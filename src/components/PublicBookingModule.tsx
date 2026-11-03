@@ -198,40 +198,33 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
 
   return (
     <section aria-label="Página Pública de Agendamento do Negócio e Simulador Google Reserve">
-      {/* Barra de Simulação de Origem & Perfis para Teste das Regras Unificadas */}
+      {/* Cabeçalho da Página Pública de Agendamento */}
       <div className="border-b border-[#DEDAD0] bg-white px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-[#141413] sm:text-2xl">
-              Página Pública do Negócio & Integração Google Reserve
+            <h1 className="text-xl font-semibold tracking-tight text-[#141413]">
+              Agendamento Online
             </h1>
-            <p className="mt-1 text-sm text-[#4A4843]">
-              Visão mobile-first do cliente final unindo Google Reserve (Trinks), atribuição Boost (_bf Booksy) e cadastro sem atrito (Reservio).
+            <p className="mt-0.5 text-xs text-[#4A4843]">
+              Escolha o serviço, profissional e horário disponível para reservar em segundos.
             </p>
           </div>
 
-          {/* Botões rápidos para testar os cenários de regras de negócio */}
+          {/* Perfis rápidos para testar os cenários de reserva */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => applyPresetProfile('LOYAL')}
               className="rounded-lg border border-[#DEDAD0] bg-[#F6F5F0] px-3 py-1.5 text-xs font-medium text-[#141413] hover:bg-[#EFECE6]"
             >
-              Testar Cliente Fiel (Sem Sinal)
+              Perfil Cliente Recorrente
             </button>
             <button
               type="button"
               onClick={() => applyPresetProfile('NOSHOW')}
               className="rounded-lg border border-[#B45309]/40 bg-[#FEF3C7] px-3 py-1.5 text-xs font-medium text-[#B45309] hover:bg-[#FDE68A]"
             >
-              Testar Cliente c/ 2 Faltas (Exige Sinal Pix)
-            </button>
-            <button
-              type="button"
-              onClick={() => applyPresetProfile('NEW_BOOST')}
-              className="rounded-lg border border-[#0F766E]/40 bg-[#E6F4F1] px-3 py-1.5 text-xs font-medium text-[#0F766E]"
-            >
-              Testar Novo Cliente via Boost (15%)
+              Perfil c/ 2 Faltas (Sinal Pix)
             </button>
           </div>
         </div>
@@ -324,7 +317,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
                 {business.monthlyBookingsLimit} reservas no Plano Grátis)
               </h3>
               <p className="text-xs text-[#4A4843] leading-relaxed">
-                Ao contrário do Reservio (que exibe erro técnico bloqueante), o ProntoAgende direciona o cliente automaticamente para o WhatsApp da recepção enquanto o gestor continua operando o caixa e encaixes normalmente.
+                O sistema direciona o cliente automaticamente para o WhatsApp da recepção enquanto o estabelecimento continua operando o caixa e encaixes normalmente.
               </p>
             </div>
           ) : (

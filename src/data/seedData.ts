@@ -193,7 +193,7 @@ export const INITIAL_CLIENTS: Client[] = [
       {
         id: 'pass_henrique_01',
         serviceId: 'srv_corte_degrade',
-        name: 'Pacote 4 Cortes Degradê (Reservio Pass)',
+        name: 'Pacote 4 Cortes Degradê',
         totalSessions: 4,
         remainingSessions: 2,
         expiresAt: '2026-12-30',

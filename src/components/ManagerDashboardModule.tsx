@@ -180,8 +180,9 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
 
       {/* Corpo Principal: Regras de Negócio & Cota Freemium (6 cols) + Razão de Comissões e Origem (6 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#DEDAD0] bg-white">
+        {/*divquerda (6 cols)*/}
         <div className="lg:col-span-6 p-4 sm:p-6 space-y-6">
-          {/* Controle da Cota Freemium (Estilo Reservio + Soft-Cap Brasileiro) */}
+          {/* Controle da Cota Mensal */}
           <div className="rounded-lg border border-[#DEDAD0] bg-[#F6F5F0]/60 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-[#141413]">
@@ -252,10 +253,10 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
             </div>
           </div>
 
-          {/* Parametrização das Regras de Negócio Unificadas */}
+          {/* Parametrização das Regras de Negócio */}
           <div className="space-y-4">
             <h2 className="text-base font-semibold text-[#141413]">
-              Parametrização das Regras de Negócio (Trinks + Booksy + Reservio)
+              Configurações de Taxas, Sinal Pix e Captação
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -264,7 +265,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                   htmlFor="cfg-fee-rule"
                   className="text-xs font-semibold text-[#141413]"
                 >
-                  Rateio da Taxa de Maquininha (Trinks)
+                  Rateio da Taxa de Maquininha
                 </label>
                 <select
                   id="cfg-fee-rule"

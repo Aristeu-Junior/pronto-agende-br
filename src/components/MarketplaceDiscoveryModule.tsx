@@ -572,7 +572,7 @@ export const MarketplaceDiscoveryModule: React.FC<
               </div>
             </div>
 
-            {/* Transparência de Atribuição (Diferencial Unificado Trinks + Booksy) */}
+            {/* Transparência de Atribuição */}
             <div className="rounded-lg border border-[#DEDAD0] bg-white p-3.5 space-y-2.5 text-xs">
               <div className="flex items-center justify-between font-semibold text-[#141413]">
                 <span className="inline-flex items-center gap-1.5">
@@ -581,23 +581,15 @@ export const MarketplaceDiscoveryModule: React.FC<
                     weight="bold"
                     className="text-[#0F766E]"
                   />
-                  <span>Motor de Atribuição Anti-Cobrança Indevida</span>
-                </span>
-                <span className="num-tabular text-[11px] text-[#0F766E]">
-                  Cookie _bf ativo
+                  <span>Reserva Direta ou em Destaque</span>
                 </span>
               </div>
               <p className="text-[#4A4843] leading-relaxed">
-                Diferente de marketplaces que cobram até 30% sem teto claro,
-                aqui o <strong>Marketplace Boost</strong> cobra{' '}
+                O destaque patrocinado aplica taxa única de{' '}
                 <strong className="num-tabular text-[#141413]">15%</strong>{' '}
-                exclusivamente quando o CPF/telefone e o fingerprint{' '}
-                <code className="rounded bg-[#F6F5F0] px-1 py-0.5 text-[11px]">
-                  _bf
-                </code>{' '}
-                nunca estiveram no CRM do salão. A partir da 2ª visita ou via{' '}
-                <strong>Google Reserve</strong>, a taxa é{' '}
-                <strong className="num-tabular text-[#0F766E]">0%</strong>.
+                exclusivamente na 1ª visita de um novo cliente. A partir da 2ª
+                visita ou via <strong>Google</strong>, a reserva é{' '}
+                <strong className="num-tabular text-[#0F766E]">100% isenta</strong>.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">

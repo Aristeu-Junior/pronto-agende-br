@@ -37,7 +37,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
     clients[0]?.id || ''
   );
 
-  // Modal Novo Cliente com validação CPF Módulo 11 (Trinks)
+  // Modal Novo Cliente com validação de CPF
   const [newClientOpen, setNewClientOpen] = useState<boolean>(false);
   const [fullName, setFullName] = useState<string>('');
   const [phoneWhatsapp, setPhoneWhatsapp] = useState<string>('');
@@ -46,7 +46,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Modal Vender Pacote / Passe (Reservio)
+  // Modal Vender Pacote de Sessões
   const [passModalOpen, setPassModalOpen] = useState<boolean>(false);
   const [passServiceId, setPassServiceId] = useState<string>(
     services[0]?.id || 'srv_corte_degrade'
@@ -81,7 +81,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
     e.preventDefault();
     const nextErrors: Record<string, string> = {};
 
-    // Regra Trinks (nomeCompleto: espaço em branco e > 5 caracteres)
+    // Validação de nome completo (> 5 caracteres)
     if (fullName.trim().length <= 5 || !fullName.trim().includes(' ')) {
       nextErrors.fullName =
         'Informe nome e sobrenome com mais de 5 caracteres (regra de conformidade fiscal).';
@@ -135,11 +135,11 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
       <div className="border-b border-[#DEDAD0] bg-white px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-[#141413] sm:text-2xl">
-              Clientes (CRM), Score Anti-No-Show & Passes
+            <h1 className="text-xl font-semibold tracking-tight text-[#141413]">
+              Clientes & Pacotes
             </h1>
-            <p className="mt-1 text-sm text-[#4A4843]">
-              Cadastro progressivo com validação de CPF Módulo 11 (Trinks), pacotes de sessões (Reservio) e trava de Sinal Pix para reincidentes em faltas (Booksy).
+            <p className="mt-0.5 text-xs text-[#4A4843]">
+              Histórico de visitas, pacotes de sessões e controle de faltas.
             </p>
           </div>
 
@@ -368,7 +368,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
               <div className="rounded-lg border border-[#DEDAD0] bg-white p-3.5 text-xs space-y-2.5">
                 <div className="flex items-center justify-between">
                   <strong className="font-semibold text-[#141413]">
-                    Passes & Pacotes de Sessões (Reservio)
+                    Pacotes de Sessões
                   </strong>
                   <button
                     type="button"

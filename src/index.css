@@ -1,27 +1,102 @@
 @import "tailwindcss";
 
 :root {
-  --bg-canvas: #F6F5F0;
-  --bg-surface: #FFFFFF;
-  --bg-subtle: #EFECE6;
-  --ink-primary: #141413;
-  --ink-secondary: #4A4843;
-  --ink-muted: #6E6A63;
-  --border-hairline: #DEDAD0;
-  --accent-emerald: #0F766E;
-  --accent-emerald-hover: #0B5C56;
-  --accent-emerald-soft: #E6F4F1;
-  --status-amber: #B45309;
-  --status-amber-soft: #FEF3C7;
-  --status-crimson: #B91C1C;
-  --status-crimson-soft: #FEE2E2;
+  color-scheme: light dark;
+
+  &:has(> head > meta[name="color-scheme"][content="dark"]) {
+    color-scheme: dark;
+  }
+  &:has(> head > meta[name="color-scheme"][content="light"]) {
+    color-scheme: light;
+  }
+
+  /* Light & Dark raw tokens */
+  --bg-canvas-light: #F6F5F0;
+  --bg-canvas-dark: #111110;
+  --bg-surface-light: #FFFFFF;
+  --bg-surface-dark: #191918;
+  --bg-subtle-light: #EFECE6;
+  --bg-subtle-dark: #232220;
+  --ink-primary-light: #141413;
+  --ink-primary-dark: #F3F2EE;
+  --ink-secondary-light: #4A4843;
+  --ink-secondary-dark: #B5B2A9;
+  --ink-muted-light: #6E6A63;
+  --ink-muted-dark: #8A867E;
+  --border-hairline-light: #DEDAD0;
+  --border-hairline-dark: #2D2C29;
+  --accent-emerald-light: #0F766E;
+  --accent-emerald-dark: #14B8A6;
+  --accent-emerald-hover-light: #0B5C56;
+  --accent-emerald-hover-dark: #0D9488;
+  --accent-emerald-soft-light: #E6F4F1;
+  --accent-emerald-soft-dark: #112A28;
+  --status-amber-light: #B45309;
+  --status-amber-dark: #F59E0B;
+  --status-amber-soft-light: #FEF3C7;
+  --status-amber-soft-dark: #2D210B;
+  --status-crimson-light: #B91C1C;
+  --status-crimson-dark: #F87171;
+  --status-crimson-soft-light: #FEE2E2;
+  --status-crimson-soft-dark: #2F1414;
+
+  /* Default fallback (light) */
+  --bg-canvas: var(--bg-canvas-light);
+  --bg-surface: var(--bg-surface-light);
+  --bg-subtle: var(--bg-subtle-light);
+  --ink-primary: var(--ink-primary-light);
+  --ink-secondary: var(--ink-secondary-light);
+  --ink-muted: var(--ink-muted-light);
+  --border-hairline: var(--border-hairline-light);
+  --accent-emerald: var(--accent-emerald-light);
+  --accent-emerald-hover: var(--accent-emerald-hover-light);
+  --accent-emerald-soft: var(--accent-emerald-soft-light);
+  --status-amber: var(--status-amber-light);
+  --status-amber-soft: var(--status-amber-soft-light);
+  --status-crimson: var(--status-crimson-light);
+  --status-crimson-soft: var(--status-crimson-soft-light);
+
+  @media (prefers-color-scheme: dark) {
+    --bg-canvas: var(--bg-canvas-dark);
+    --bg-surface: var(--bg-surface-dark);
+    --bg-subtle: var(--bg-subtle-dark);
+    --ink-primary: var(--ink-primary-dark);
+    --ink-secondary: var(--ink-secondary-dark);
+    --ink-muted: var(--ink-muted-dark);
+    --border-hairline: var(--border-hairline-dark);
+    --accent-emerald: var(--accent-emerald-dark);
+    --accent-emerald-hover: var(--accent-emerald-hover-dark);
+    --accent-emerald-soft: var(--accent-emerald-soft-dark);
+    --status-amber: var(--status-amber-dark);
+    --status-amber-soft: var(--status-amber-soft-dark);
+    --status-crimson: var(--status-crimson-dark);
+    --status-crimson-soft: var(--status-crimson-soft-dark);
+  }
+
+  @supports (color: light-dark(white, black)) {
+    --bg-canvas: light-dark(var(--bg-canvas-light), var(--bg-canvas-dark));
+    --bg-surface: light-dark(var(--bg-surface-light), var(--bg-surface-dark));
+    --bg-subtle: light-dark(var(--bg-subtle-light), var(--bg-subtle-dark));
+    --ink-primary: light-dark(var(--ink-primary-light), var(--ink-primary-dark));
+    --ink-secondary: light-dark(var(--ink-secondary-light), var(--ink-secondary-dark));
+    --ink-muted: light-dark(var(--ink-muted-light), var(--ink-muted-dark));
+    --border-hairline: light-dark(var(--border-hairline-light), var(--border-hairline-dark));
+    --accent-emerald: light-dark(var(--accent-emerald-light), var(--accent-emerald-dark));
+    --accent-emerald-hover: light-dark(var(--accent-emerald-hover-light), var(--accent-emerald-hover-dark));
+    --accent-emerald-soft: light-dark(var(--accent-emerald-soft-light), var(--accent-emerald-soft-dark));
+    --status-amber: light-dark(var(--status-amber-light), var(--status-amber-dark));
+    --status-amber-soft: light-dark(var(--status-amber-soft-light), var(--status-amber-soft-dark));
+    --status-crimson: light-dark(var(--status-crimson-light), var(--status-crimson-dark));
+    --status-crimson-soft: light-dark(var(--status-crimson-soft-light), var(--status-crimson-soft-dark));
+  }
+
   --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  color-scheme: light;
+  accent-color: var(--accent-emerald);
   caret-color: var(--accent-emerald);
   scrollbar-width: thin;
-  scrollbar-color: #C7C2B6 var(--bg-canvas);
+  scrollbar-color: var(--border-hairline) var(--bg-canvas);
 }
 
 *,
@@ -43,26 +118,149 @@ body {
 }
 
 ::selection {
-  background-color: rgba(15, 118, 110, 0.16);
-  color: #0B5C56;
+  background-color: var(--accent-emerald-soft);
+  color: var(--accent-emerald);
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Automatic Dark Mode mapping for utility classes across all views */
+:root:has(> head > meta[name="color-scheme"][content="dark"]) {
+  & .bg-white {
+    background-color: var(--bg-surface) !important;
+  }
+  & .bg-white\/95 {
+    background-color: color-mix(in oklab, var(--bg-surface) 95%, transparent) !important;
+  }
+  & .bg-\[\#FFFFFF\]\/95 {
+    background-color: color-mix(in oklab, var(--bg-surface) 95%, transparent) !important;
+  }
+  & .bg-\[\#F6F5F0\],
+  & .bg-\[\#F6F5F0\]\/70,
+  & .bg-\[\#F6F5F0\]\/60,
+  & .bg-\[\#F6F5F0\]\/50,
+  & .bg-\[\#F6F5F0\]\/40 {
+    background-color: var(--bg-canvas) !important;
+  }
+  & .bg-\[\#EFECE6\],
+  & .bg-\[\#EFECE6\]\/60,
+  & .bg-\[\#EFECE6\]\/50 {
+    background-color: var(--bg-subtle) !important;
+  }
+  & .bg-\[\#E6F4F1\],
+  & .bg-\[\#E6F4F1\]\/60,
+  & .bg-\[\#E6F4F1\]\/45,
+  & .bg-\[\#E6F4F1\]\/40 {
+    background-color: var(--accent-emerald-soft) !important;
+  }
+  & .bg-\[\#FEF3C7\],
+  & .bg-\[\#FEF3C7\]\/70 {
+    background-color: var(--status-amber-soft) !important;
+  }
+  & .bg-\[\#FEE2E2\],
+  & .bg-\[\#FEE2E2\]\/70,
+  & .bg-\[\#FEE2E2\]\/60 {
+    background-color: var(--status-crimson-soft) !important;
+  }
+  & .text-\[\#141413\] {
+    color: var(--ink-primary) !important;
+  }
+  & .text-\[\#4A4843\] {
+    color: var(--ink-secondary) !important;
+  }
+  & .text-\[\#6E6A63\],
+  & .text-\[\#7A776E\] {
+    color: var(--ink-muted) !important;
+  }
+  & .text-\[\#0F766E\] {
+    color: var(--accent-emerald) !important;
+  }
+  & .text-\[\#B45309\] {
+    color: var(--status-amber) !important;
+  }
+  & .text-\[\#B91C1C\] {
+    color: var(--status-crimson) !important;
+  }
+  & .border-\[\#DEDAD0\],
+  & .divide-\[\#DEDAD0\] > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--border-hairline) !important;
+  }
+  & input,
+  & select,
+  & textarea {
+    background-color: var(--bg-surface) !important;
+    color: var(--ink-primary) !important;
+    border-color: var(--border-hairline) !important;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: var(--bg-canvas);
-}
-
-::-webkit-scrollbar-thumb {
-  background: #C7C2B6;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #9E988B;
+@media (prefers-color-scheme: dark) {
+  :root:not(:has(> head > meta[name="color-scheme"][content="light"])) {
+    & .bg-white {
+      background-color: var(--bg-surface) !important;
+    }
+    & .bg-white\/95 {
+      background-color: color-mix(in oklab, var(--bg-surface) 95%, transparent) !important;
+    }
+    & .bg-\[\#FFFFFF\]\/95 {
+      background-color: color-mix(in oklab, var(--bg-surface) 95%, transparent) !important;
+    }
+    & .bg-\[\#F6F5F0\],
+    & .bg-\[\#F6F5F0\]\/70,
+    & .bg-\[\#F6F5F0\]\/60,
+    & .bg-\[\#F6F5F0\]\/50,
+    & .bg-\[\#F6F5F0\]\/40 {
+      background-color: var(--bg-canvas) !important;
+    }
+    & .bg-\[\#EFECE6\],
+    & .bg-\[\#EFECE6\]\/60,
+    & .bg-\[\#EFECE6\]\/50 {
+      background-color: var(--bg-subtle) !important;
+    }
+    & .bg-\[\#E6F4F1\],
+    & .bg-\[\#E6F4F1\]\/60,
+    & .bg-\[\#E6F4F1\]\/45,
+    & .bg-\[\#E6F4F1\]\/40 {
+      background-color: var(--accent-emerald-soft) !important;
+    }
+    & .bg-\[\#FEF3C7\],
+    & .bg-\[\#FEF3C7\]\/70 {
+      background-color: var(--status-amber-soft) !important;
+    }
+    & .bg-\[\#FEE2E2\],
+    & .bg-\[\#FEE2E2\]\/70,
+    & .bg-\[\#FEE2E2\]\/60 {
+      background-color: var(--status-crimson-soft) !important;
+    }
+    & .text-\[\#141413\] {
+      color: var(--ink-primary) !important;
+    }
+    & .text-\[\#4A4843\] {
+      color: var(--ink-secondary) !important;
+    }
+    & .text-\[\#6E6A63\],
+    & .text-\[\#7A776E\] {
+      color: var(--ink-muted) !important;
+    }
+    & .text-\[\#0F766E\] {
+      color: var(--accent-emerald) !important;
+    }
+    & .text-\[\#B45309\] {
+      color: var(--status-amber) !important;
+    }
+    & .text-\[\#B91C1C\] {
+      color: var(--status-crimson) !important;
+    }
+    & .border-\[\#DEDAD0\],
+    & .divide-\[\#DEDAD0\] > :not([hidden]) ~ :not([hidden]) {
+      border-color: var(--border-hairline) !important;
+    }
+    & input,
+    & select,
+    & textarea {
+      background-color: var(--bg-surface) !important;
+      color: var(--ink-primary) !important;
+      border-color: var(--border-hairline) !important;
+    }
+  }
 }
 
 /* Tabular numeric precision across operational metrics, schedules, and currency */
@@ -106,11 +304,11 @@ dialog.operational-dialog {
   color: var(--ink-primary);
   max-width: min(560px, calc(100vw - 2rem));
   width: 100%;
-  box-shadow: 0 24px 48px -12px rgba(20, 20, 19, 0.18);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.32);
 }
 
 dialog.operational-dialog::backdrop {
-  background-color: rgba(20, 20, 19, 0.48);
+  background-color: rgba(15, 15, 14, 0.58);
   backdrop-filter: blur(3px);
 }
 

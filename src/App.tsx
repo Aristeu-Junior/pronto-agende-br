@@ -6,8 +6,10 @@ import {
   Compass,
   CurrencyDollar,
   GlobeHemisphereWest,
+  Moon,
   Scissors,
   ShieldCheck,
+  Sun,
   Users,
 } from '@phosphor-icons/react';
 import {
@@ -130,6 +132,73 @@ export function App() {
 
   const [posTargetAppointment, setPosTargetAppointment] =
     useState<Appointment | null>(null);
+
+  const [resolvedScheme, setResolvedScheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const stored = localStorage.getItem('color-scheme');
+      if (stored === 'dark' || stored === 'light') return stored;
+    } catch {}
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    ) {
+      return 'dark';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const syncScheme = () => {
+      let stored: string | null = null;
+      try {
+        stored = localStorage.getItem('color-scheme');
+      } catch {}
+      const meta = document.querySelector('meta[name="color-scheme"]');
+      if (meta) {
+        meta.setAttribute('content', stored ?? 'light dark');
+      }
+      if (stored === 'dark' || stored === 'light') {
+        setResolvedScheme(stored);
+      } else {
+        setResolvedScheme(mq.matches ? 'dark' : 'light');
+      }
+    };
+
+    syncScheme();
+    mq.addEventListener('change', syncScheme);
+    window.addEventListener('storage', syncScheme);
+    return () => {
+      mq.removeEventListener('change', syncScheme);
+      window.removeEventListener('storage', syncScheme);
+    };
+  }, []);
+
+  const handleToggleColorScheme = () => {
+    const target: 'light' | 'dark' =
+      resolvedScheme === 'dark' ? 'light' : 'dark';
+    const systemIsDark = window.matchMedia(
+      '(prefers-color-scheme: dark)'
+    ).matches;
+    const systemScheme: 'light' | 'dark' = systemIsDark ? 'dark' : 'light';
+
+    try {
+      if (target === systemScheme) {
+        localStorage.removeItem('color-scheme');
+      } else {
+        localStorage.setItem('color-scheme', target);
+      }
+    } catch {}
+
+    const meta = document.querySelector('meta[name="color-scheme"]');
+    if (meta) {
+      meta.setAttribute(
+        'content',
+        target === systemScheme ? 'light dark' : target
+      );
+    }
+    setResolvedScheme(target);
+  };
 
   useEffect(() => {
     try {
@@ -429,7 +498,7 @@ export function App() {
   }> = [
     {
       id: 'AGENDA',
-      label: 'Agenda & Walk-in',
+      label: 'Agenda',
       shortLabel: 'Agenda',
       badge: String(
         appointments.filter(
@@ -440,20 +509,20 @@ export function App() {
     },
     {
       id: 'POS',
-      label: 'PDV & Comissões',
-      shortLabel: 'PDV',
+      label: 'Caixa (PDV)',
+      shortLabel: 'Caixa',
       icon: <CurrencyDollar size={18} weight="bold" />,
     },
     {
       id: 'CLIENTS',
-      label: 'Clientes & Passes',
+      label: 'Clientes',
       shortLabel: 'Clientes',
       badge: String(clients.length),
       icon: <Users size={18} weight="bold" />,
     },
     {
       id: 'REMINDERS',
-      label: 'Lembretes WhatsApp',
+      label: 'Lembretes',
       shortLabel: 'Lembretes',
       badge: String(
         reminders.filter((r) => r.status === 'PENDING').length || ''
@@ -462,21 +531,20 @@ export function App() {
     },
     {
       id: 'MARKETPLACE',
-      label: 'Vitrine Marketplace',
+      label: 'Vitrine Local',
       shortLabel: 'Vitrine',
-      badge: String(marketplaceVenues.length),
       icon: <Compass size={18} weight="bold" />,
     },
     {
       id: 'PUBLIC_PAGE',
-      label: 'Página Pública / Google',
-      shortLabel: 'Pág. Pública',
+      label: 'Link de Reserva',
+      shortLabel: 'Reservar',
       icon: <GlobeHemisphereWest size={18} weight="bold" />,
     },
     {
       id: 'MANAGER',
-      label: 'Painel do Gestor',
-      shortLabel: 'Gestor',
+      label: 'Gestão',
+      shortLabel: 'Gestão',
       icon: <ChartBar size={18} weight="bold" />,
     },
   ];
@@ -486,29 +554,26 @@ export function App() {
       {/* Barra Operacional Superior */}
       <header className="sticky top-0 z-30 border-b border-[#DEDAD0] bg-[#FFFFFF]/95 backdrop-blur-sm">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
-          <div className="flex h-16 items-center justify-between gap-4">
+          <div className="flex h-16 items-center justify-between gap-3">
             {/* Identidade da Plataforma + Unidade Ativa */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#141413] text-white">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0F766E] text-white">
                 <Scissors size={20} weight="bold" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-bold tracking-tight text-[#141413]">
+                  <span className="text-base font-bold tracking-tight text-[#141413] truncate">
                     ProntoAgende BR
                   </span>
-                  <span className="hidden sm:inline-flex items-center rounded border border-[#0F766E]/30 bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-semibold text-[#0F766E]">
-                    Trinks + Booksy + Reservio
-                  </span>
                 </div>
-                <p className="text-xs text-[#4A4843]">
-                  {business.name} · {business.neighborhood}, {business.cityState}
+                <p className="text-xs text-[#4A4843] truncate">
+                  {business.name} · {business.neighborhood}
                 </p>
               </div>
             </div>
 
-            {/* Indicador Vivo da Cota Freemium & Status Google Reserve */}
-            <div className="flex items-center gap-2.5">
+            {/* Ações Superiores: Alternador Modo Claro/Escuro + Link de Reserva */}
+            <div className="flex items-center gap-2">
               <div className="hidden lg:flex items-center gap-2 rounded-lg border border-[#DEDAD0] bg-[#F6F5F0] px-3 py-1.5 text-xs">
                 <ShieldCheck size={16} weight="fill" className="text-[#0F766E]" />
                 <span>
@@ -518,22 +583,49 @@ export function App() {
                     {business.planTier === 'PRO'
                       ? 'Ilimitado'
                       : business.monthlyBookingsLimit}
-                  </strong>{' '}
-                  reservas/mês
+                  </strong>
                 </span>
               </div>
 
               <button
                 type="button"
+                onClick={handleToggleColorScheme}
+                aria-label={
+                  resolvedScheme === 'dark'
+                    ? 'Alternar para Modo Claro'
+                    : 'Alternar para Modo Escuro'
+                }
+                title={
+                  resolvedScheme === 'dark'
+                    ? 'Mudar para Modo Claro'
+                    : 'Mudar para Modo Escuro'
+                }
+                className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg border border-[#DEDAD0] bg-white px-3 py-1.5 text-xs font-semibold text-[#141413] hover:bg-[#EFECE6]"
+              >
+                {resolvedScheme === 'dark' ? (
+                  <>
+                    <Sun size={16} weight="bold" className="text-[#F59E0B]" />
+                    <span>Modo Claro</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon size={16} weight="bold" className="text-[#0F766E]" />
+                    <span>Modo Escuro</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setActiveTab('PUBLIC_PAGE')}
-                className={`min-h-[38px] inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold ${
+                className={`hidden sm:inline-flex min-h-[38px] items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold ${
                   activeTab === 'PUBLIC_PAGE'
                     ? 'border-[#0F766E] bg-[#0F766E] text-white'
-                    : 'border-[#DEDAD0] bg-white text-[#141413] hover:bg-[#F6F5F0]'
+                    : 'border-[#DEDAD0] bg-white text-[#141413] hover:bg-[#EFECE6]'
                 }`}
               >
                 <GlobeHemisphereWest size={16} weight="bold" />
-                <span>Ver Página Pública / Google Reserve</span>
+                <span>Link de Agendamento</span>
               </button>
             </div>
           </div>
@@ -552,7 +644,7 @@ export function App() {
                   onClick={() => setActiveTab(item.id)}
                   className={`min-h-[38px] inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold ${
                     active
-                      ? 'bg-[#141413] text-white'
+                      ? 'bg-[#0F766E] text-white'
                       : 'text-[#4A4843] hover:bg-[#EFECE6] hover:text-[#141413]'
                   }`}
                 >

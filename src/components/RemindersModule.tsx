@@ -38,11 +38,11 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
   return (
     <section aria-label="Central de Lembretes WhatsApp e Ciclo de Retorno">
       <div className="border-b border-[#DEDAD0] bg-white px-4 py-4 sm:px-6">
-        <h1 className="text-xl font-semibold tracking-tight text-[#141413] sm:text-2xl">
-          Lembretes Interativos & Recuperação de Ciclo (21 Dias)
+        <h1 className="text-xl font-semibold tracking-tight text-[#141413]">
+          Lembretes & Retorno de Clientes
         </h1>
-        <p className="mt-1 text-sm text-[#4A4843]">
-          Disparo automático de confirmação via WhatsApp (sem cobrar pacote extra como no Trinks) que atualiza o status na Agenda em tempo real.
+        <p className="mt-0.5 text-xs text-[#4A4843]">
+          Disparo automático de confirmação via WhatsApp que atualiza o status na Agenda em tempo real.
         </p>
       </div>
 
@@ -129,13 +129,13 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
             ))}
           </div>
 
-          {/* Editor de Template Personalizável (Estilo Reservio Standard liberado no Free) */}
+          {/* Editor de Template Personalizável */}
           <div className="rounded-lg border border-[#DEDAD0] bg-[#F6F5F0]/60 p-4 space-y-2">
             <label
               htmlFor="whatsapp-template"
               className="block text-xs font-semibold text-[#141413]"
             >
-              Template da Mensagem Automática (Variáveis: {'{nome}'}, {'{hora}'},{' '}
+              Mensagem Padrão de Confirmação (Variáveis: {'{nome}'}, {'{hora}'},{' '}
               {'{profissional}'})
             </label>
             <textarea
@@ -148,14 +148,14 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
           </div>
         </div>
 
-        {/* Coluna Direita (5 cols): Lacuna de Mercado Coberta — Motor de Retorno de 21 Dias */}
+        {/* Coluna Direita (5 cols): Motor de Retorno de 21 Dias */}
         <div className="lg:col-span-5 bg-[#F6F5F0]/50 p-4 sm:p-6 space-y-4">
           <div>
             <h2 className="text-base font-semibold text-[#141413]">
-              Reativação Automática de Ciclo (&gt; 21 Dias sem Cortar)
+              Clientes Ausentes (&gt; 21 Dias sem Visitar)
             </h2>
             <p className="mt-1 text-xs text-[#4A4843]">
-              Diferencial exclusivo além dos 3 concorrentes: identifica clientes cujo ciclo médio de corte venceu e envia convite com link direto da agenda.
+              Identifica clientes cujo ciclo médio de retorno venceu e envia convite direto no WhatsApp.
             </p>
           </div>
 

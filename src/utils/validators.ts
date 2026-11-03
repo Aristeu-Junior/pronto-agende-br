@@ -1,7 +1,7 @@
 import { FeeSplitRule, PaymentMethod } from '../types';
 
 /**
- * Validação oficial de CPF (Módulo 11) — compatível com a diretiva observada no Trinks (trinks_app_3.js)
+ * Validação oficial de CPF (Módulo 11)
  */
 export function isValidCPF(rawCpf: string): boolean {
   const digits = rawCpf.replace(/\D/g, '');
@@ -102,7 +102,7 @@ export interface PartnerSplitResult {
 }
 
 /**
- * Motor unificado de cálculo Salão Parceiro (Lei 13.352/2016) + Taxa Maquininha (Trinks) + Boost 1ª Visita (Booksy)
+ * Motor unificado de cálculo Salão Parceiro (Lei 13.352/2016) + Rateio de Taxa de Maquininha + Captação 1ª Visita
  */
 export function calculatePartnerSplit(input: PartnerSplitInput): PartnerSplitResult {
   const netServices = Math.max(0, input.subtotalServices - input.discountAmount);
@@ -114,7 +114,7 @@ export function calculatePartnerSplit(input: PartnerSplitInput): PartnerSplitRes
   const acquirerFeePct = getPaymentFeePct(input.paymentMethod);
   const acquirerFeeAmount = Number(((totalAmount * acquirerFeePct) / 100).toFixed(2));
 
-  // Regra Boost (Booksy calibrado): incide apenas sobre o preço líquido do serviço na 1ª visita via Marketplace Boost
+  // Taxa de captação incide apenas sobre o preço líquido do serviço na 1ª visita via Vitrine
   const boostFeeAmount = input.isFirstVisitBoost
     ? Number(((netServices * input.boostCommissionPct) / 100).toFixed(2))
     : 0;

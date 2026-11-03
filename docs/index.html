@@ -3,17 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ProntoAgende BR — Agendamento, Walk-in & Gestão Salão Parceiro</title>
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      try {
+        document.querySelector('meta[name="color-scheme"]').content =
+          localStorage.getItem('color-scheme') ?? 'light dark';
+      } catch (e) {}
+    </script>
+    <title>ProntoAgende BR — Agenda, Caixa & Gestão</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="./assets/index-DYra0DxB.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DEb3UweQ.css">
+    <script type="module" crossorigin src="./assets/index-WWUkA-YU.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Bv1XHk9M.css">
   </head>
-  <body class="bg-[#F6F5F0] text-[#141413] antialiased selection:bg-[#0F766E]/15 selection:text-[#0F766E]">
+  <body class="antialiased">
     <div id="root"></div>
   </body>
 </html>
