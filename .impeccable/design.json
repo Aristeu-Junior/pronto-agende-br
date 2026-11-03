@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 2,
+  "updatedAt": "2026-10-31T16:10:00.000Z",
+  "tokens": {
+    "palette": {
+      "bg": "#F9F8F6",
+      "surface": "#FFFFFF",
+      "surface-subtle": "#F3F1ED",
+      "text-primary": "#141413",
+      "text-secondary": "#57554F",
+      "text-muted": "#7D7A72",
+      "accent": "#0F6E61",
+      "accent-hover": "#0B5349",
+      "accent-soft": "#E7F3F1",
+      "brass": "#B45309",
+      "brass-soft": "#FEF3C7",
+      "danger": "#B91C1C",
+      "danger-soft": "#FEE2E2",
+      "border": "#E6E3DC"
+    },
+    "fonts": {
+      "display": "Plus Jakarta Sans",
+      "sans": "Plus Jakarta Sans",
+      "mono": "JetBrains Mono"
+    }
+  }
+}
