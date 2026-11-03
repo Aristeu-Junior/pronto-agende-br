@@ -19,6 +19,7 @@ import {
   StaffMember,
 } from '../types';
 import { formatCurrencyBRL } from '../utils/finance';
+import { sanitizeUserText, validateSafeReceiptFile } from '../utils/security';
 
 interface PublicBookingModuleProps {
   business: BusinessConfig;
@@ -102,8 +103,8 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
 
     onCreatePublicBooking({
       clientId: `cli_pub_${Date.now()}`,
-      clientName: clientName.trim(),
-      clientPhone: clientPhone.trim(),
+      clientName: sanitizeUserText(clientName.trim(), 80),
+      clientPhone: sanitizeUserText(clientPhone.trim(), 30),
       staffId: selectedStaffId || staff[0]?.id || 'st_01',
       serviceIds: selectedServiceIds,
       date: new Date().toISOString().slice(0, 10),
@@ -386,10 +387,18 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
                     : 'Anexar Comprovante do Pix'}
                   <input
                     type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) =>
-                      setProofFileName(e.target.files?.[0]?.name ?? '')
-                    }
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const check = validateSafeReceiptFile(file);
+                      if (!check.valid) {
+                        alert(check.reason);
+                        e.target.value = '';
+                        return;
+                      }
+                      setProofFileName(check.safeName);
+                    }}
                     className="hidden"
                   />
                 </label>

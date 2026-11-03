@@ -20,8 +20,10 @@ import {
   PosTransaction,
   ServiceItem,
   StaffMember,
+  UserPermissions,
 } from '../types';
 import { FEE_SPLIT_RULE_LABELS, formatCurrencyBRL } from '../utils/finance';
+import { sanitizeUserText, validateSafeReceiptFile } from '../utils/security';
 
 interface ManagerDashboardModuleProps {
   business: BusinessConfig;
@@ -30,6 +32,7 @@ interface ManagerDashboardModuleProps {
   appointments: Appointment[];
   transactions: PosTransaction[];
   bankStatements: BankStatementEntry[];
+  userPermissions?: UserPermissions;
   onUpdateBusiness: (patch: Partial<BusinessConfig>) => void;
   onUpdateService: (serviceId: string, patch: Partial<ServiceItem>) => void;
   onAddService: (service: Omit<ServiceItem, 'id'>) => void;
@@ -49,6 +52,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
   appointments,
   transactions,
   bankStatements,
+  userPermissions,
   onUpdateBusiness,
   onUpdateService,
   onAddService,
@@ -104,11 +108,19 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
     };
   }, [transactions, bankStatements]);
 
+  const canEditPrices = userPermissions?.canEditPrices ?? true;
+  const canUploadStatements = userPermissions?.canUploadStatements ?? true;
+  const canResetData = userPermissions?.canExportOrResetData ?? false;
+
   const handleAddServiceForm = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEditPrices) {
+      alert('Sua conta não possui permissão para alterar a tabela de preços. Solicite ao Administrador.');
+      return;
+    }
     if (!newSrvName.trim()) return;
     onAddService({
-      name: newSrvName.trim(),
+      name: sanitizeUserText(newSrvName.trim(), 80),
       category: 'CABELO',
       durationMinutes: Math.max(10, Number(newSrvDuration) || 30),
       bufferAfterMinutes: 5,
@@ -150,10 +162,14 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
 
   const handleAddStatementForm = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canUploadStatements) {
+      alert('Permissão para anexar extratos desativada pelo Administrador.');
+      return;
+    }
     if (!stmtDesc.trim() || !stmtAmount.trim()) return;
     onAddBankStatement({
       date: new Date().toLocaleDateString('pt-BR'),
-      description: stmtDesc.trim(),
+      description: sanitizeUserText(stmtDesc.trim(), 120),
       amount: Math.max(0, Number(stmtAmount) || 0),
       type: stmtType,
       attachmentName: stmtFileName || undefined,
@@ -400,13 +416,14 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                     type="number"
                     min="0"
                     step="1"
+                    disabled={!canEditPrices}
                     value={srv.price}
                     onChange={(e) =>
                       onUpdateService(srv.id, {
                         price: Math.max(0, Number(e.target.value) || 0),
                       })
                     }
-                    className="w-full bg-transparent text-xs font-mono font-bold text-amber-400 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
+                    className="w-full bg-transparent text-xs font-mono font-bold text-amber-400 disabled:opacity-50 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
                   />
                 </div>
                 <div className="col-span-1 flex justify-end">
@@ -679,10 +696,18 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                 {stmtFileName ? 'Arquivo Pronto' : 'Anexar PDF/Foto'}
                 <input
                   type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) =>
-                    setStmtFileName(e.target.files?.[0]?.name ?? '')
-                  }
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const check = validateSafeReceiptFile(file);
+                    if (!check.valid) {
+                      alert(check.reason);
+                      e.target.value = '';
+                      return;
+                    }
+                    setStmtFileName(check.safeName);
+                  }}
                   className="hidden"
                 />
               </label>
@@ -815,7 +840,9 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
             </span>
             <button
               type="button"
+              disabled={!canResetData}
               onClick={() => {
+                if (!canResetData) return;
                 if (
                   window.confirm(
                     'Deseja zerar todos os clientes, agendamentos e lançamentos de caixa para começar do zero?'
@@ -824,10 +851,12 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                   onResetAllData();
                 }
               }}
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 disabled:opacity-40 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Zerar Todos os Clientes, Agenda e Caixa
+              {canResetData
+                ? 'Zerar Todos os Clientes, Agenda e Caixa'
+                : 'Zerar Dados (Restrito ao Admin Master)'}
             </button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Bell,
   Calendar,
@@ -8,7 +8,8 @@ import {
   Moon,
   PencilSimple as Pencil,
   Scissors,
-  Sparkle as Sparkles,
+  ShieldCheck,
+  SignOut,
   Sun,
   Users,
 } from '@phosphor-icons/react';
@@ -30,15 +31,27 @@ import {
   Client,
   PosTransaction,
   ReminderLog,
+  SecurityAuditEvent,
   ServiceItem,
   StaffMember,
+  UserAccount,
 } from './types';
+import {
+  buildInitialAccounts,
+  createAuditEvent,
+  createSignedSession,
+  sanitizeUserText,
+  SignedSessionToken,
+  verifySignedSession,
+} from './utils/security';
 import { AgendaModule } from './components/AgendaModule';
 import { ClientsModule } from './components/ClientsModule';
 import { PosModule } from './components/PosModule';
 import { RemindersModule } from './components/RemindersModule';
 import { PublicBookingModule } from './components/PublicBookingModule';
 import { ManagerDashboardModule } from './components/ManagerDashboardModule';
+import { LoginGate } from './components/LoginGate';
+import { AdminSecurityModule } from './components/AdminSecurityModule';
 
 type ActiveTab =
   | 'AGENDA'
@@ -46,9 +59,13 @@ type ActiveTab =
   | 'CLIENTS'
   | 'REMINDERS'
   | 'PUBLIC_BOOKING'
-  | 'MANAGER';
+  | 'MANAGER'
+  | 'ADMIN_SECURITY';
 
 const STORAGE_KEY = 'pronto_agende_br_state_v2_clean';
+const USERS_STORAGE_KEY = 'pronto_agende_br_users_v1';
+const AUDIT_STORAGE_KEY = 'pronto_agende_br_audit_v1';
+const SESSION_STORAGE_KEY = 'pronto_agende_br_hmac_session_v1';
 const THEME_STORAGE_KEY = 'pronto_agende_br_theme';
 
 export function App() {
@@ -56,6 +73,204 @@ export function App() {
   const [pendingCheckoutAppointmentId, setPendingCheckoutAppointmentId] =
     useState<string | null>(null);
   const [editingHeaderName, setEditingHeaderName] = useState(false);
+
+  // Security & Accounts State
+  const [accounts, setAccounts] = useState<UserAccount[]>([]);
+  const [accountsLoaded, setAccountsLoaded] = useState(false);
+  const [sessionToken, setSessionToken] = useState<SignedSessionToken | null>(
+    () => {
+      try {
+        const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+        return raw ? (JSON.parse(raw) as SignedSessionToken) : null;
+      } catch {
+        return null;
+      }
+    }
+  );
+  const [auditLogs, setAuditLogs] = useState<SecurityAuditEvent[]>(() => {
+    try {
+      const saved = localStorage.getItem(AUDIT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return [
+      createAuditEvent(
+        'LOGIN_SUCCESS',
+        'INFO',
+        'sistema',
+        'Motor criptográfico PBKDF2-HMAC-SHA256 (120.000 iterações) + WAF inicializado.'
+      ),
+    ];
+  });
+
+  // Boot accounts with PBKDF2 hashes
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const defaults = await buildInitialAccounts();
+      if (!mounted) return;
+      try {
+        const saved = localStorage.getItem(USERS_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved) as UserAccount[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Garante que Aristeu e Otávio sempre existam como MASTER_ADMIN
+            const hasAristeu = parsed.some((a) => a.username === 'aristeu');
+            const hasOtavio = parsed.some((a) => a.username === 'otavio');
+            const merged = [...parsed];
+            if (!hasAristeu) merged.unshift(defaults[0]);
+            if (!hasOtavio) merged.splice(1, 0, defaults[1]);
+            setAccounts(merged);
+            setAccountsLoaded(true);
+            return;
+          }
+        }
+      } catch {
+        // fallback to defaults
+      }
+      setAccounts(defaults);
+      setAccountsLoaded(true);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!accountsLoaded || accounts.length === 0) return;
+    try {
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(accounts));
+    } catch {
+      // ignore
+    }
+  }, [accounts, accountsLoaded]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        AUDIT_STORAGE_KEY,
+        JSON.stringify(auditLogs.slice(0, 150))
+      );
+    } catch {
+      // ignore
+    }
+  }, [auditLogs]);
+
+  const currentUser = useMemo(() => {
+    if (!sessionToken) return undefined;
+    return accounts.find((a) => a.id === sessionToken.userId);
+  }, [accounts, sessionToken]);
+
+  // Verify HMAC integrity of the active session whenever accounts or token change
+  useEffect(() => {
+    if (!accountsLoaded || !sessionToken) return;
+    let active = true;
+    (async () => {
+      const valid = await verifySignedSession(sessionToken, currentUser);
+      if (active && !valid) {
+        setSessionToken(null);
+        try {
+          sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        } catch {
+          // ignore
+        }
+        setAuditLogs((prev) => [
+          createAuditEvent(
+            'SESSION_TERMINATED',
+            'CRITICAL',
+            sessionToken.username || 'desconhecido',
+            'Sessão encerrada automaticamente: assinatura HMAC inválida, expirada ou permissões alteradas.'
+          ),
+          ...prev,
+        ]);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [sessionToken, currentUser, accountsLoaded]);
+
+  const handleLogSecurityEvent = (event: SecurityAuditEvent) => {
+    setAuditLogs((prev) => [event, ...prev.slice(0, 149)]);
+  };
+
+  const handleLoginSuccess = async (account: UserAccount) => {
+    const signed = await createSignedSession(account);
+    setSessionToken(signed);
+    try {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(signed));
+    } catch {
+      // ignore
+    }
+    // Se for Admin Master (Aristeu ou Otávio), já pode ver todas as abas incluindo Admin & Segurança
+    if (account.role === 'MASTER_ADMIN') {
+      setActiveTab('ADMIN_SECURITY');
+    } else {
+      setActiveTab('AGENDA');
+    }
+  };
+
+  const handleLogout = () => {
+    if (currentUser) {
+      handleLogSecurityEvent(
+        createAuditEvent(
+          'SESSION_TERMINATED',
+          'INFO',
+          currentUser.username,
+          'Logout realizado manualmente pelo usuário.'
+        )
+      );
+    }
+    setSessionToken(null);
+    try {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleCreateAccount = (newAcc: UserAccount) => {
+    setAccounts((prev) => [...prev, newAcc]);
+  };
+
+  const handleUpdateAccount = async (
+    userId: string,
+    patch: Partial<UserAccount>
+  ) => {
+    let updatedTarget: UserAccount | undefined;
+    setAccounts((prev) =>
+      prev.map((acc) => {
+        if (acc.id === userId) {
+          updatedTarget = { ...acc, ...patch };
+          return updatedTarget;
+        }
+        return acc;
+      })
+    );
+
+    // Se o próprio usuário logado teve dados/permissões atualizados pelo Admin, re-assina o token
+    if (updatedTarget && sessionToken && sessionToken.userId === userId) {
+      if (updatedTarget.status !== 'ACTIVE') {
+        handleLogout();
+      } else {
+        const resigned = await createSignedSession(updatedTarget);
+        setSessionToken(resigned);
+        try {
+          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(resigned));
+        } catch {
+          // ignore
+        }
+      }
+    }
+  };
+
+  const handleDeleteAccount = (userId: string) => {
+    setAccounts((prev) => prev.filter((a) => a.id !== userId));
+  };
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     try {
@@ -229,7 +444,11 @@ export function App() {
 
   // Handlers
   const handleUpdateBusiness = (patch: Partial<BusinessConfig>) => {
-    setBusiness((prev) => ({ ...prev, ...patch }));
+    const cleanPatch = { ...patch };
+    if (typeof cleanPatch.name === 'string') {
+      cleanPatch.name = sanitizeUserText(cleanPatch.name, 100);
+    }
+    setBusiness((prev) => ({ ...prev, ...cleanPatch }));
   };
 
   const handleUpdateAppointmentStatus = (
@@ -275,24 +494,25 @@ export function App() {
   };
 
   const handleCreateAppointment = (newApt: Omit<Appointment, 'id'>) => {
+    const safeName = sanitizeUserText(newApt.clientName, 80);
     const created: Appointment = {
       ...newApt,
+      clientName: safeName,
       id: `apt_${Date.now()}`,
     };
     setAppointments((prev) => [...prev, created]);
 
-    // Se o cliente ainda não estiver na lista de Clientes, cadastra automaticamente
     const exists = clients.some(
       (c) =>
-        c.fullName.toLowerCase() === newApt.clientName.toLowerCase() ||
+        c.fullName.toLowerCase() === safeName.toLowerCase() ||
         (newApt.clientPhone && c.phoneWhatsapp === newApt.clientPhone)
     );
-    if (!exists && newApt.clientName.trim()) {
+    if (!exists && safeName.trim()) {
       setClients((prev) => [
         {
           id: newApt.clientId || `cli_${Date.now()}`,
-          fullName: newApt.clientName.trim(),
-          phoneWhatsapp: newApt.clientPhone || '',
+          fullName: safeName.trim(),
+          phoneWhatsapp: sanitizeUserText(newApt.clientPhone || '', 30),
           cpf: '',
           email: '',
           visitsCount: 1,
@@ -300,7 +520,7 @@ export function App() {
           lastVisitDaysAgo: 0,
           totalSpent: 0,
           tags: ['NOVO'],
-          notes: newApt.notes || '',
+          notes: sanitizeUserText(newApt.notes || '', 250),
           passes: [],
         },
         ...prev,
@@ -353,6 +573,8 @@ export function App() {
   const handleAddClient = (newCli: Omit<Client, 'id'>) => {
     const created: Client = {
       ...newCli,
+      fullName: sanitizeUserText(newCli.fullName, 80),
+      notes: sanitizeUserText(newCli.notes, 250),
       id: `cli_${Date.now()}`,
     };
     setClients((prev) => [created, ...prev]);
@@ -372,16 +594,19 @@ export function App() {
     serviceId: string,
     patch: Partial<ServiceItem>
   ) => {
+    if (currentUser && !currentUser.permissions.canEditPrices) return;
     setServices((prev) =>
       prev.map((s) => (s.id === serviceId ? { ...s, ...patch } : s))
     );
   };
 
   const handleAddService = (newSrv: Omit<ServiceItem, 'id'>) => {
+    if (currentUser && !currentUser.permissions.canEditPrices) return;
     setServices((prev) => [...prev, { ...newSrv, id: `srv_${Date.now()}` }]);
   };
 
   const handleDeleteService = (serviceId: string) => {
+    if (currentUser && !currentUser.permissions.canEditPrices) return;
     setServices((prev) => prev.filter((s) => s.id !== serviceId));
   };
 
@@ -400,6 +625,7 @@ export function App() {
   };
 
   const handleAddBankStatement = (entry: Omit<BankStatementEntry, 'id'>) => {
+    if (currentUser && !currentUser.permissions.canUploadStatements) return;
     setBankStatements((prev) => [
       { ...entry, id: `stmt_${Date.now()}` },
       ...prev,
@@ -411,6 +637,7 @@ export function App() {
   };
 
   const handleResetAllData = () => {
+    if (currentUser && !currentUser.permissions.canExportOrResetData) return;
     setClients([]);
     setAppointments([]);
     setTransactions([]);
@@ -418,12 +645,27 @@ export function App() {
     setBankStatements([]);
   };
 
-  const navItems: Array<{
+  // Se ainda não estiver autenticado com token assinado, exibe a Tela de Login Blindada
+  if (!currentUser || !sessionToken) {
+    return (
+      <LoginGate
+        accounts={accounts}
+        onLoginSuccess={handleLoginSuccess}
+        onUpdateAccount={handleUpdateAccount}
+        onLogSecurityEvent={handleLogSecurityEvent}
+      />
+    );
+  }
+
+  const perms = currentUser.permissions;
+
+  const allNavItems: Array<{
     id: ActiveTab;
     label: string;
     shortLabel: string;
     icon: React.ReactNode;
     badge?: number;
+    allowed: boolean;
   }> = [
     {
       id: 'AGENDA',
@@ -433,12 +675,14 @@ export function App() {
       badge: appointments.filter(
         (a) => a.status !== 'COMPLETED' && a.status !== 'CANCELLED'
       ).length,
+      allowed: perms.canAccessAgenda,
     },
     {
       id: 'POS',
       label: 'Caixa / PDV',
       shortLabel: 'Caixa',
       icon: <CreditCard className="w-4 h-4" />,
+      allowed: perms.canAccessPos,
     },
     {
       id: 'CLIENTS',
@@ -446,26 +690,40 @@ export function App() {
       shortLabel: 'Clientes',
       icon: <Users className="w-4 h-4" />,
       badge: clients.length,
+      allowed: perms.canAccessClients,
     },
     {
       id: 'REMINDERS',
       label: 'Lembretes WhatsApp',
       shortLabel: 'Lembretes',
       icon: <Bell className="w-4 h-4" />,
+      allowed: perms.canAccessReminders,
     },
     {
       id: 'PUBLIC_BOOKING',
       label: 'Link de Reserva',
       shortLabel: 'Link',
       icon: <ExternalLink className="w-4 h-4" />,
+      allowed: perms.canAccessPublicBooking,
     },
     {
       id: 'MANAGER',
       label: 'Gestão & Preços',
       shortLabel: 'Gestão',
       icon: <LayoutDashboard className="w-4 h-4" />,
+      allowed: perms.canAccessManager,
+    },
+    {
+      id: 'ADMIN_SECURITY',
+      label: 'Admin Master',
+      shortLabel: 'Admin',
+      icon: <ShieldCheck className="w-4 h-4" />,
+      badge: accounts.length,
+      allowed: currentUser.role === 'MASTER_ADMIN' && perms.canManageUsers,
     },
   ];
+
+  const navItems = allNavItems.filter((item) => item.allowed);
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col pb-20 md:pb-8">
@@ -475,7 +733,7 @@ export function App() {
           {/* Brand Identity + Inline Editable Barbershop Name */}
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-stone-950 shadow-lg shadow-amber-500/20 shrink-0">
-              <Scissors className="w-5 h-5 stroke-[2.2]" />
+              <Scissors className="w-5 h-5" weight="bold" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -483,7 +741,7 @@ export function App() {
                   ProntoAgende
                 </span>
                 <span className="text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold">
-                  BR
+                  {currentUser.role === 'MASTER_ADMIN' ? 'ADMIN MASTER' : 'BR'}
                 </span>
               </div>
 
@@ -512,7 +770,7 @@ export function App() {
                   type="button"
                   onClick={() => setEditingHeaderName(true)}
                   title="Clique para editar o nome da sua barbearia"
-                  className="text-xs text-stone-400 hover:text-amber-300 flex items-center gap-1.5 truncate max-w-[230px] sm:max-w-md cursor-pointer"
+                  className="text-xs text-stone-400 hover:text-amber-300 flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-xs cursor-pointer"
                 >
                   <span className="truncate">{business.name}</span>
                   <Pencil className="w-3 h-3 text-amber-400 shrink-0" />
@@ -556,8 +814,12 @@ export function App() {
             })}
           </nav>
 
-          {/* Right Status Pill & Theme Toggle */}
+          {/* Right User Badge, Theme Toggle & Logout */}
           <div className="flex items-center gap-2 shrink-0">
+            <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-stone-900 border border-stone-800 text-[11px] font-mono text-emerald-400">
+              <ShieldCheck className="w-3.5 h-3.5" />@{currentUser.username}
+            </span>
+
             <button
               type="button"
               onClick={toggleTheme}
@@ -569,27 +831,23 @@ export function App() {
                   ? 'Mudar para Modo Claro'
                   : 'Mudar para Modo Escuro'
               }
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-200 hover:border-amber-500/50 transition-all cursor-pointer text-xs font-medium"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-200 hover:border-amber-500/50 transition-all cursor-pointer text-xs font-medium"
             >
               {theme === 'dark' ? (
-                <>
-                  <Sun className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="hidden sm:inline">Modo Claro</span>
-                </>
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
               ) : (
-                <>
-                  <Moon className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="hidden sm:inline">Modo Escuro</span>
-                </>
+                <Moon className="w-3.5 h-3.5 text-amber-500" />
               )}
             </button>
 
             <button
-              onClick={() => setActiveTab('MANAGER')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer bg-amber-500/10 border-amber-500/30 text-amber-300"
+              type="button"
+              onClick={handleLogout}
+              title="Sair e bloquear sessão"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-semibold transition-all cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Configurar Barbearia</span>
+              <SignOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sair</span>
             </button>
           </div>
         </div>
@@ -597,7 +855,7 @@ export function App() {
 
       {/* Main Workspace Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-6">
-        {activeTab === 'AGENDA' && (
+        {activeTab === 'AGENDA' && perms.canAccessAgenda && (
           <AgendaModule
             appointments={appointments}
             staff={staff}
@@ -612,7 +870,7 @@ export function App() {
           />
         )}
 
-        {activeTab === 'POS' && (
+        {activeTab === 'POS' && perms.canAccessPos && (
           <PosModule
             business={business}
             staff={staff}
@@ -626,7 +884,7 @@ export function App() {
           />
         )}
 
-        {activeTab === 'CLIENTS' && (
+        {activeTab === 'CLIENTS' && perms.canAccessClients && (
           <ClientsModule
             clients={clients}
             businessName={business.name}
@@ -636,7 +894,7 @@ export function App() {
           />
         )}
 
-        {activeTab === 'REMINDERS' && (
+        {activeTab === 'REMINDERS' && perms.canAccessReminders && (
           <RemindersModule
             reminders={reminders}
             appointments={appointments}
@@ -648,7 +906,7 @@ export function App() {
           />
         )}
 
-        {activeTab === 'PUBLIC_BOOKING' && (
+        {activeTab === 'PUBLIC_BOOKING' && perms.canAccessPublicBooking && (
           <PublicBookingModule
             business={business}
             staff={staff}
@@ -657,7 +915,7 @@ export function App() {
           />
         )}
 
-        {activeTab === 'MANAGER' && (
+        {activeTab === 'MANAGER' && perms.canAccessManager && (
           <ManagerDashboardModule
             business={business}
             staff={staff}
@@ -665,6 +923,7 @@ export function App() {
             appointments={appointments}
             transactions={transactions}
             bankStatements={bankStatements}
+            userPermissions={perms}
             onUpdateBusiness={handleUpdateBusiness}
             onUpdateService={handleUpdateService}
             onAddService={handleAddService}
@@ -677,12 +936,28 @@ export function App() {
             onResetAllData={handleResetAllData}
           />
         )}
+
+        {activeTab === 'ADMIN_SECURITY' &&
+          currentUser.role === 'MASTER_ADMIN' &&
+          perms.canManageUsers && (
+            <AdminSecurityModule
+              currentUser={currentUser}
+              accounts={accounts}
+              auditLogs={auditLogs}
+              business={business}
+              onCreateAccount={handleCreateAccount}
+              onUpdateAccount={handleUpdateAccount}
+              onDeleteAccount={handleDeleteAccount}
+              onUpdateBusiness={handleUpdateBusiness}
+              onLogSecurityEvent={handleLogSecurityEvent}
+            />
+          )}
       </main>
 
       {/* Mobile Bottom Navigation Bar */}
       <nav
         aria-label="Navegação Mobile"
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-stone-950/95 backdrop-blur-lg border-t border-stone-800 px-1 py-1.5 grid grid-cols-6 gap-0.5"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-stone-950/95 backdrop-blur-lg border-t border-stone-800 px-1 py-1.5 flex items-center justify-around"
       >
         {navItems.map((item) => {
           const active = activeTab === item.id;
@@ -690,7 +965,7 @@ export function App() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
+              className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
                 active
                   ? 'text-amber-400 bg-amber-500/10 font-semibold'
                   : 'text-stone-400 hover:text-stone-200'

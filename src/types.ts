@@ -23,6 +23,60 @@ export type PaymentMethod =
   | 'CASH'
   | 'CLIENT_PASS';
 
+export type UserRole = 'MASTER_ADMIN' | 'BARBER_OWNER' | 'BARBER_STAFF';
+
+export type AccountStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING_APPROVAL';
+
+export interface UserPermissions {
+  canAccessAgenda: boolean;
+  canAccessPos: boolean;
+  canAccessClients: boolean;
+  canAccessReminders: boolean;
+  canAccessPublicBooking: boolean;
+  canAccessManager: boolean;
+  canEditPrices: boolean;
+  canUploadStatements: boolean;
+  canExportOrResetData: boolean;
+  canManageUsers: boolean; // Exclusivo para MASTER_ADMIN (Aristeu e Otávio)
+}
+
+export interface UserAccount {
+  id: string;
+  username: string;
+  displayName: string;
+  email: string;
+  role: UserRole;
+  status: AccountStatus;
+  tenantId: string;
+  barbershopName: string;
+  passwordHash: string;
+  passwordSalt: string;
+  pinHash: string;
+  permissions: UserPermissions;
+  createdAt: string;
+  lastLoginAt?: string;
+  failedLoginAttempts: number;
+  lockedUntil?: number;
+}
+
+export interface SecurityAuditEvent {
+  id: string;
+  timestamp: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  eventType:
+    | 'LOGIN_SUCCESS'
+    | 'LOGIN_FAILED'
+    | 'BRUTE_FORCE_LOCKOUT'
+    | 'PERMISSION_UPDATED'
+    | 'USER_CREATED'
+    | 'USER_STATUS_CHANGED'
+    | 'XSS_PAYLOAD_BLOCKED'
+    | 'SESSION_TERMINATED';
+  actorUsername: string;
+  description: string;
+  ipOrDeviceFingerprint: string;
+}
+
 export interface BankStatementEntry {
   id: string;
   date: string;

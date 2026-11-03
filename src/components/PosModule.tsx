@@ -25,6 +25,7 @@ import {
   formatCurrencyBRL,
   PAYMENT_METHOD_LABELS,
 } from '../utils/finance';
+import { sanitizeUserText, validateSafeReceiptFile } from '../utils/security';
 
 interface PosModuleProps {
   business: BusinessConfig;
@@ -141,14 +142,21 @@ export const PosModule: React.FC<PosModuleProps> = ({
   const handleAttachReceipt = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setReceiptFileName(file.name);
+    const check = validateSafeReceiptFile(file);
+    if (!check.valid) {
+      alert(check.reason);
+      e.target.value = '';
+      return;
+    }
+    setReceiptFileName(check.safeName);
   };
 
   const handleFinalizeCheckout = (e: React.FormEvent) => {
     e.preventDefault();
     if (activeTotalPrice <= 0) return;
 
-    const finalClientName = clientNameInput.trim() || 'Cliente Avulso (Balcão)';
+    const finalClientName =
+      sanitizeUserText(clientNameInput.trim(), 80) || 'Cliente Avulso (Balcão)';
     const matchedClient = clients.find(
       (c) => c.fullName.toLowerCase() === finalClientName.toLowerCase()
     );
