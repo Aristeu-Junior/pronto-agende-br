@@ -283,42 +283,25 @@ export function validatePasswordStrength(password: string): {
 }
 
 /**
- * Inicialização criptográfica dos 2 Administradores Master (Aristeu e Otávio)
+ * Inicialização criptográfica dos Administradores Master (Aristeu e Otávio)
+ * Apenas hashes irreversíveis PBKDF2-HMAC-SHA256 (256 bits) são armazenados.
  */
 export async function buildInitialAccounts(): Promise<UserAccount[]> {
-  const aristeuSalt = 'salt_aristeu_master_v1';
-  const otavioSalt = 'salt_otavio_master_v1';
-  const demoBarberSalt = 'salt_barbeiro_cliente_v1';
-
-  const [
-    aristeuPwdHash,
-    aristeuPinHash,
-    otavioPwdHash,
-    otavioPinHash,
-    barberPwdHash,
-    barberPinHash,
-  ] = await Promise.all([
-    derivePasswordHash('Aristeu@Admin2026!', aristeuSalt),
-    derivePasswordHash('202601', aristeuSalt),
-    derivePasswordHash('Otavio@Admin2026!', otavioSalt),
-    derivePasswordHash('202602', otavioSalt),
-    derivePasswordHash('Barbearia@2026!', demoBarberSalt),
-    derivePasswordHash('123456', demoBarberSalt),
-  ]);
-
   return [
     {
       id: 'usr_admin_aristeu',
       username: 'aristeu',
-      displayName: 'Aristeu Junior (Admin Master)',
+      displayName: 'Aristeu Junior',
       email: 'aristeu@prontoagende.com.br',
       role: 'MASTER_ADMIN',
       status: 'ACTIVE',
       tenantId: 'tenant_master_aristeu',
-      barbershopName: 'Matriz ProntoAgende BR (Admin Aristeu)',
-      passwordHash: aristeuPwdHash,
-      passwordSalt: aristeuSalt,
-      pinHash: aristeuPinHash,
+      barbershopName: 'ProntoAgende BR',
+      passwordHash:
+        '864502c120e6bae933494a1605dde15411d2dbba6a816b9e31a2cf2a142e9bcb',
+      passwordSalt: 'salt_aristeu_master_v1',
+      pinHash:
+        '672196b1f2c7d5019a8b776575029eb74b77852e044a25ac331baaaff92be6ab',
       permissions: { ...MASTER_ADMIN_PERMISSIONS },
       createdAt: '2026-11-03',
       failedLoginAttempts: 0,
@@ -326,15 +309,17 @@ export async function buildInitialAccounts(): Promise<UserAccount[]> {
     {
       id: 'usr_admin_otavio',
       username: 'otavio',
-      displayName: 'Otávio (Admin Master)',
+      displayName: 'Otávio',
       email: 'otavio@prontoagende.com.br',
       role: 'MASTER_ADMIN',
       status: 'ACTIVE',
       tenantId: 'tenant_master_otavio',
-      barbershopName: 'Matriz ProntoAgende BR (Admin Otávio)',
-      passwordHash: otavioPwdHash,
-      passwordSalt: otavioSalt,
-      pinHash: otavioPinHash,
+      barbershopName: 'ProntoAgende BR',
+      passwordHash:
+        'c4129105d675654382158e78820a6a074783536eef63f07a3ebce0cb80f3249e',
+      passwordSalt: 'salt_otavio_master_v1',
+      pinHash:
+        '55802c922bf10bbe1a39d7f7662182260f17cbd4123bb669a3f0c66c514b06c5',
       permissions: { ...MASTER_ADMIN_PERMISSIONS },
       createdAt: '2026-11-03',
       failedLoginAttempts: 0,
@@ -342,15 +327,17 @@ export async function buildInitialAccounts(): Promise<UserAccount[]> {
     {
       id: 'usr_barber_assinante_01',
       username: 'barbeiro',
-      displayName: 'Cliente Assinante (Barbearia Padrão)',
+      displayName: 'Cliente Barbearia',
       email: 'contato@minhabarbearia.com.br',
       role: 'BARBER_OWNER',
       status: 'ACTIVE',
       tenantId: 'tenant_barber_01',
-      barbershopName: 'Minha Barbearia (Assinante)',
-      passwordHash: barberPwdHash,
-      passwordSalt: demoBarberSalt,
-      pinHash: barberPinHash,
+      barbershopName: 'Minha Barbearia',
+      passwordHash:
+        'e79686f7cfa3a6c87b85d0f41efed009406f97ebb6c8341ea4aeef8d940f40cc',
+      passwordSalt: 'salt_barbeiro_cliente_v1',
+      pinHash:
+        '26944bd9be0ab2ba1cf19d94bf73b5e7888e1fd711652a08b0375cf10a0b9d84',
       permissions: { ...DEFAULT_BARBER_PERMISSIONS },
       createdAt: '2026-11-03',
       failedLoginAttempts: 0,
