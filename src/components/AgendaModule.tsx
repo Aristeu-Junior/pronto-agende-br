@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   CalendarCheck,
   CheckCircle,
@@ -6,8 +6,11 @@ import {
   FunnelSimple,
   Lightning,
   MagnifyingGlass,
+  Paperclip,
+  PencilSimple,
   Plus,
   Scissors,
+  Trash,
   WarningCircle,
   WhatsappLogo,
 } from '@phosphor-icons/react';
@@ -16,7 +19,6 @@ import {
   AppointmentStatus,
   BusinessConfig,
   Client,
-  OriginChannel,
   ServiceItem,
   StaffMember,
 } from '../types';
@@ -30,9 +32,10 @@ interface AgendaModuleProps {
   clients: Client[];
   appointments: Appointment[];
   onUpdateStatus: (appointmentId: string, status: AppointmentStatus) => void;
+  onUpdateAppointment: (appointmentId: string, patch: Partial<Appointment>) => void;
+  onDeleteAppointment: (appointmentId: string) => void;
   onCreateAppointment: (apt: Omit<Appointment, 'id'>) => void;
   onOpenInPos: (appointment: Appointment) => void;
-  onTriggerWhatsAppReminder: (appointment: Appointment) => void;
 }
 
 const STATUS_META: Record<
@@ -77,13 +80,6 @@ const STATUS_META: Record<
   },
 };
 
-const ORIGIN_LABELS: Record<OriginChannel, string> = {
-  GOOGLE_RESERVE: 'Google',
-  MARKETPLACE_BOOST: 'Vitrine Local',
-  DIRECT_LINK: 'Link Direto',
-  WALK_IN: 'Balcão',
-};
-
 export const AgendaModule: React.FC<AgendaModuleProps> = ({
   business,
   staff,
@@ -91,9 +87,10 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
   clients,
   appointments,
   onUpdateStatus,
+  onUpdateAppointment,
+  onDeleteAppointment,
   onCreateAppointment,
   onOpenInPos,
-  onTriggerWhatsAppReminder,
 }) => {
   const professionals = useMemo(
     () => staff.filter((s) => s.role === 'PROFESSIONAL'),
@@ -107,31 +104,45 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
     appointments[0]?.id || ''
   );
 
-  // Encaixe rápido de balcão
+  // Estado de edição inline do agendamento selecionado na direita
+  const [editClientName, setEditClientName] = useState<string>('');
+  const [editClientPhone, setEditClientPhone] = useState<string>('');
+  const [editStartTime, setEditStartTime] = useState<string>('');
+  const [editStaffId, setEditStaffId] = useState<string>('');
+  const [editServiceIds, setEditServiceIds] = useState<string[]>([]);
+  const [editCustomPrice, setEditCustomPrice] = useState<string>('');
+  const [editDepositPaid, setEditDepositPaid] = useState<string>('0');
+  const [editProofName, setEditProofName] = useState<string>('');
+  const [editNotes, setEditNotes] = useState<string>('');
+  const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
+
+  // Encaixe rápido
   const [walkInOpen, setWalkInOpen] = useState<boolean>(false);
   const [walkInName, setWalkInName] = useState<string>('');
   const [walkInPhone, setWalkInPhone] = useState<string>('');
   const [walkInStaffId, setWalkInStaffId] = useState<string>(
-    professionals[0]?.id || 'st_caio'
+    professionals[0]?.id || ''
   );
   const [walkInServiceId, setWalkInServiceId] = useState<string>(
-    services[0]?.id || 'srv_corte_degrade'
+    services[0]?.id || ''
+  );
+  const [walkInPrice, setWalkInPrice] = useState<string>(
+    String(services[0]?.price || 45)
   );
   const [walkInError, setWalkInError] = useState<string>('');
 
-  // Novo agendamento padrão
+  // Novo agendamento completo
   const [newAptOpen, setNewAptOpen] = useState<boolean>(false);
-  const [newAptClientId, setNewAptClientId] = useState<string>(
-    clients[0]?.id || ''
-  );
+  const [newAptClientName, setNewAptClientName] = useState<string>('');
+  const [newAptClientPhone, setNewAptClientPhone] = useState<string>('');
   const [newAptStaffId, setNewAptStaffId] = useState<string>(
-    professionals[0]?.id || 'st_caio'
+    professionals[0]?.id || ''
   );
-  const [newAptAssistantId, setNewAptAssistantId] = useState<string>('');
-  const [newAptServiceIds, setNewAptServiceIds] = useState<string[]>([
-    services[0]?.id || 'srv_corte_degrade',
-  ]);
-  const [newAptTime, setNewAptTime] = useState<string>('16:30');
+  const [newAptServiceIds, setNewAptServiceIds] = useState<string[]>(
+    services[0] ? [services[0].id] : []
+  );
+  const [newAptTime, setNewAptTime] = useState<string>('14:00');
+  const [newAptDeposit, setNewAptDeposit] = useState<string>('0');
   const [newAptError, setNewAptError] = useState<string>('');
 
   const filteredAppointments = useMemo(() => {
@@ -145,9 +156,10 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         }
         if (searchQuery.trim() !== '') {
           const q = searchQuery.toLowerCase();
-          const matchName = apt.clientName.toLowerCase().includes(q);
-          const matchPhone = apt.clientPhone.toLowerCase().includes(q);
-          return matchName || matchPhone;
+          return (
+            apt.clientName.toLowerCase().includes(q) ||
+            apt.clientPhone.toLowerCase().includes(q)
+          );
         }
         return true;
       })
@@ -165,48 +177,120 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
   const getServicesForApt = (serviceIds: string[]) =>
     services.filter((s) => serviceIds.includes(s.id));
 
-  const getAptTotal = (serviceIds: string[]) =>
-    getServicesForApt(serviceIds).reduce((acc, s) => acc + s.price, 0);
+  const getAptTotal = (apt: Appointment) => {
+    if (typeof apt.customPrice === 'number' && apt.customPrice >= 0) {
+      return apt.customPrice;
+    }
+    return getServicesForApt(apt.serviceIds).reduce((acc, s) => acc + s.price, 0);
+  };
 
   const getStaffById = (id?: string) => staff.find((s) => s.id === id);
+
+  // Sincroniza formulário de edição lateral ao trocar de agendamento
+  useEffect(() => {
+    if (!activeAppointment) return;
+    setEditClientName(activeAppointment.clientName);
+    setEditClientPhone(activeAppointment.clientPhone);
+    setEditStartTime(activeAppointment.startTime);
+    setEditStaffId(activeAppointment.staffId);
+    setEditServiceIds(activeAppointment.serviceIds);
+    setEditCustomPrice(String(getAptTotal(activeAppointment)));
+    setEditDepositPaid(String(activeAppointment.depositPixPaid || 0));
+    setEditProofName(activeAppointment.paymentProofName || '');
+    setEditNotes(activeAppointment.notes || '');
+    setSavedSuccess(false);
+  }, [activeAppointment?.id]);
+
+  const handleSaveInlineEdits = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeAppointment) return;
+
+    const chosenServices = getServicesForApt(editServiceIds);
+    const totalDuration =
+      chosenServices.reduce((acc, s) => acc + s.durationMinutes, 0) || 40;
+    const [h, m] = (editStartTime || '14:00').split(':').map(Number);
+    const endMinutes = (h || 14) * 60 + (m || 0) + totalDuration;
+    const endH = String(Math.floor(endMinutes / 60)).padStart(2, '0');
+    const endM = String(endMinutes % 60).padStart(2, '0');
+
+    onUpdateAppointment(activeAppointment.id, {
+      clientName: editClientName.trim() || 'Cliente',
+      clientPhone: editClientPhone.trim(),
+      startTime: editStartTime,
+      endTime: `${endH}:${endM}`,
+      staffId: editStaffId,
+      serviceIds: editServiceIds,
+      customPrice: Math.max(0, Number(editCustomPrice) || 0),
+      depositPixPaid: Math.max(0, Number(editDepositPaid) || 0),
+      paymentProofName: editProofName || undefined,
+      notes: editNotes.trim(),
+    });
+
+    setSavedSuccess(true);
+    window.setTimeout(() => setSavedSuccess(false), 2000);
+  };
+
+  const toggleEditService = (srvId: string) => {
+    setEditServiceIds((prev) => {
+      const next = prev.includes(srvId)
+        ? prev.filter((id) => id !== srvId)
+        : [...prev, srvId];
+      const newSum = services
+        .filter((s) => next.includes(s.id))
+        .reduce((acc, s) => acc + s.price, 0);
+      setEditCustomPrice(String(newSum));
+      return next;
+    });
+  };
+
+  const handleSendRealWhatsApp = (apt: Appointment) => {
+    const cleanPhone = apt.clientPhone.replace(/\D/g, '');
+    const fullPhone = cleanPhone.startsWith('55')
+      ? cleanPhone
+      : `55${cleanPhone}`;
+    const srvNames = getServicesForApt(apt.serviceIds)
+      .map((s) => s.name)
+      .join(' + ');
+    const profName = getStaffById(apt.staffId)?.name || 'Barbeiro';
+    const total = formatBRL(getAptTotal(apt));
+    const msg = `Olá, *${apt.clientName}*! Tudo bem?\n\nPassando para confirmar seu horário na *${business.name}*:\n- *Horário:* Hoje às ${apt.startTime}\n- *Serviço:* ${srvNames} (${total})\n- *Profissional:* ${profName}\n\nPodemos confirmar sua presença?`;
+
+    window.open(
+      `https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
 
   const handleWalkInSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = walkInName.trim() || 'Cliente Balcão';
-    if (walkInPhone.trim() !== '' && !isValidPhoneBR(walkInPhone)) {
-      setWalkInError(
-        'Informe um WhatsApp válido com DDD ou deixe em branco para encaixe rápido.'
-      );
-      return;
-    }
     const srv = services.find((s) => s.id === walkInServiceId) || services[0];
     const now = new Date();
-    const startH = String(Math.min(19, Math.max(9, now.getHours()))).padStart(
-      2,
-      '0'
-    );
-    const startM = now.getMinutes() < 30 ? '15' : '45';
+    const startH = String(now.getHours()).padStart(2, '0');
+    const startM = String(now.getMinutes()).padStart(2, '0');
     const startTime = `${startH}:${startM}`;
-    const totalMinutes =
-      parseInt(startH, 10) * 60 + parseInt(startM, 10) + srv.durationMinutes;
-    const endH = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+    const duration = srv?.durationMinutes || 40;
+    const totalMinutes = now.getHours() * 60 + now.getMinutes() + duration;
+    const endH = String(Math.floor(totalMinutes / 60) % 24).padStart(2, '0');
     const endM = String(totalMinutes % 60).padStart(2, '0');
 
     onCreateAppointment({
       clientId: `cli_walkin_${Date.now()}`,
       clientName: trimmedName,
-      clientPhone: walkInPhone.trim() || '(11) 90000-0000',
-      staffId: walkInStaffId,
-      serviceIds: [srv.id],
-      date: '2026-10-31',
+      clientPhone: walkInPhone.trim() || '',
+      staffId: walkInStaffId || professionals[0]?.id || 'st_01',
+      serviceIds: srv ? [srv.id] : [],
+      customPrice: Math.max(0, Number(walkInPrice) || srv?.price || 0),
+      date: new Date().toISOString().slice(0, 10),
       startTime,
       endTime: `${endH}:${endM}`,
       status: 'IN_SERVICE',
       isWalkIn: true,
       originChannel: 'WALK_IN',
-      deviceFingerprint: 'walkin_pos_terminal',
+      deviceFingerprint: 'walkin',
       depositPixPaid: 0,
-      notes: 'Encaixe presencial lançado na recepção.',
+      notes: 'Encaixe presencial de balcão.',
     });
 
     setWalkInName('');
@@ -217,51 +301,50 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
 
   const handleNewAppointmentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newAptServiceIds.length === 0) {
-      setNewAptError('Selecione ao menos 1 serviço para reservar o horário.');
+    if (!newAptClientName.trim()) {
+      setNewAptError('Digite o nome do cliente.');
       return;
     }
-    const client = clients.find((c) => c.id === newAptClientId);
-    if (!client) {
-      setNewAptError('Selecione um cliente cadastrado.');
+    if (newAptServiceIds.length === 0) {
+      setNewAptError('Selecione pelo menos 1 serviço.');
       return;
     }
 
-    const totalDuration = getServicesForApt(newAptServiceIds).reduce(
-      (acc, s) => acc + s.durationMinutes,
+    const totalDuration =
+      getServicesForApt(newAptServiceIds).reduce(
+        (acc, s) => acc + s.durationMinutes,
+        0
+      ) || 40;
+    const [h, m] = newAptTime.split(':').map(Number);
+    const endTotal = (h || 14) * 60 + (m || 0) + totalDuration;
+    const endH = String(Math.floor(endTotal / 60) % 24).padStart(2, '0');
+    const endM = String(endTotal % 60).padStart(2, '0');
+    const defaultTotal = getServicesForApt(newAptServiceIds).reduce(
+      (acc, s) => acc + s.price,
       0
     );
-    const [h, m] = newAptTime.split(':').map(Number);
-    const endTotal = h * 60 + m + totalDuration;
-    const endH = String(Math.floor(endTotal / 60)).padStart(2, '0');
-    const endM = String(endTotal % 60).padStart(2, '0');
-
-    const requiresPixDeposit = client.noShowCount >= 2;
-    const totalValue = getAptTotal(newAptServiceIds);
-    const depositAmount = requiresPixDeposit
-      ? Number(((totalValue * business.noShowDepositPercent) / 100).toFixed(2))
-      : 0;
 
     onCreateAppointment({
-      clientId: client.id,
-      clientName: client.fullName,
-      clientPhone: client.phoneWhatsapp,
-      staffId: newAptStaffId,
-      assistantStaffId: newAptAssistantId || undefined,
+      clientId: `cli_${Date.now()}`,
+      clientName: newAptClientName.trim(),
+      clientPhone: newAptClientPhone.trim(),
+      staffId: newAptStaffId || professionals[0]?.id || 'st_01',
       serviceIds: newAptServiceIds,
-      date: '2026-10-31',
+      customPrice: defaultTotal,
+      date: new Date().toISOString().slice(0, 10),
       startTime: newAptTime,
       endTime: `${endH}:${endM}`,
       status: 'CONFIRMED',
       isWalkIn: false,
       originChannel: 'DIRECT_LINK',
       deviceFingerprint: `manual_${Date.now()}`,
-      depositPixPaid: depositAmount,
-      notes: requiresPixDeposit
-        ? `Cliente com ${client.noShowCount} faltas anteriores. Sinal Pix de ${formatBRL(depositAmount)} registrado.`
-        : 'Agendamento registrado pela recepção.',
+      depositPixPaid: Math.max(0, Number(newAptDeposit) || 0),
+      notes: '',
     });
 
+    setNewAptClientName('');
+    setNewAptClientPhone('');
+    setNewAptDeposit('0');
     setNewAptError('');
     setNewAptOpen(false);
   };
@@ -274,7 +357,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
 
   return (
     <section aria-label="Agenda do Dia e Encaixes">
-      {/* Cabeçalho Direto e Simples */}
+      {/* Cabeçalho */}
       <div className="border-b border-[#DEDAD0] bg-white px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -282,11 +365,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               Agenda do Dia
             </h1>
             <p className="mt-0.5 text-xs text-[#4A4843]">
-              Hoje ·{' '}
-              <strong className="num-tabular text-[#141413]">
-                {appointments.filter((a) => a.status !== 'CANCELLED').length}
-              </strong>{' '}
-              horários marcados
+              Clique em qualquer agendamento para editar horário, valor, sinal pago ou enviar WhatsApp.
             </p>
           </div>
 
@@ -295,29 +374,34 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               type="button"
               onClick={() => {
                 setWalkInError('');
+                setWalkInStaffId(professionals[0]?.id || '');
+                setWalkInServiceId(services[0]?.id || '');
+                setWalkInPrice(String(services[0]?.price || 45));
                 setWalkInOpen(true);
               }}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-[#DEDAD0] bg-[#EFECE6] px-3.5 py-2 text-xs font-semibold text-[#141413] hover:opacity-90"
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-[#DEDAD0] bg-[#EFECE6] px-3.5 py-2 text-xs font-semibold text-[#141413]"
             >
               <Lightning size={15} weight="fill" className="text-[#0F766E]" />
-              <span>Encaixe Rápido</span>
+              <span>+ Encaixe Rápido</span>
             </button>
 
             <button
               type="button"
               onClick={() => {
                 setNewAptError('');
+                setNewAptStaffId(professionals[0]?.id || '');
+                setNewAptServiceIds(services[0] ? [services[0].id] : []);
                 setNewAptOpen(true);
               }}
               className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0B5C56]"
             >
               <Plus size={15} weight="bold" />
-              <span>Novo Agendamento</span>
+              <span>+ Novo Agendamento</span>
             </button>
           </div>
         </div>
 
-        {/* Filtros Essenciais */}
+        {/* Filtros */}
         <div className="mt-4 pt-3 border-t border-[#DEDAD0] grid grid-cols-1 gap-2.5 md:grid-cols-12">
           <div className="md:col-span-6 flex items-center gap-1.5 overflow-x-auto pb-1">
             <button
@@ -329,7 +413,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                   : 'border-[#DEDAD0] bg-white text-[#4A4843]'
               }`}
             >
-              Todas ({professionals.length})
+              Todos ({professionals.length})
             </button>
             {professionals.map((prof) => {
               const count = appointments.filter(
@@ -357,16 +441,13 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
           </div>
 
           <div className="md:col-span-3">
-            <label htmlFor="filter-status-select" className="sr-only">
-              Filtrar por status
-            </label>
             <div className="relative flex items-center">
               <FunnelSimple
                 size={15}
                 className="pointer-events-none absolute left-3 text-[#6E6A63]"
               />
               <select
-                id="filter-status-select"
+                aria-label="Filtrar por status"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 className="min-h-[36px] w-full rounded-lg border border-[#DEDAD0] bg-white pl-8 pr-3 text-xs font-medium text-[#141413]"
@@ -382,56 +463,51 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
           </div>
 
           <div className="md:col-span-3">
-            <label htmlFor="agenda-search-input" className="sr-only">
-              Buscar cliente na agenda
-            </label>
             <div className="relative flex items-center">
               <MagnifyingGlass
                 size={15}
                 className="pointer-events-none absolute left-3 text-[#6E6A63]"
               />
               <input
-                id="agenda-search-input"
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar cliente..."
-                className="min-h-[36px] w-full rounded-lg border border-[#DEDAD0] bg-white pl-8 pr-3 text-xs text-[#141413] placeholder:text-[#6E6A63]"
+                className="min-h-[36px] w-full rounded-lg border border-[#DEDAD0] bg-white pl-8 pr-3 text-xs text-[#141413]"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Lista de Horários + Resumo Simples ao Lado */}
+      {/* Lista + Painel de Edição Direta */}
       <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#DEDAD0] bg-white">
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-7">
           {filteredAppointments.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-[#DEDAD0] bg-[#F6F5F0] text-[#4A4843]">
-                <CalendarCheck size={22} />
+            <div className="px-6 py-14 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#DEDAD0] bg-[#F6F5F0] text-[#4A4843]">
+                <CalendarCheck size={24} />
               </div>
               <h2 className="mt-3 text-sm font-semibold text-[#141413]">
-                Nenhum horário encontrado
+                Sua agenda está zerada e pronta para começar
               </h2>
+              <p className="mx-auto mt-1 max-w-md text-xs text-[#4A4843]">
+                Adicione seu primeiro agendamento ou lance um encaixe rápido de balcão nos botões abaixo.
+              </p>
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedStaffId('ALL');
-                    setSelectedStatus('ALL');
-                    setSearchQuery('');
-                  }}
-                  className="rounded-lg border border-[#DEDAD0] bg-white px-3.5 py-2 text-xs font-medium text-[#141413]"
+                  onClick={() => setWalkInOpen(true)}
+                  className="rounded-lg border border-[#DEDAD0] bg-white px-4 py-2 text-xs font-semibold text-[#141413]"
                 >
-                  Mostrar todos
+                  + Encaixe Rápido
                 </button>
                 <button
                   type="button"
-                  onClick={() => setWalkInOpen(true)}
-                  className="rounded-lg bg-[#0F766E] px-3.5 py-2 text-xs font-medium text-white"
+                  onClick={() => setNewAptOpen(true)}
+                  className="rounded-lg bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white"
                 >
-                  + Encaixe Rápido
+                  + Novo Agendamento
                 </button>
               </div>
             </div>
@@ -440,7 +516,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               {filteredAppointments.map((apt) => {
                 const prof = getStaffById(apt.staffId);
                 const aptServices = getServicesForApt(apt.serviceIds);
-                const total = getAptTotal(apt.serviceIds);
+                const total = getAptTotal(apt);
                 const statusInfo = STATUS_META[apt.status];
                 const isSelected = activeAppointment?.id === apt.id;
 
@@ -473,16 +549,25 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                             >
                               {statusInfo.label}
                             </span>
+                            {apt.depositPixPaid > 0 && (
+                              <span className="num-tabular rounded bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-semibold text-[#0F766E]">
+                                Sinal pago: {formatBRL(apt.depositPixPaid)}
+                              </span>
+                            )}
                           </div>
 
                           <p className="mt-0.5 text-xs text-[#4A4843]">
-                            {aptServices.map((s) => s.name).join(' + ')}
+                            {aptServices.map((s) => s.name).join(' + ') || 'Serviço personalizado'}
                           </p>
 
                           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#6E6A63]">
                             <span>{prof?.name}</span>
-                            <span>·</span>
-                            <span className="num-tabular">{apt.clientPhone}</span>
+                            {apt.clientPhone && (
+                              <>
+                                <span>·</span>
+                                <span className="num-tabular">{apt.clientPhone}</span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -496,13 +581,15 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                           className="flex items-center gap-1.5"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {(apt.status === 'CONFIRMED' || apt.status === 'PENDING') && (
+                          {apt.clientPhone && (
                             <button
                               type="button"
-                              onClick={() => onUpdateStatus(apt.id, 'IN_SERVICE')}
-                              className="rounded-lg border border-[#DEDAD0] bg-[#EFECE6] px-2.5 py-1 text-xs font-medium text-[#141413]"
+                              onClick={() => handleSendRealWhatsApp(apt)}
+                              title="Enviar confirmação no WhatsApp"
+                              className="inline-flex items-center gap-1 rounded-lg border border-[#DEDAD0] bg-white px-2.5 py-1 text-xs font-medium text-[#0F766E]"
                             >
-                              Atender
+                              <WhatsappLogo size={14} weight="bold" />
+                              <span>WhatsApp</span>
                             </button>
                           )}
                           {apt.status !== 'COMPLETED' && apt.status !== 'CANCELLED' && (
@@ -512,7 +599,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                               className="inline-flex items-center gap-1 rounded-lg bg-[#0F766E] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#0B5C56]"
                             >
                               <CurrencyDollar size={13} weight="bold" />
-                              <span>Cobrar</span>
+                              <span>Receber</span>
                             </button>
                           )}
                         </div>
@@ -525,109 +612,247 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
           )}
         </div>
 
-        {/* Coluna Direita: Detalhes Rápidos do Atendimento Selecionado */}
-        <aside className="lg:col-span-4 bg-[#F6F5F0]/50 p-4 sm:p-5">
+        {/* Coluna Direita (5 cols): Editor Completo do Agendamento Selecionado */}
+        <aside className="lg:col-span-5 bg-[#F6F5F0]/50 p-4 sm:p-5">
           {activeAppointment ? (
-            <div className="space-y-4">
-              <div className="flex items-start justify-between gap-2 border-b border-[#DEDAD0] pb-3">
-                <div>
-                  <h2 className="text-base font-semibold text-[#141413]">
-                    {activeAppointment.clientName}
+            <form onSubmit={handleSaveInlineEdits} className="space-y-4">
+              <div className="flex items-center justify-between border-b border-[#DEDAD0] pb-3">
+                <div className="flex items-center gap-2">
+                  <PencilSimple size={16} weight="bold" className="text-[#0F766E]" />
+                  <h2 className="text-sm font-semibold text-[#141413]">
+                    Editar Agendamento
                   </h2>
-                  <p className="num-tabular text-xs text-[#4A4843]">
-                    {activeAppointment.clientPhone} · {activeAppointment.startTime} às{' '}
-                    {activeAppointment.endTime}
-                  </p>
                 </div>
-                <span
-                  className={`rounded border px-2 py-0.5 text-xs font-medium ${
-                    STATUS_META[activeAppointment.status].bg
-                  } ${STATUS_META[activeAppointment.status].text} ${
-                    STATUS_META[activeAppointment.status].border
-                  }`}
+
+                <select
+                  aria-label="Status do agendamento"
+                  value={activeAppointment.status}
+                  onChange={(e) =>
+                    onUpdateStatus(
+                      activeAppointment.id,
+                      e.target.value as AppointmentStatus
+                    )
+                  }
+                  className="rounded-lg border border-[#DEDAD0] bg-white px-2.5 py-1 text-xs font-semibold text-[#141413]"
                 >
-                  {STATUS_META[activeAppointment.status].label}
-                </span>
+                  <option value="PENDING">Aguardando</option>
+                  <option value="CONFIRMED">Confirmado</option>
+                  <option value="IN_SERVICE">Em Atendimento</option>
+                  <option value="COMPLETED">Concluído</option>
+                  <option value="NO_SHOW">Faltou</option>
+                  <option value="CANCELLED">Cancelado</option>
+                </select>
               </div>
 
-              <div className="rounded-lg border border-[#DEDAD0] bg-white p-3 space-y-2 text-xs">
-                <div className="flex justify-between text-[#4A4843]">
-                  <span>Profissional</span>
-                  <span className="font-semibold text-[#141413]">
-                    {getStaffById(activeAppointment.staffId)?.name}
-                  </span>
-                </div>
-                <div className="flex justify-between border-t border-[#DEDAD0] pt-2 text-[#4A4843]">
-                  <span>Origem</span>
-                  <span className="font-medium text-[#141413]">
-                    {ORIGIN_LABELS[activeAppointment.originChannel]}
-                  </span>
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-[#DEDAD0] bg-white divide-y divide-[#DEDAD0]">
-                {getServicesForApt(activeAppointment.serviceIds).map((srv) => (
-                  <div
-                    key={srv.id}
-                    className="flex items-center justify-between px-3 py-2 text-xs"
-                  >
-                    <span className="font-medium text-[#141413]">{srv.name}</span>
-                    <span className="num-tabular font-semibold text-[#141413]">
-                      {formatBRL(srv.price)}
-                    </span>
-                  </div>
-                ))}
-                <div className="flex items-center justify-between bg-[#EFECE6]/50 px-3 py-2 text-xs font-semibold text-[#141413]">
-                  <span>Total</span>
-                  <span className="num-tabular text-sm">
-                    {formatBRL(getAptTotal(activeAppointment.serviceIds))}
-                  </span>
-                </div>
-              </div>
-
-              {activeAppointment.notes && (
-                <div className="rounded-lg border border-[#DEDAD0] bg-white p-3 text-xs text-[#4A4843]">
-                  <strong className="block font-semibold text-[#141413]">
-                    Observações:
-                  </strong>
-                  <p className="mt-1">{activeAppointment.notes}</p>
+              {savedSuccess && (
+                <div className="rounded-lg border border-[#0F766E]/40 bg-[#E6F4F1] px-3 py-2 text-xs font-semibold text-[#0F766E] flex items-center gap-1.5">
+                  <CheckCircle size={15} weight="fill" />
+                  <span>Alterações salvas na agenda!</span>
                 </div>
               )}
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-[#141413]">
+                    Nome do Cliente
+                  </label>
+                  <input
+                    type="text"
+                    value={editClientName}
+                    onChange={(e) => setEditClientName(e.target.value)}
+                    className="min-h-[36px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-[#141413]">
+                    WhatsApp do Cliente
+                  </label>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={editClientPhone}
+                    onChange={(e) => setEditClientPhone(formatPhoneBR(e.target.value))}
+                    placeholder="(11) 99999-0000"
+                    className="num-tabular min-h-[36px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-[#141413]">
+                    Horário
+                  </label>
+                  <input
+                    type="time"
+                    value={editStartTime}
+                    onChange={(e) => setEditStartTime(e.target.value)}
+                    className="num-tabular min-h-[36px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-[#141413]">
+                    Barbeiro / Profissional
+                  </label>
+                  <select
+                    value={editStaffId}
+                    onChange={(e) => setEditStaffId(e.target.value)}
+                    className="min-h-[36px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
+                  >
+                    {professionals.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Serviços do agendamento */}
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-[#141413]">
+                  Serviços
+                </span>
+                <div className="divide-y divide-[#DEDAD0] rounded-lg border border-[#DEDAD0] bg-white">
+                  {services.map((srv) => {
+                    const checked = editServiceIds.includes(srv.id);
+                    return (
+                      <label
+                        key={srv.id}
+                        className="flex cursor-pointer items-center justify-between px-3 py-2 text-xs"
+                      >
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleEditService(srv.id)}
+                            className="h-4 w-4 accent-[#0F766E]"
+                          />
+                          <span className="font-medium text-[#141413]">{srv.name}</span>
+                        </span>
+                        <span className="num-tabular text-[#4A4843]">
+                          {formatBRL(srv.price)}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Preço Cobrado e Sinal Pago */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-[#141413]">
+                    Valor Total do Corte (R$)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={editCustomPrice}
+                    onChange={(e) => setEditCustomPrice(e.target.value)}
+                    className="num-tabular min-h-[36px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs font-semibold text-[#141413]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-[#141413]">
+                    Sinal / Adiantamento Pago (R$)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={editDepositPaid}
+                    onChange={(e) => setEditDepositPaid(e.target.value)}
+                    className="num-tabular min-h-[36px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#0F766E] font-semibold"
+                  />
+                </div>
+              </div>
+
+              {/* Comprovante de Sinal / Observações */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-[#141413]">
+                  Anexar Comprovante Pix / Sinal (Opcional)
+                </label>
+                <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-[#DEDAD0] bg-white px-3 py-2 text-xs text-[#4A4843]">
+                  <span className="inline-flex items-center gap-1.5 truncate">
+                    <Paperclip size={14} weight="bold" className="text-[#0F766E]" />
+                    <span className="truncate">
+                      {editProofName || 'Selecionar imagem ou PDF do comprovante...'}
+                    </span>
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setEditProofName(file.name);
+                    }}
+                  />
+                </label>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-[#141413]">
+                  Observações do Cliente
+                </label>
+                <textarea
+                  rows={2}
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Ex.: Degradê baixo, confirmar 1h antes..."
+                  className="rounded-lg border border-[#DEDAD0] bg-white p-2.5 text-xs text-[#141413]"
+                />
+              </div>
+
               <div className="space-y-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => onOpenInPos(activeAppointment)}
-                  className="w-full min-h-[40px] inline-flex items-center justify-center gap-2 rounded-lg bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0B5C56]"
-                >
-                  <CurrencyDollar size={16} weight="bold" />
-                  <span>Abrir no Caixa (PDV)</span>
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="submit"
+                    className="min-h-[38px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#0F766E] px-3 py-2 text-xs font-semibold text-white hover:bg-[#0B5C56]"
+                  >
+                    <CheckCircle size={15} weight="bold" />
+                    <span>Salvar Alterações</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onOpenInPos(activeAppointment)}
+                    className="min-h-[38px] inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#0F766E] bg-[#E6F4F1] px-3 py-2 text-xs font-semibold text-[#0F766E]"
+                  >
+                    <CurrencyDollar size={15} weight="bold" />
+                    <span>Receber no Caixa</span>
+                  </button>
+                </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => onTriggerWhatsAppReminder(activeAppointment)}
+                    onClick={() => handleSendRealWhatsApp(activeAppointment)}
                     className="min-h-[36px] inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#DEDAD0] bg-white px-3 py-1.5 text-xs font-medium text-[#141413]"
                   >
-                    <WhatsappLogo size={15} />
-                    <span>Lembrete</span>
+                    <WhatsappLogo size={15} weight="bold" className="text-[#0F766E]" />
+                    <span>Mandar WhatsApp</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => onUpdateStatus(activeAppointment.id, 'NO_SHOW')}
+                    onClick={() => onDeleteAppointment(activeAppointment.id)}
                     className="min-h-[36px] inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#B91C1C]/30 bg-[#FEE2E2]/60 px-3 py-1.5 text-xs font-medium text-[#B91C1C]"
                   >
-                    <WarningCircle size={15} />
-                    <span>Marcar Falta</span>
+                    <Trash size={14} />
+                    <span>Excluir Horário</span>
                   </button>
                 </div>
               </div>
-            </div>
+            </form>
           ) : (
             <div className="py-10 text-center text-xs text-[#6E6A63]">
-              Selecione um atendimento para ver os detalhes.
+              Clique em um horário na lista (ou crie um novo) para editar todos os dados aqui.
             </div>
           )}
         </aside>
@@ -638,67 +863,26 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         open={walkInOpen}
         onClose={() => setWalkInOpen(false)}
         title="Encaixe Rápido de Balcão"
-        subtitle="Selecione o profissional e o serviço para iniciar o atendimento imediatamente."
+        subtitle="Para clientes que chegaram agora sem hora marcada."
       >
         <form onSubmit={handleWalkInSubmit} className="space-y-4" noValidate>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="walkin-staff" className="text-xs font-semibold text-[#141413]">
-              1. Profissional Disponível
-            </label>
-            <div id="walkin-staff" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {professionals.map((prof) => (
-                <button
-                  key={prof.id}
-                  type="button"
-                  onClick={() => setWalkInStaffId(prof.id)}
-                  className={`rounded-lg border p-2.5 text-left text-xs ${
-                    walkInStaffId === prof.id
-                      ? 'border-[#0F766E] bg-[#E6F4F1] text-[#0F766E]'
-                      : 'border-[#DEDAD0] bg-white text-[#141413]'
-                  }`}
-                >
-                  <span className="num-tabular font-semibold block">{prof.chairLabel}</span>
-                  <span className="font-medium">{prof.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="walkin-service" className="text-xs font-semibold text-[#141413]">
-              2. Serviço
-            </label>
-            <select
-              id="walkin-service"
-              value={walkInServiceId}
-              onChange={(e) => setWalkInServiceId(e.target.value)}
-              className="min-h-[40px] w-full rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
-            >
-              {services.map((srv) => (
-                <option key={srv.id} value={srv.id}>
-                  {srv.name} — {formatBRL(srv.price)} ({srv.durationMinutes} min)
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label htmlFor="walkin-name" className="text-xs font-medium text-[#141413]">
-                Nome do Cliente (Opcional)
+              <label htmlFor="walkin-name" className="text-xs font-semibold text-[#141413]">
+                Nome do Cliente
               </label>
               <input
                 id="walkin-name"
                 type="text"
                 value={walkInName}
                 onChange={(e) => setWalkInName(e.target.value)}
-                placeholder="Ex.: Diego"
+                placeholder="Ex.: Lucas"
                 className="min-h-[38px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="walkin-phone" className="text-xs font-medium text-[#141413]">
+              <label htmlFor="walkin-phone" className="text-xs font-semibold text-[#141413]">
                 WhatsApp (Opcional)
               </label>
               <input
@@ -706,12 +890,48 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 type="tel"
                 inputMode="numeric"
                 value={walkInPhone}
-                onChange={(e) => {
-                  setWalkInPhone(formatPhoneBR(e.target.value));
-                  if (walkInError) setWalkInError('');
-                }}
+                onChange={(e) => setWalkInPhone(formatPhoneBR(e.target.value))}
                 placeholder="(11) 99999-0000"
                 className="num-tabular min-h-[38px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="walkin-service" className="text-xs font-semibold text-[#141413]">
+                Serviço
+              </label>
+              <select
+                id="walkin-service"
+                value={walkInServiceId}
+                onChange={(e) => {
+                  setWalkInServiceId(e.target.value);
+                  const found = services.find((s) => s.id === e.target.value);
+                  if (found) setWalkInPrice(String(found.price));
+                }}
+                className="min-h-[38px] w-full rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
+              >
+                {services.map((srv) => (
+                  <option key={srv.id} value={srv.id}>
+                    {srv.name} — {formatBRL(srv.price)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="walkin-price" className="text-xs font-semibold text-[#141413]">
+                Valor Cobrado (R$)
+              </label>
+              <input
+                id="walkin-price"
+                type="number"
+                min={0}
+                step={1}
+                value={walkInPrice}
+                onChange={(e) => setWalkInPrice(e.target.value)}
+                className="num-tabular min-h-[38px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs font-semibold text-[#141413]"
               />
             </div>
           </div>
@@ -735,7 +955,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg bg-[#0F766E] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#0B5C56]"
             >
               <Scissors size={15} weight="bold" />
-              <span>Iniciar Atendimento</span>
+              <span>Adicionar na Agenda</span>
             </button>
           </div>
         </form>
@@ -746,34 +966,70 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         open={newAptOpen}
         onClose={() => setNewAptOpen(false)}
         title="Novo Agendamento"
-        subtitle="Escolha o cliente, profissional, horário e serviços."
+        subtitle="Preencha os dados do cliente ou selecione um cliente já cadastrado."
       >
         <form onSubmit={handleNewAppointmentSubmit} className="space-y-4" noValidate>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="newapt-client" className="text-xs font-semibold text-[#141413]">
-              Cliente
-            </label>
-            <select
-              id="newapt-client"
-              value={newAptClientId}
-              onChange={(e) => setNewAptClientId(e.target.value)}
-              className="min-h-[40px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
-            >
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.fullName} — {c.phoneWhatsapp}
-                </option>
-              ))}
-            </select>
+          {clients.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-[#141413]">
+                Preencher com Cliente Cadastrado (Opcional)
+              </label>
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  const found = clients.find((c) => c.id === e.target.value);
+                  if (found) {
+                    setNewAptClientName(found.fullName);
+                    setNewAptClientPhone(found.phoneWhatsapp);
+                  }
+                }}
+                className="min-h-[38px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
+              >
+                <option value="">Digitar manualmente abaixo...</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.fullName} — {c.phoneWhatsapp}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-[#141413]">
+                Nome do Cliente *
+              </label>
+              <input
+                type="text"
+                value={newAptClientName}
+                onChange={(e) => setNewAptClientName(e.target.value)}
+                placeholder="Ex.: Matheus"
+                className="min-h-[38px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-[#141413]">
+                WhatsApp
+              </label>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={newAptClientPhone}
+                onChange={(e) => setNewAptClientPhone(formatPhoneBR(e.target.value))}
+                placeholder="(11) 99999-0000"
+                className="num-tabular min-h-[38px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div className="flex flex-col gap-1">
-              <label htmlFor="newapt-staff" className="text-xs font-semibold text-[#141413]">
+              <label className="text-xs font-semibold text-[#141413]">
                 Profissional
               </label>
               <select
-                id="newapt-staff"
                 value={newAptStaffId}
                 onChange={(e) => setNewAptStaffId(e.target.value)}
                 className="min-h-[38px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
@@ -787,35 +1043,27 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="newapt-aux" className="text-xs font-semibold text-[#141413]">
-                Auxiliar (Opcional)
-              </label>
-              <select
-                id="newapt-aux"
-                value={newAptAssistantId}
-                onChange={(e) => setNewAptAssistantId(e.target.value)}
-                className="min-h-[38px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
-              >
-                <option value="">Sem auxiliar</option>
-                {staff
-                  .filter((s) => s.role === 'ASSISTANT')
-                  .map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="newapt-time" className="text-xs font-semibold text-[#141413]">
+              <label className="text-xs font-semibold text-[#141413]">
                 Horário
               </label>
               <input
-                id="newapt-time"
                 type="time"
                 value={newAptTime}
                 onChange={(e) => setNewAptTime(e.target.value)}
+                className="num-tabular min-h-[38px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-[#141413]">
+                Sinal Pix Pago (R$)
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={newAptDeposit}
+                onChange={(e) => setNewAptDeposit(e.target.value)}
                 className="num-tabular min-h-[38px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
               />
             </div>

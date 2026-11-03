@@ -1,328 +1,263 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  CheckCircle,
-  MagnifyingGlass,
+  Warning as AlertTriangle,
+  Check,
+  WhatsappLogo as MessageCircle,
+  Phone,
   Plus,
-  ShieldWarning,
-  Ticket,
-  UserPlus,
+  MagnifyingGlass as Search,
+  Trash as Trash2,
+  UserCheck,
   Users,
 } from '@phosphor-icons/react';
-import { Client, ServiceItem } from '../types';
-import {
-  formatBRL,
-  formatCPF,
-  formatPhoneBR,
-  isValidCPF,
-  isValidPhoneBR,
-} from '../utils/validators';
-import { LightDismissDialog } from './LightDismissDialog';
+import { Client } from '../types';
+import { formatCurrencyBRL } from '../utils/finance';
 
 interface ClientsModuleProps {
   clients: Client[];
-  services: ServiceItem[];
+  businessName: string;
   onAddClient: (client: Omit<Client, 'id'>) => void;
-  onAddPassToClient: (clientId: string, serviceId: string, sessions: number) => void;
+  onUpdateClient: (clientId: string, patch: Partial<Client>) => void;
+  onDeleteClient: (clientId: string) => void;
 }
 
 export const ClientsModule: React.FC<ClientsModuleProps> = ({
   clients,
-  services,
+  businessName,
   onAddClient,
-  onAddPassToClient,
+  onUpdateClient,
+  onDeleteClient,
 }) => {
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [activeTagFilter, setActiveTagFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedClientId, setSelectedClientId] = useState<string>(
-    clients[0]?.id || ''
+    clients[0]?.id ?? ''
   );
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [savedFeedback, setSavedFeedback] = useState(false);
 
-  // Modal Novo Cliente com validação de CPF
-  const [newClientOpen, setNewClientOpen] = useState<boolean>(false);
-  const [fullName, setFullName] = useState<string>('');
-  const [phoneWhatsapp, setPhoneWhatsapp] = useState<string>('');
-  const [cpf, setCpf] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
-  const [notes, setNotes] = useState<string>('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Modal Vender Pacote de Sessões
-  const [passModalOpen, setPassModalOpen] = useState<boolean>(false);
-  const [passServiceId, setPassServiceId] = useState<string>(
-    services[0]?.id || 'srv_corte_degrade'
-  );
-  const [passSessions, setPassSessions] = useState<number>(4);
+  // New client form
+  const [newName, setNewName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newCpf, setNewCpf] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newNotes, setNewNotes] = useState('');
 
   const filteredClients = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return clients.filter((c) => {
-      if (activeTagFilter === 'VIP' && !c.tags.includes('VIP')) return false;
-      if (activeTagFilter === 'ALERTA_FALTA' && c.noShowCount < 2) return false;
-      if (activeTagFilter === 'PACOTE_ATIVO' && c.passes.length === 0) return false;
-      if (activeTagFilter === 'CICLO_21' && c.lastVisitDaysAgo < 21) return false;
-
-      if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase();
-        return (
-          c.fullName.toLowerCase().includes(q) ||
-          c.phoneWhatsapp.toLowerCase().includes(q) ||
-          c.cpf.includes(q)
-        );
-      }
-      return true;
+      if (!q) return true;
+      return (
+        c.fullName.toLowerCase().includes(q) ||
+        c.phoneWhatsapp.toLowerCase().includes(q) ||
+        c.cpf.toLowerCase().includes(q)
+      );
     });
-  }, [clients, activeTagFilter, searchQuery]);
+  }, [clients, searchQuery]);
 
   const selectedClient =
-    filteredClients.find((c) => c.id === selectedClientId) ||
-    filteredClients[0] ||
-    null;
+    clients.find((c) => c.id === selectedClientId) ?? filteredClients[0];
+
+  // Editable fields for the selected client
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editCpf, setEditCpf] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editVisits, setEditVisits] = useState('0');
+  const [editNoShows, setEditNoShows] = useState('0');
+  const [editTotalSpent, setEditTotalSpent] = useState('0');
+  const [editNotes, setEditNotes] = useState('');
+
+  useEffect(() => {
+    if (selectedClient) {
+      setEditName(selectedClient.fullName);
+      setEditPhone(selectedClient.phoneWhatsapp);
+      setEditCpf(selectedClient.cpf || '');
+      setEditEmail(selectedClient.email || '');
+      setEditVisits(String(selectedClient.visitsCount ?? 0));
+      setEditNoShows(String(selectedClient.noShowCount ?? 0));
+      setEditTotalSpent(String(selectedClient.totalSpent ?? 0));
+      setEditNotes(selectedClient.notes || '');
+      setSavedFeedback(false);
+    }
+  }, [selectedClient?.id]);
 
   const handleCreateClient = (e: React.FormEvent) => {
     e.preventDefault();
-    const nextErrors: Record<string, string> = {};
-
-    // Validação de nome completo (> 5 caracteres)
-    if (fullName.trim().length <= 5 || !fullName.trim().includes(' ')) {
-      nextErrors.fullName =
-        'Informe nome e sobrenome com mais de 5 caracteres (regra de conformidade fiscal).';
-    }
-    if (!isValidPhoneBR(phoneWhatsapp)) {
-      nextErrors.phoneWhatsapp =
-        'Informe um celular WhatsApp válido com DDD (10 ou 11 dígitos).';
-    }
-    if (cpf.trim() !== '' && !isValidCPF(cpf)) {
-      nextErrors.cpf =
-        'CPF inválido pelo cálculo oficial Módulo 11. Verifique os dígitos.';
-    }
-
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
+    if (!newName.trim() || !newPhone.trim()) return;
 
     onAddClient({
-      fullName: fullName.trim(),
-      phoneWhatsapp,
-      cpf: cpf.trim() || 'Não informado',
-      email: email.trim() || 'sem-email@cliente.br',
+      fullName: newName.trim(),
+      phoneWhatsapp: newPhone.trim(),
+      cpf: newCpf.trim() || '',
+      email: newEmail.trim() || '',
       visitsCount: 0,
       noShowCount: 0,
       lastVisitDaysAgo: 0,
       totalSpent: 0,
       tags: ['NOVO'],
-      notes: notes.trim() || 'Cadastro realizado na recepção.',
+      notes: newNotes.trim() || '',
       passes: [],
     });
 
-    setFullName('');
-    setPhoneWhatsapp('');
-    setCpf('');
-    setEmail('');
-    setNotes('');
-    setErrors({});
-    setNewClientOpen(false);
+    setNewName('');
+    setNewPhone('');
+    setNewCpf('');
+    setNewEmail('');
+    setNewNotes('');
+    setShowNewModal(false);
   };
 
-  const handleAssignPass = (e: React.FormEvent) => {
+  const handleSaveSelectedClient = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClient) return;
-    onAddPassToClient(selectedClient.id, passServiceId, passSessions);
-    setPassModalOpen(false);
+    if (!selectedClient || !editName.trim()) return;
+
+    const noShows = Math.max(0, Number(editNoShows) || 0);
+    const visits = Math.max(0, Number(editVisits) || 0);
+    const spent = Math.max(0, Number(editTotalSpent) || 0);
+
+    const updatedTags: Client['tags'] = [];
+    if (noShows > 0) updatedTags.push('ALERTA_FALTA');
+    if (visits >= 5) updatedTags.push('RECORRENTE');
+    if (spent >= 500) updatedTags.push('VIP');
+    if (updatedTags.length === 0) updatedTags.push('NOVO');
+
+    onUpdateClient(selectedClient.id, {
+      fullName: editName.trim(),
+      phoneWhatsapp: editPhone.trim(),
+      cpf: editCpf.trim(),
+      email: editEmail.trim(),
+      visitsCount: visits,
+      noShowCount: noShows,
+      totalSpent: spent,
+      notes: editNotes,
+      tags: updatedTags,
+    });
+
+    setSavedFeedback(true);
+    setTimeout(() => setSavedFeedback(false), 2500);
+  };
+
+  const openWhatsAppClient = (client: Client) => {
+    const digits = client.phoneWhatsapp.replace(/\D/g, '');
+    if (!digits) {
+      alert('Cadastre um número de WhatsApp válido com DDD para este cliente.');
+      return;
+    }
+    const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
+    const message = `Olá ${client.fullName}, tudo bem? Aqui é da *${businessName}*. Como podemos te ajudar hoje?`;
+    window.open(
+      `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
   return (
-    <section aria-label="Base de Clientes, Validação CPF e Passes de Sessões">
-      <div className="border-b border-[#DEDAD0] bg-white px-4 py-4 sm:px-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-[#141413]">
-              Clientes & Pacotes
-            </h1>
-            <p className="mt-0.5 text-xs text-[#4A4843]">
-              Histórico de visitas, pacotes de sessões e controle de faltas.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              setErrors({});
-              setNewClientOpen(true);
-            }}
-            className="inline-flex min-h-[42px] items-center gap-2 rounded-lg bg-[#0F766E] px-4 py-2 text-sm font-medium text-white hover:bg-[#0B5C56]"
-          >
-            <UserPlus size={17} weight="bold" />
-            <span>Cadastrar Cliente</span>
-          </button>
+    <div className="space-y-6">
+      {/* Top Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-stone-900/70 border border-stone-800/80 rounded-2xl p-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar cliente por nome, WhatsApp ou CPF..."
+            className="w-full bg-stone-950 border border-stone-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+          />
         </div>
 
-        {/* Barra de Filtros e Busca */}
-        <div className="mt-4 pt-4 border-t border-[#DEDAD0] flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-            {[
-              { id: 'ALL', label: `Todos (${clients.length})` },
-              {
-                id: 'PACOTE_ATIVO',
-                label: `Com Passe Ativo (${clients.filter((c) => c.passes.length > 0).length})`,
-              },
-              {
-                id: 'ALERTA_FALTA',
-                label: `Exigem Sinal Pix (${clients.filter((c) => c.noShowCount >= 2).length})`,
-              },
-              {
-                id: 'CICLO_21',
-                label: `Ausentes > 21 dias (${clients.filter((c) => c.lastVisitDaysAgo >= 21).length})`,
-              },
-              {
-                id: 'VIP',
-                label: `VIP (${clients.filter((c) => c.tags.includes('VIP')).length})`,
-              },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTagFilter(tab.id)}
-                className={`min-h-[36px] shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium ${
-                  activeTagFilter === tab.id
-                    ? 'border-[#0F766E] bg-[#E6F4F1] text-[#0F766E]'
-                    : 'border-[#DEDAD0] bg-white text-[#4A4843] hover:bg-[#F6F5F0]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="relative w-full md:w-72">
-            <label htmlFor="crm-search" className="sr-only">
-              Buscar por nome, CPF ou WhatsApp
-            </label>
-            <MagnifyingGlass
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#6E6A63]"
-            />
-            <input
-              id="crm-search"
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar nome, CPF ou WhatsApp..."
-              className="min-h-[38px] w-full rounded-lg border border-[#DEDAD0] bg-white pl-9 pr-3 text-xs text-[#141413]"
-            />
-          </div>
-        </div>
+        <button
+          onClick={() => setShowNewModal(true)}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-semibold text-xs transition-all cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          Cadastrar Novo Cliente
+        </button>
       </div>
 
-      {/* Layout Principal: Tabela Responsiva (8 cols) + Ficha Individual e Passes (4 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#DEDAD0] bg-white">
-        <div className="lg:col-span-8 p-4 sm:p-6">
-          {filteredClients.length === 0 ? (
-            <div className="py-12 text-center">
-              <Users size={28} className="mx-auto text-[#6E6A63]" />
-              <h2 className="mt-3 text-base font-semibold text-[#141413]">
-                Nenhum cliente corresponde à busca
-              </h2>
-              <p className="mt-1 text-xs text-[#4A4843]">
-                Redefina os filtros de segmento ou cadastre um novo cliente.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTagFilter('ALL');
-                  setSearchQuery('');
-                }}
-                className="mt-4 rounded-lg border border-[#DEDAD0] bg-white px-4 py-2 text-xs font-medium text-[#141413]"
-              >
-                Limpar filtros
-              </button>
+      {/* Empty State if 0 clients */}
+      {clients.length === 0 ? (
+        <div className="bg-stone-900/60 border border-stone-800/80 rounded-2xl p-8 text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+            <Users className="w-6 h-6" />
+          </div>
+          <div className="max-w-md mx-auto space-y-1.5">
+            <h3 className="text-base font-bold text-stone-100">
+              Sua carteira de clientes está pronta para começar
+            </h3>
+            <p className="text-xs text-stone-400">
+              Cadastre seus clientes manualmente no botão abaixo ou compartilhe seu{' '}
+              <span className="text-amber-400 font-semibold">Link de Reserva</span> para que
+              eles mesmos agendem e entrem automaticamente na lista.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar Primeiro Cliente
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Directory Table (Left 7 cols) */}
+          <div className="lg:col-span-7 bg-stone-900/50 border border-stone-800/80 rounded-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-stone-800/80 flex items-center justify-between">
+              <span className="text-xs font-semibold text-stone-300">
+                Clique em qualquer cliente para editar os dados ao lado ({filteredClients.length})
+              </span>
             </div>
-          ) : (
-            <div
-              tabIndex={0}
-              role="region"
-              aria-label="Diretório de clientes cadastrados"
-              className="table-wrapper"
-            >
-              <table
-                style={
-                  {
-                    '--label-2': '"WhatsApp & CPF"',
-                    '--label-3': '"Visitas / Faltas"',
-                    '--label-4': '"Última Visita"',
-                    '--label-5': '"LTV Acumulado"',
-                    '--label-6': '"Passes / Regra"',
-                  } as React.CSSProperties
-                }
-              >
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-[#DEDAD0] text-xs font-semibold text-[#4A4843]">
-                    <th className="px-4 py-3">Cliente</th>
-                    <th className="px-4 py-3">WhatsApp & CPF</th>
-                    <th className="px-4 py-3">Visitas / Faltas</th>
-                    <th className="px-4 py-3">Última Visita</th>
-                    <th className="px-4 py-3">LTV Acumulado</th>
-                    <th className="px-4 py-3">Passes / Regra</th>
+                  <tr className="border-b border-stone-800 text-[11px] uppercase tracking-wider text-stone-400 bg-stone-950/60">
+                    <th className="py-3.5 px-4">Cliente</th>
+                    <th className="py-3.5 px-4">WhatsApp</th>
+                    <th className="py-3.5 px-4 text-right">Visitas</th>
+                    <th className="py-3.5 px-4 text-right">Faltas</th>
+                    <th className="py-3.5 px-4 text-right">Total Gasto</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#DEDAD0] text-xs">
+                <tbody className="divide-y divide-stone-800/60 text-sm">
                   {filteredClients.map((client) => {
                     const isSelected = selectedClient?.id === client.id;
                     return (
                       <tr
                         key={client.id}
                         onClick={() => setSelectedClientId(client.id)}
-                        className={`cursor-pointer ${
-                          isSelected ? 'bg-[#E6F4F1]/45' : 'hover:bg-[#F6F5F0]/60'
+                        className={`cursor-pointer transition-colors ${
+                          isSelected
+                            ? 'bg-amber-500/10 text-stone-100'
+                            : 'hover:bg-stone-800/40 text-stone-300'
                         }`}
                       >
-                        <th scope="row" className="px-4 py-3 text-left">
-                          <span className="font-semibold text-[#141413] block">
+                        <td className="py-3.5 px-4">
+                          <div className="font-semibold text-stone-100">
                             {client.fullName}
-                          </span>
-                          <span className="text-[11px] font-normal text-[#6E6A63]">
-                            {client.email}
-                          </span>
-                        </th>
-                        <td className="px-4 py-3 num-tabular">
-                          <span className="block text-[#141413]">{client.phoneWhatsapp}</span>
-                          <span className="text-[11px] text-[#6E6A63]">CPF: {client.cpf}</span>
+                          </div>
+                          <div className="text-[11px] text-stone-400">
+                            {client.notes ? client.notes.slice(0, 40) : 'Clique para editar'}
+                          </div>
                         </td>
-                        <td data-numeric="true" className="px-4 py-3">
-                          <span className="font-semibold text-[#141413]">
-                            {client.visitsCount} vis.
-                          </span>{' '}
-                          ·{' '}
-                          <span
-                            className={
-                              client.noShowCount >= 2
-                                ? 'font-semibold text-[#B91C1C]'
-                                : 'text-[#6E6A63]'
-                            }
-                          >
-                            {client.noShowCount} faltas
-                          </span>
+                        <td className="py-3.5 px-4 font-mono text-xs text-stone-300">
+                          {client.phoneWhatsapp || 'Sem telefone'}
                         </td>
-                        <td data-numeric="true" className="px-4 py-3">
-                          há {client.lastVisitDaysAgo} dias
+                        <td className="py-3.5 px-4 text-right font-mono font-medium">
+                          {client.visitsCount}
                         </td>
-                        <td data-numeric="true" className="px-4 py-3 font-semibold text-[#141413]">
-                          {formatBRL(client.totalSpent)}
-                        </td>
-                        <td className="px-4 py-3">
-                          {client.noShowCount >= 2 ? (
-                            <span className="inline-flex items-center gap-1 rounded border border-[#B91C1C]/30 bg-[#FEE2E2] px-2 py-0.5 text-[11px] font-medium text-[#B91C1C]">
-                              Sinal Pix Obrigatório
-                            </span>
-                          ) : client.passes.length > 0 ? (
-                            <span className="num-tabular inline-flex items-center gap-1 rounded border border-[#0F766E]/30 bg-[#E6F4F1] px-2 py-0.5 text-[11px] font-medium text-[#0F766E]">
-                              Passe ({client.passes[0].remainingSessions}/
-                              {client.passes[0].totalSessions})
+                        <td className="py-3.5 px-4 text-right font-mono">
+                          {client.noShowCount > 0 ? (
+                            <span className="px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30 text-xs font-semibold">
+                              {client.noShowCount}
                             </span>
                           ) : (
-                            <span className="text-[11px] text-[#6E6A63]">
-                              Reserva 1-Clique Liberada
-                            </span>
+                            <span className="text-stone-400">0</span>
                           )}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono font-semibold text-stone-100">
+                          {formatCurrencyBRL(client.totalSpent)}
                         </td>
                       </tr>
                     );
@@ -330,253 +265,269 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Ficha Detalhada lateral */}
-        <aside className="lg:col-span-4 bg-[#F6F5F0]/50 p-5 sm:p-6">
-          {selectedClient ? (
-            <div className="space-y-4">
-              <div className="border-b border-[#DEDAD0] pb-4">
-                <h2 className="text-lg font-semibold text-[#141413]">
-                  {selectedClient.fullName}
-                </h2>
-                <p className="num-tabular mt-0.5 text-xs text-[#4A4843]">
-                  {selectedClient.phoneWhatsapp} · CPF {selectedClient.cpf}
-                </p>
-              </div>
+          {/* Client Editable Detail Panel (Right 5 cols) */}
+          <div className="lg:col-span-5 bg-stone-900/80 border border-stone-800 rounded-2xl p-5 space-y-4">
+            {selectedClient ? (
+              <form onSubmit={handleSaveSelectedClient} className="space-y-4">
+                <div className="flex items-start justify-between gap-2 border-b border-stone-800 pb-3">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400">
+                      Ficha Editável do Cliente
+                    </span>
+                    <h3 className="text-lg font-bold text-stone-100">
+                      {selectedClient.fullName}
+                    </h3>
+                  </div>
 
-              {selectedClient.noShowCount >= 2 && (
-                <div className="rounded-lg border border-[#B91C1C]/30 bg-[#FEE2E2]/70 p-3.5 text-xs text-[#B91C1C]">
-                  <strong className="flex items-center gap-1.5 font-semibold">
-                    <ShieldWarning size={16} weight="fill" />
-                    <span>Trava Anti-No-Show Ativa</span>
-                  </strong>
-                  <p className="mt-1">
-                    Este cliente possui {selectedClient.noShowCount} faltas registradas. Na Página Pública de Agendamento, o sistema exige automaticamente pagamento de Sinal Pix antes de bloquear a agenda.
-                  </p>
-                </div>
-              )}
-
-              <div className="rounded-lg border border-[#DEDAD0] bg-white p-3.5 text-xs space-y-2">
-                <strong className="block font-semibold text-[#141413]">
-                  Preferências & Anotações Técnicas:
-                </strong>
-                <p className="text-[#4A4843] leading-relaxed">{selectedClient.notes}</p>
-              </div>
-
-              <div className="rounded-lg border border-[#DEDAD0] bg-white p-3.5 text-xs space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <strong className="font-semibold text-[#141413]">
-                    Pacotes de Sessões
-                  </strong>
                   <button
                     type="button"
-                    onClick={() => setPassModalOpen(true)}
-                    className="inline-flex items-center gap-1 rounded bg-[#0F766E] px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-[#0B5C56]"
+                    onClick={() => openWhatsAppClient(selectedClient)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold text-xs transition-all cursor-pointer"
                   >
-                    <Plus size={12} weight="bold" />
-                    <span>Novo Passe</span>
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    Chamar no WhatsApp
                   </button>
                 </div>
 
-                {selectedClient.passes.length === 0 ? (
-                  <p className="text-[#6E6A63]">
-                    Nenhum pacote de sessões ativo para este cliente.
-                  </p>
-                ) : (
-                  selectedClient.passes.map((pass) => (
-                    <div
-                      key={pass.id}
-                      className="rounded border border-[#DEDAD0] bg-[#F6F5F0] p-2.5"
-                    >
-                      <span className="font-semibold text-[#141413] block">
-                        {pass.name}
-                      </span>
-                      <span className="num-tabular mt-1 block text-[#0F766E] font-medium">
-                        Saldo: {pass.remainingSessions} de {pass.totalSessions} sessões restantes
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          ) : null}
-        </aside>
-      </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-medium text-stone-400 mb-1">
+                      Nome Completo do Cliente
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
 
-      {/* Modal: Cadastrar Novo Cliente com Validador CPF Módulo 11 */}
-      <LightDismissDialog
-        open={newClientOpen}
-        onClose={() => setNewClientOpen(false)}
-        title="Novo Cadastro de Cliente"
-        subtitle="Valida nome completo, WhatsApp com DDD e dígitos verificadores de CPF (Módulo 11)."
-      >
-        <form onSubmit={handleCreateClient} className="space-y-4" noValidate>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="cli-name" className="text-xs font-semibold text-[#141413]">
-              Nome e Sobrenome *
-            </label>
-            <input
-              id="cli-name"
-              type="text"
-              autoComplete="name"
-              value={fullName}
-              onChange={(e) => {
-                setFullName(e.target.value);
-                if (errors.fullName) setErrors({ ...errors, fullName: '' });
-              }}
-              placeholder="Ex.: Leonardo Farias"
-              className="min-h-[40px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-sm text-[#141413]"
-            />
-            {errors.fullName && (
-              <p role="alert" className="text-xs font-medium text-[#B91C1C]">
-                {errors.fullName}
+                  <div>
+                    <label className="block text-[11px] font-medium text-stone-400 mb-1">
+                      WhatsApp (com DDD)
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-3.5 h-3.5 text-stone-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="tel"
+                        required
+                        value={editPhone}
+                        onChange={(e) => setEditPhone(e.target.value)}
+                        placeholder="(11) 99999-9999"
+                        className="w-full bg-stone-950 border border-stone-800 rounded-xl pl-8 pr-3 py-2 text-xs font-mono text-stone-100 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-medium text-stone-400 mb-1">
+                      CPF (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={editCpf}
+                      onChange={(e) => setEditCpf(e.target.value)}
+                      placeholder="000.000.000-00"
+                      className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs font-mono text-stone-100 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-medium text-stone-400 mb-1">
+                      Qtd. de Cortes / Visitas
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editVisits}
+                      onChange={(e) => setEditVisits(e.target.value)}
+                      className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs font-mono text-stone-100 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-medium text-stone-400 mb-1">
+                      Faltas sem Aviso (No-Show)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editNoShows}
+                      onChange={(e) => setEditNoShows(e.target.value)}
+                      className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs font-mono text-stone-100 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-medium text-stone-400 mb-1">
+                      Total Gasto Acumulado (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editTotalSpent}
+                      onChange={(e) => setEditTotalSpent(e.target.value)}
+                      className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs font-mono text-amber-400 font-bold focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-medium text-stone-400 mb-1">
+                      Preferências de Corte / Observações
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      placeholder="Ex: Degradê navalhado na zero, barba desenhada, gosta de pomada efeito seco..."
+                      className="w-full bg-stone-950 border border-stone-800 rounded-xl p-3 text-xs text-stone-100 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {Number(editNoShows) > 0 && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-2 text-xs text-rose-300">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>
+                      Cliente com {editNoShows} falta(s) registrada(s). Recomendado pedir sinal via Pix.
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Tem certeza que deseja excluir o cliente "${selectedClient.fullName}"?`
+                        )
+                      ) {
+                        onDeleteClient(selectedClient.id);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/25 text-xs font-semibold transition-all cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Excluir
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition-all cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" />
+                    {savedFeedback ? 'Dados Salvos com Sucesso!' : 'Salvar Alterações do Cliente'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <p className="text-sm text-stone-400">
+                Selecione um cliente na tabela para editar seus dados.
               </p>
             )}
           </div>
+        </div>
+      )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="cli-phone" className="text-xs font-semibold text-[#141413]">
-                Celular WhatsApp (DDD) *
-              </label>
-              <input
-                id="cli-phone"
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel"
-                value={phoneWhatsapp}
-                onChange={(e) => {
-                  setPhoneWhatsapp(formatPhoneBR(e.target.value));
-                  if (errors.phoneWhatsapp) setErrors({ ...errors, phoneWhatsapp: '' });
-                }}
-                placeholder="(11) 98888-7777"
-                className="num-tabular min-h-[40px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-sm text-[#141413]"
-              />
-              {errors.phoneWhatsapp && (
-                <p role="alert" className="text-xs font-medium text-[#B91C1C]">
-                  {errors.phoneWhatsapp}
-                </p>
-              )}
+      {/* Modal Novo Cliente */}
+      {showNewModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-stone-900 border border-stone-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-bold text-stone-100">
+                  Novo Cliente da Barbearia
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowNewModal(false)}
+                className="text-xs text-stone-400 hover:text-stone-200"
+              >
+                Fechar
+              </button>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="cli-cpf" className="text-xs font-semibold text-[#141413]">
-                CPF (Opcional — Validado Módulo 11)
-              </label>
-              <input
-                id="cli-cpf"
-                type="text"
-                inputMode="numeric"
-                value={cpf}
-                onChange={(e) => {
-                  setCpf(formatCPF(e.target.value));
-                  if (errors.cpf) setErrors({ ...errors, cpf: '' });
-                }}
-                placeholder="390.533.447-05"
-                className="num-tabular min-h-[40px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-sm text-[#141413]"
-              />
-              {errors.cpf && (
-                <p role="alert" className="text-xs font-medium text-[#B91C1C]">
-                  {errors.cpf}
-                </p>
-              )}
-            </div>
-          </div>
+            <form onSubmit={handleCreateClient} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-stone-300 mb-1">
+                  Nome Completo *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Ex: Lucas Oliveira"
+                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+                />
+              </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="cli-notes" className="text-xs font-semibold text-[#141413]">
-              Preferências de Corte / Alergias / Observações
-            </label>
-            <textarea
-              id="cli-notes"
-              rows={2}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex.: Degradê médio na navalha, alergia a lâmina de níquel."
-              className="rounded-lg border border-[#DEDAD0] bg-white p-3 text-xs text-[#141413]"
-            />
-          </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-stone-300 mb-1">
+                    WhatsApp (com DDD) *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                    placeholder="(11) 99999-0000"
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-stone-300 mb-1">
+                    CPF (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newCpf}
+                    onChange={(e) => setNewCpf(e.target.value)}
+                    placeholder="000.000.000-00"
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
 
-          <div className="flex items-center justify-end gap-2.5 border-t border-[#DEDAD0] pt-4">
-            <button
-              type="button"
-              onClick={() => setNewClientOpen(false)}
-              className="min-h-[40px] rounded-lg border border-[#DEDAD0] bg-white px-4 py-2 text-xs font-medium text-[#4A4843]"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="min-h-[40px] inline-flex items-center gap-2 rounded-lg bg-[#0F766E] px-5 py-2 text-xs font-semibold text-white hover:bg-[#0B5C56]"
-            >
-              <CheckCircle size={16} weight="bold" />
-              <span>Salvar Cliente</span>
-            </button>
-          </div>
-        </form>
-      </LightDismissDialog>
+              <div>
+                <label className="block text-xs font-medium text-stone-300 mb-1">
+                  Observações de Corte / Preferência
+                </label>
+                <textarea
+                  rows={2}
+                  value={newNotes}
+                  onChange={(e) => setNewNotes(e.target.value)}
+                  placeholder="Ex: Degradê na zero, barba alinhada na navalha"
+                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+                />
+              </div>
 
-      {/* Modal: Vender / Atribuir Passe de Sessões */}
-      <LightDismissDialog
-        open={passModalOpen}
-        onClose={() => setPassModalOpen(false)}
-        title={`Atribuir Pacote/Passe — ${selectedClient?.fullName || ''}`}
-        subtitle="Gera saldo pré-pago de sessões que pode ser abatido diretamente no PDV."
-      >
-        <form onSubmit={handleAssignPass} className="space-y-4">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="pass-service" className="text-xs font-semibold text-[#141413]">
-              Serviço do Pacote
-            </label>
-            <select
-              id="pass-service"
-              value={passServiceId}
-              onChange={(e) => setPassServiceId(e.target.value)}
-              className="min-h-[40px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
-            >
-              {services.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({formatBRL(s.price)} / sessão)
-                </option>
-              ))}
-            </select>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNewModal(false)}
+                  className="px-4 py-2.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold cursor-pointer"
+                >
+                  Salvar Cliente
+                </button>
+              </div>
+            </form>
           </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="pass-sessions" className="text-xs font-semibold text-[#141413]">
-              Quantidade de Sessões no Passe
-            </label>
-            <input
-              id="pass-sessions"
-              type="number"
-              min={2}
-              max={12}
-              value={passSessions}
-              onChange={(e) => setPassSessions(Math.max(2, Number(e.target.value)))}
-              className="num-tabular min-h-[40px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-2.5 border-t border-[#DEDAD0] pt-4">
-            <button
-              type="button"
-              onClick={() => setPassModalOpen(false)}
-              className="min-h-[40px] rounded-lg border border-[#DEDAD0] bg-white px-4 py-2 text-xs font-medium text-[#4A4843]"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="min-h-[40px] inline-flex items-center gap-2 rounded-lg bg-[#0F766E] px-5 py-2 text-xs font-semibold text-white hover:bg-[#0B5C56]"
-            >
-              <Ticket size={16} weight="bold" />
-              <span>Ativar Passe na Ficha</span>
-            </button>
-          </div>
-        </form>
-      </LightDismissDialog>
-    </section>
+        </div>
+      )}
+    </div>
   );
 };

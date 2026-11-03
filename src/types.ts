@@ -23,6 +23,15 @@ export type PaymentMethod =
   | 'CASH'
   | 'CLIENT_PASS';
 
+export interface BankStatementEntry {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  type: 'PIX_SINAL' | 'FECHAMENTO_DIA' | 'EXTRATO_BANCARIO';
+  attachmentName?: string;
+}
+
 export interface BusinessConfig {
   id: string;
   slug: string;
@@ -31,6 +40,7 @@ export interface BusinessConfig {
   cityState: string;
   address: string;
   phone: string;
+  pixKey: string;
   planTier: PlanTier;
   monthlyBookingsUsed: number;
   monthlyBookingsLimit: number;
@@ -43,6 +53,7 @@ export interface BusinessConfig {
   reviewsRank: number;
   reviewsCount: number;
   bestBadge: boolean;
+  isConfigured: boolean;
 }
 
 export interface StaffMember {
@@ -114,12 +125,14 @@ export interface Appointment {
   date: string;
   startTime: string;
   endTime: string;
+  customPrice?: number;
   status: AppointmentStatus;
   isWalkIn: boolean;
   isFirstVisitBoost?: boolean;
   originChannel: OriginChannel;
   deviceFingerprint: string;
   depositPixPaid: number;
+  paymentProofName?: string;
   notes?: string;
 }
 
@@ -150,6 +163,7 @@ export interface PosTransaction {
   staffNetCommission: number;
   salonNetShare: number;
   originChannel: OriginChannel;
+  receiptAttachmentName?: string;
 }
 
 export interface ReminderLog {
@@ -165,52 +179,3 @@ export interface ReminderLog {
   status: 'PENDING' | 'SENT' | 'CONFIRMED_BY_CLIENT' | 'CANCELLED_BY_CLIENT';
   sentAt?: string;
 }
-
-export type MarketplaceCategory =
-  | 'TODAS'
-  | 'BARBEARIA'
-  | 'SALAO_BELEZA'
-  | 'CLINICA_ESTETICA'
-  | 'STUDIO_SOBRANCELHA';
-
-export interface VerifiedReview {
-  id: string;
-  venueId: string;
-  clientName: string;
-  serviceName: string;
-  staffName: string;
-  rating: number;
-  comment: string;
-  verifiedAt: string;
-  posReceiptCode: string;
-  originChannel: OriginChannel;
-}
-
-export interface MarketplaceVenue {
-  id: string;
-  slug: string;
-  name: string;
-  category: Exclude<MarketplaceCategory, 'TODAS'>;
-  categoryLabel: string;
-  neighborhood: string;
-  cityState: string;
-  address: string;
-  distanceKm: number;
-  rating: number;
-  reviewsCount: number;
-  bestOfYearBadge: boolean;
-  isBoostSponsored: boolean;
-  googleReserveIntegrated: boolean;
-  acceptsWalkInNow: boolean;
-  walkInWaitMinutes: number;
-  startingPrice: number;
-  nextAvailableSlots: string[];
-  featuredServices: Array<{
-    id: string;
-    name: string;
-    durationMinutes: number;
-    price: number;
-  }>;
-  isCurrentWorkspaceVenue?: boolean;
-}
-

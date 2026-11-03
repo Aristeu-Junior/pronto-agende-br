@@ -1,594 +1,418 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  CalendarPlus,
-  CheckCircle,
+  CalendarCheck,
   Clock,
   Copy,
-  GlobeHemisphereWest,
   MapPin,
+  WhatsappLogo as MessageCircle,
+  Paperclip,
   QrCode,
+  Scissors,
   ShieldCheck,
-  ShieldWarning,
-  Star,
-  Storefront,
-  UserCheck,
-  WhatsappLogo,
+  Sparkle as Sparkles,
 } from '@phosphor-icons/react';
 import {
   Appointment,
   BusinessConfig,
-  Client,
   OriginChannel,
   ServiceItem,
   StaffMember,
 } from '../types';
-import { formatBRL, formatPhoneBR, isValidPhoneBR } from '../utils/validators';
+import { formatCurrencyBRL } from '../utils/finance';
 
 interface PublicBookingModuleProps {
   business: BusinessConfig;
   staff: StaffMember[];
   services: ServiceItem[];
-  clients: Client[];
-  initialOrigin?: OriginChannel;
-  onCreatePublicBooking: (apt: Omit<Appointment, 'id'>) => void;
-  onNavigateToAgenda: () => void;
+  onCreatePublicBooking: (booking: Omit<Appointment, 'id'>) => void;
 }
 
-const AVAILABLE_SLOTS = ['16:00', '16:45', '17:30', '18:15', '19:00'];
+const AVAILABLE_TIMES = [
+  '09:00',
+  '10:00',
+  '11:00',
+  '13:30',
+  '14:30',
+  '15:30',
+  '16:30',
+  '17:30',
+  '18:30',
+  '19:30',
+];
 
 export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
   business,
   staff,
   services,
-  clients,
-  initialOrigin,
   onCreatePublicBooking,
-  onNavigateToAgenda,
 }) => {
-  const professionals = useMemo(
-    () => staff.filter((s) => s.role === 'PROFESSIONAL'),
-    [staff]
+  const professionals = staff.filter((s) => s.role === 'PROFESSIONAL');
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
+    services[0] ? [services[0].id] : []
   );
-
-  const [simulatedOrigin, setSimulatedOrigin] = useState<OriginChannel>(
-    initialOrigin || 'GOOGLE_RESERVE'
-  );
-
-  useEffect(() => {
-    if (initialOrigin) {
-      setSimulatedOrigin(initialOrigin);
-    }
-  }, [initialOrigin]);
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([
-    services[0]?.id || 'srv_corte_degrade',
-  ]);
   const [selectedStaffId, setSelectedStaffId] = useState<string>(
-    professionals[0]?.id || 'st_caio'
+    professionals[0]?.id ?? staff[0]?.id ?? ''
   );
-  const [selectedSlot, setSelectedSlot] = useState<string>('16:45');
-  const [customerName, setCustomerName] = useState<string>(
-    'Henrique Albuquerque'
-  );
-  const [customerPhone, setCustomerPhone] =
-    useState<string>('(11) 98812-4501');
-  const [pixPaidConfirmed, setPixPaidConfirmed] = useState<boolean>(false);
-  const [pixCopied, setPixCopied] = useState<boolean>(false);
-  const [formError, setFormError] = useState<string>('');
-  const [bookingConfirmed, setBookingConfirmed] = useState<boolean>(false);
-
-  const isQuotaReached =
-    business.planTier === 'FREE' &&
-    business.monthlyBookingsUsed >= business.monthlyBookingsLimit;
-
-  const matchedClient = useMemo(() => {
-    const cleanInput = customerPhone.replace(/\D/g, '');
-    if (!cleanInput) return null;
-    return (
-      clients.find(
-        (c) => c.phoneWhatsapp.replace(/\D/g, '') === cleanInput
-      ) || null
-    );
-  }, [clients, customerPhone]);
-
-  const requiresPixDeposit = Boolean(
-    matchedClient && matchedClient.noShowCount >= 2
-  );
+  const [selectedTime, setSelectedTime] = useState<string>('15:30');
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [originChannel] = useState<OriginChannel>('DIRECT_LINK');
+  const [requireDeposit, setRequireDeposit] = useState(false);
+  const [proofFileName, setProofFileName] = useState('');
+  const [bookingCompleted, setBookingCompleted] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const selectedServices = useMemo(
     () => services.filter((s) => selectedServiceIds.includes(s.id)),
     [services, selectedServiceIds]
   );
 
-  const totalAmount = useMemo(
-    () => selectedServices.reduce((acc, s) => acc + s.price, 0),
-    [selectedServices]
+  const totalPrice = selectedServices.reduce((acc, s) => acc + s.price, 0);
+  const totalDuration = selectedServices.reduce(
+    (acc, s) => acc + s.durationMinutes,
+    0
   );
-
-  const totalDuration = useMemo(
-    () => selectedServices.reduce((acc, s) => acc + s.durationMinutes, 0),
-    [selectedServices]
-  );
-
-  const requiredDepositAmount = requiresPixDeposit
-    ? Number(((totalAmount * business.noShowDepositPercent) / 100).toFixed(2))
-    : 0;
+  const depositAmount =
+    Math.round(totalPrice * (business.noShowDepositPercent / 100) * 100) / 100;
 
   const toggleService = (id: string) => {
-    setBookingConfirmed(false);
-    setFormError('');
     setSelectedServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id)
+        ? prev.length > 1
+          ? prev.filter((item) => item !== id)
+          : prev
+        : [...prev, id]
     );
   };
 
-  const applyPresetProfile = (type: 'LOYAL' | 'NOSHOW' | 'NEW_BOOST') => {
-    setBookingConfirmed(false);
-    setFormError('');
-    if (type === 'LOYAL') {
-      setCustomerName('Henrique Albuquerque');
-      setCustomerPhone('(11) 98812-4501');
-      setSimulatedOrigin('DIRECT_LINK');
-      setPixPaidConfirmed(false);
-    } else if (type === 'NOSHOW') {
-      setCustomerName('Breno Siqueira Tavares');
-      setCustomerPhone('(11) 99104-8372');
-      setSimulatedOrigin('GOOGLE_RESERVE');
-      setPixPaidConfirmed(false);
-    } else {
-      setCustomerName('Lucas Evangelista');
-      setCustomerPhone('(11) 99540-2219');
-      setSimulatedOrigin('MARKETPLACE_BOOST');
-      setPixPaidConfirmed(false);
-    }
+  const handleCopyBookingLink = () => {
+    navigator.clipboard?.writeText(window.location.href);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
   };
 
-  const handleConfirmPublicBooking = (e: React.FormEvent) => {
+  const handleConfirmBooking = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedServiceIds.length === 0) {
-      setFormError('Selecione ao menos 1 serviço para continuar.');
-      return;
-    }
-    if (customerName.trim().length < 3) {
-      setFormError('Informe seu nome para identificar a reserva.');
-      return;
-    }
-    if (!isValidPhoneBR(customerPhone)) {
-      setFormError('Informe seu WhatsApp com DDD (10 ou 11 dígitos).');
-      return;
-    }
-    if (requiresPixDeposit && !pixPaidConfirmed) {
-      setFormError(
-        `Para confirmar seu horário, conclua a validação do Sinal Pix de ${formatBRL(requiredDepositAmount)}.`
-      );
-      return;
-    }
+    if (!clientName.trim() || !clientPhone.trim()) return;
 
-    const [h, m] = selectedSlot.split(':').map(Number);
-    const endMinutes = h * 60 + m + totalDuration;
+    const [h, m] = selectedTime.split(':').map(Number);
+    const endMinutes = h * 60 + m + (totalDuration || 40);
     const endH = String(Math.floor(endMinutes / 60)).padStart(2, '0');
     const endM = String(endMinutes % 60).padStart(2, '0');
 
     onCreatePublicBooking({
-      clientId: matchedClient?.id || `cli_pub_${Date.now()}`,
-      clientName: customerName.trim(),
-      clientPhone: customerPhone,
-      staffId: selectedStaffId,
+      clientId: `cli_pub_${Date.now()}`,
+      clientName: clientName.trim(),
+      clientPhone: clientPhone.trim(),
+      staffId: selectedStaffId || staff[0]?.id || 'st_01',
       serviceIds: selectedServiceIds,
-      date: '2026-10-31',
-      startTime: selectedSlot,
+      date: new Date().toISOString().slice(0, 10),
+      startTime: selectedTime,
       endTime: `${endH}:${endM}`,
+      customPrice: totalPrice,
       status: 'CONFIRMED',
       isWalkIn: false,
-      isFirstVisitBoost:
-        simulatedOrigin === 'MARKETPLACE_BOOST' && !matchedClient,
-      originChannel: simulatedOrigin,
-      deviceFingerprint: `bf_pub_${simulatedOrigin.toLowerCase()}_98a1`,
-      depositPixPaid: requiredDepositAmount,
-      notes:
-        simulatedOrigin === 'GOOGLE_RESERVE'
-          ? 'Reserva pública via integração Reserve with Google.'
-          : simulatedOrigin === 'MARKETPLACE_BOOST'
-          ? 'Cliente novo originado pela Vitrine Marketplace Boost.'
-          : 'Reserva pública via Link Próprio da Barbearia.',
+      isFirstVisitBoost: false,
+      originChannel,
+      deviceFingerprint: `fp_web_${Math.random().toString(36).slice(2, 7)}`,
+      depositPixPaid: requireDeposit ? depositAmount : 0,
+      paymentProofName: proofFileName || undefined,
+      notes: 'Agendado pelo Link de Reserva da Barbearia',
     });
 
-    setFormError('');
-    setBookingConfirmed(true);
+    setBookingCompleted(true);
+
+    // Se a barbearia cadastrou WhatsApp na aba Gestão, abre confirmação via WhatsApp
+    const barberDigits = (business.phone || '').replace(/\D/g, '');
+    if (barberDigits) {
+      const barberPhone = barberDigits.startsWith('55')
+        ? barberDigits
+        : `55${barberDigits}`;
+      const selectedStaffObj = staff.find((s) => s.id === selectedStaffId);
+      const servicesText = selectedServices.map((s) => s.name).join(' + ');
+      const text = `Olá! Me chamo *${clientName.trim()}* (${clientPhone.trim()}). Acabei de agendar *${servicesText}* (${formatCurrencyBRL(
+        totalPrice
+      )}) para hoje às *${selectedTime}* com *${
+        selectedStaffObj?.name ?? 'Barbeiro'
+      }* na *${business.name}*.`;
+      window.open(
+        `https://wa.me/${barberPhone}?text=${encodeURIComponent(text)}`,
+        '_blank',
+        'noopener,noreferrer'
+      );
+    }
   };
 
   return (
-    <section aria-label="Página Pública de Agendamento do Negócio e Simulador Google Reserve">
-      {/* Cabeçalho da Página Pública de Agendamento */}
-      <div className="border-b border-[#DEDAD0] bg-white px-4 py-4 sm:px-6">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-[#141413]">
-              Agendamento Online
-            </h1>
-            <p className="mt-0.5 text-xs text-[#4A4843]">
-              Escolha o serviço, profissional e horário disponível para reservar em segundos.
-            </p>
-          </div>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Top Share Bar for the Barber */}
+      <div className="bg-stone-900/80 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="text-xs">
+          <span className="font-bold text-amber-400 uppercase tracking-wider block">
+            Página Pública de Agendamento da Sua Barbearia
+          </span>
+          <span className="text-stone-300">
+            Envie este link na bio do Instagram ou no WhatsApp dos seus clientes. Quando eles agendarem abaixo, o horário cai direto na sua aba <strong>Agenda</strong> e <strong>Clientes</strong>.
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={handleCopyBookingLink}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs shrink-0 transition-all cursor-pointer"
+        >
+          <Copy className="w-3.5 h-3.5" />
+          {copiedLink ? 'Link Copiado!' : 'Copiar Link de Agendamento'}
+        </button>
+      </div>
 
-          {/* Perfis rápidos para testar os cenários de reserva */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => applyPresetProfile('LOYAL')}
-              className="rounded-lg border border-[#DEDAD0] bg-[#F6F5F0] px-3 py-1.5 text-xs font-medium text-[#141413] hover:bg-[#EFECE6]"
-            >
-              Perfil Cliente Recorrente
-            </button>
-            <button
-              type="button"
-              onClick={() => applyPresetProfile('NOSHOW')}
-              className="rounded-lg border border-[#B45309]/40 bg-[#FEF3C7] px-3 py-1.5 text-xs font-medium text-[#B45309] hover:bg-[#FDE68A]"
-            >
-              Perfil c/ 2 Faltas (Sinal Pix)
-            </button>
+      {/* Storefront Hero Banner */}
+      <div className="bg-gradient-to-br from-stone-900 via-stone-900 to-amber-950/30 border border-stone-800 rounded-3xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Agendamento Online 24h • Sem precisar baixar aplicativo</span>
+          </div>
+          <h2 className="text-2xl font-bold text-stone-100">{business.name}</h2>
+          <p className="text-xs text-stone-400 flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>
+              {business.address} • {business.neighborhood}, {business.cityState}
+            </span>
+          </p>
+        </div>
+
+        <div className="bg-stone-950/80 border border-stone-800 rounded-2xl p-4 text-right shrink-0">
+          <span className="text-[11px] uppercase tracking-wider text-stone-400">
+            Total Selecionado
+          </span>
+          <div className="text-2xl font-bold font-mono text-amber-400">
+            {formatCurrencyBRL(totalPrice)}
+          </div>
+          <div className="text-[11px] text-stone-400 flex items-center justify-end gap-1 mt-0.5">
+            <Clock className="w-3 h-3" />
+            <span>Duração média: {totalDuration} min</span>
           </div>
         </div>
       </div>
 
-      {/* Container Mobile-First do Estabelecimento + Resumo Lateral */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#DEDAD0] bg-white">
-        <div className="lg:col-span-7 p-4 sm:p-6 space-y-6">
-          {/* Cabeçalho Público da Barbearia */}
-          <div className="rounded-lg border border-[#DEDAD0] bg-[#F6F5F0]/70 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-bold text-[#141413]">
-                  {business.name}
-                </h2>
-                {business.bestBadge && (
-                  <span className="inline-flex items-center gap-1 rounded bg-[#141413] px-2 py-0.5 text-[11px] font-semibold text-white">
-                    <Star size={12} weight="fill" />
-                    <span>Top Avaliado Pinheiros</span>
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 flex items-center gap-1.5 text-xs text-[#4A4843]">
-                <MapPin size={14} weight="bold" />
-                <span>
-                  {business.address} · {business.neighborhood}, {business.cityState}
-                </span>
-              </p>
-            </div>
-
-            <div className="text-left sm:text-right">
-              <span className="num-tabular text-lg font-bold text-[#0F766E]">
-                {business.reviewsRank.toFixed(1)} / 5.0
-              </span>
-              <span className="num-tabular block text-[11px] text-[#6E6A63]">
-                {business.reviewsCount} avaliações verificadas
-              </span>
-            </div>
+      {bookingCompleted ? (
+        <div className="bg-emerald-950/30 border border-emerald-500/40 rounded-3xl p-8 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-300">
+            <CalendarCheck className="w-7 h-7" />
           </div>
-
-          {/* Seletor de Canal de Origem Simulado */}
-          <div>
-            <span className="block text-xs font-semibold text-[#141413] mb-2">
-              Canal de Entrada do Cliente (Rastreamento de Origem Auditável)
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {(
-                [
-                  {
-                    id: 'GOOGLE_RESERVE',
-                    title: 'Reservar com Google',
-                    desc: 'Busca Google / Maps (0% taxa)',
-                  },
-                  {
-                    id: 'DIRECT_LINK',
-                    title: 'Link da Bio / QR Code',
-                    desc: 'Cliente orgânico (0% taxa)',
-                  },
-                  {
-                    id: 'MARKETPLACE_BOOST',
-                    title: 'Vitrine Boost',
-                    desc: '15% só na 1ª visita inédita',
-                  },
-                ] as Array<{ id: OriginChannel; title: string; desc: string }>
-              ).map((ch) => (
-                <button
-                  key={ch.id}
-                  type="button"
-                  onClick={() => setSimulatedOrigin(ch.id)}
-                  className={`rounded-lg border p-3 text-left text-xs ${
-                    simulatedOrigin === ch.id
-                      ? 'border-[#0F766E] bg-[#E6F4F1] text-[#0F766E]'
-                      : 'border-[#DEDAD0] bg-white text-[#141413] hover:bg-[#F6F5F0]'
-                  }`}
-                >
-                  <span className="font-semibold block">{ch.title}</span>
-                  <span className="text-[11px] text-[#4A4843]">{ch.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {isQuotaReached ? (
-            <div
-              role="alert"
-              className="rounded-lg border border-[#B45309]/40 bg-[#FEF3C7] p-5 space-y-3"
-            >
-              <h3 className="text-base font-semibold text-[#B45309]">
-                Agenda Online do Mês Completa ({business.monthlyBookingsUsed}/
-                {business.monthlyBookingsLimit} reservas no Plano Grátis)
+          <h3 className="text-xl font-bold text-stone-100">
+            Horário Reservado com Sucesso para {clientName}!
+          </h3>
+          <p className="text-sm text-stone-300 max-w-md mx-auto">
+            O agendamento hoje às{' '}
+            <span className="font-mono font-bold text-emerald-300">
+              {selectedTime}
+            </span>{' '}
+            já foi salvo na <strong>Agenda</strong> da barbearia.
+          </p>
+          <button
+            onClick={() => {
+              setBookingCompleted(false);
+              setClientName('');
+              setClientPhone('');
+              setProofFileName('');
+            }}
+            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition-all cursor-pointer"
+          >
+            Fazer Outro Agendamento
+          </button>
+        </div>
+      ) : (
+        <form
+          onSubmit={handleConfirmBooking}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start"
+        >
+          {/* Left 7 Cols: Services + Barber + Time */}
+          <div className="lg:col-span-7 space-y-5">
+            {/* Step 1: Services */}
+            <div className="bg-stone-900/60 border border-stone-800 rounded-2xl p-5 space-y-3">
+              <h3 className="text-sm font-bold text-stone-100 flex items-center gap-2">
+                <Scissors className="w-4 h-4 text-amber-400" />
+                <span>1. Escolha os Serviços e Valores</span>
               </h3>
-              <p className="text-xs text-[#4A4843] leading-relaxed">
-                O sistema direciona o cliente automaticamente para o WhatsApp da recepção enquanto o estabelecimento continua operando o caixa e encaixes normalmente.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleConfirmPublicBooking} className="space-y-5" noValidate>
-              {/* Etapa 1: Serviços */}
-              <div>
-                <h3 className="text-sm font-semibold text-[#141413]">
-                  1. Escolha os Serviços Desejados
-                </h3>
-                <div className="mt-2 divide-y divide-[#DEDAD0] rounded-lg border border-[#DEDAD0]">
-                  {services.map((srv) => {
-                    const checked = selectedServiceIds.includes(srv.id);
-                    return (
-                      <label
-                        key={srv.id}
-                        className={`flex cursor-pointer items-center justify-between px-4 py-3 text-xs ${
-                          checked ? 'bg-[#E6F4F1]/45' : 'bg-white hover:bg-[#F6F5F0]/60'
-                        }`}
-                      >
-                        <span className="flex items-center gap-3">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleService(srv.id)}
-                            className="h-4 w-4 accent-[#0F766E]"
-                          />
-                          <span>
-                            <strong className="font-medium text-[#141413] block">
-                              {srv.name}
-                            </strong>
-                            <span className="num-tabular text-[11px] text-[#6E6A63]">
-                              Duração estimada: {srv.durationMinutes} min
-                            </span>
-                          </span>
-                        </span>
-                        <span className="num-tabular font-semibold text-[#141413]">
-                          {formatBRL(srv.price)}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Etapa 2: Profissional e Horário */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="pub-staff"
-                    className="block text-sm font-semibold text-[#141413] mb-2"
-                  >
-                    2. Profissional Preferido
-                  </label>
-                  <select
-                    id="pub-staff"
-                    value={selectedStaffId}
-                    onChange={(e) => setSelectedStaffId(e.target.value)}
-                    className="min-h-[42px] w-full rounded-lg border border-[#DEDAD0] bg-white px-3 text-xs text-[#141413]"
-                  >
-                    {professionals.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} — {p.chairLabel}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <span className="block text-sm font-semibold text-[#141413] mb-2">
-                    3. Horário Disponível Hoje (31/10)
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {AVAILABLE_SLOTS.map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setSelectedSlot(slot)}
-                        className={`num-tabular min-h-[38px] rounded-lg border px-3 py-1.5 text-xs font-semibold ${
-                          selectedSlot === slot
-                            ? 'border-[#0F766E] bg-[#0F766E] text-white'
-                            : 'border-[#DEDAD0] bg-white text-[#141413] hover:bg-[#F6F5F0]'
-                        }`}
-                      >
-                        {slot}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Etapa 4: Identificação Sem Senha (Nome + WhatsApp) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="pub-name"
-                    className="text-xs font-semibold text-[#141413]"
-                  >
-                    Seu Nome
-                  </label>
-                  <input
-                    id="pub-name"
-                    type="text"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="min-h-[40px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-sm text-[#141413]"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="pub-phone"
-                    className="text-xs font-semibold text-[#141413]"
-                  >
-                    Seu WhatsApp (Confirmação Automática)
-                  </label>
-                  <input
-                    id="pub-phone"
-                    type="tel"
-                    inputMode="numeric"
-                    value={customerPhone}
-                    onChange={(e) => {
-                      setCustomerPhone(formatPhoneBR(e.target.value));
-                      setFormError('');
-                    }}
-                    className="num-tabular min-h-[40px] rounded-lg border border-[#DEDAD0] bg-white px-3 text-sm text-[#141413]"
-                  />
-                </div>
-              </div>
-
-              {/* Regra Dinâmica Anti-No-Show: Exige Sinal Pix apenas se noShowCount >= 2 */}
-              {requiresPixDeposit ? (
-                <div className="rounded-lg border border-[#B45309]/40 bg-[#FEF3C7]/70 p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <strong className="text-xs font-semibold text-[#B45309] flex items-center gap-1.5">
-                        <ShieldWarning size={17} weight="fill" />
-                        <span>
-                          Garantia Anti-No-Show Ativada ({matchedClient?.noShowCount} faltas anteriores registradas)
-                        </span>
-                      </strong>
-                      <p className="mt-1 text-xs text-[#4A4843]">
-                        Para reservar este horário, é necessário adiantar o Sinal Pix de{' '}
-                        <strong className="num-tabular text-[#141413]">
-                          {business.noShowDepositPercent}% ({formatBRL(requiredDepositAmount)})
-                        </strong>
-                        , abatido integralmente na comanda final.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
+              <div className="space-y-2">
+                {services.map((srv) => {
+                  const selected = selectedServiceIds.includes(srv.id);
+                  return (
                     <button
+                      key={srv.id}
                       type="button"
-                      onClick={() => setPixCopied(true)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-[#DEDAD0] bg-white px-3 py-1.5 text-xs font-medium text-[#141413]"
+                      onClick={() => toggleService(srv.id)}
+                      className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        selected
+                          ? 'bg-amber-500/15 border-amber-500/50 text-stone-100'
+                          : 'bg-stone-950/70 border-stone-800/80 text-stone-400 hover:text-stone-200'
+                      }`}
                     >
-                      <Copy size={15} weight="bold" />
-                      <span>
-                        {pixCopied
-                          ? 'Código Pix Copiado!'
-                          : 'Copiar Chave Pix Copia-e-Cola'}
+                      <div>
+                        <div className="text-sm font-semibold">{srv.name}</div>
+                        <div className="text-[11px] text-stone-400">
+                          {srv.durationMinutes} min
+                        </div>
+                      </div>
+                      <span className="font-mono text-sm font-bold text-amber-400">
+                        {formatCurrencyBRL(srv.price)}
                       </span>
                     </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#0F766E] bg-[#E6F4F1] px-3 py-1.5 text-xs font-semibold text-[#0F766E]">
-                      <input
-                        type="checkbox"
-                        checked={pixPaidConfirmed}
-                        onChange={(e) => {
-                          setPixPaidConfirmed(e.target.checked);
-                          if (formError) setFormError('');
-                        }}
-                        className="h-4 w-4 accent-[#0F766E]"
-                      />
-                      <span>Simular Pagamento Pix Confirmado ({formatBRL(requiredDepositAmount)})</span>
-                    </label>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-lg border border-[#0F766E]/30 bg-[#E6F4F1]/60 p-3 text-xs text-[#0F766E] flex items-center gap-2">
-                  <ShieldCheck size={18} weight="fill" />
-                  <span>
-                    <strong>Score de Presença Positivo:</strong> Reserva liberada em 1 clique sem cobrança antecipada. Cancelamento gratuito até {business.cancelNoticeHours}h antes.
-                  </span>
-                </div>
-              )}
+            {/* Step 2: Barber & Time */}
+            <div className="bg-stone-900/60 border border-stone-800 rounded-2xl p-5 space-y-4">
+              <h3 className="text-sm font-bold text-stone-100">
+                2. Profissional e Horário Disponível
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {staff.map((pro) => (
+                  <button
+                    key={pro.id}
+                    type="button"
+                    onClick={() => setSelectedStaffId(pro.id)}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      selectedStaffId === pro.id
+                        ? 'bg-amber-500/15 border-amber-500/50 text-stone-100'
+                        : 'bg-stone-950 border-stone-800 text-stone-400'
+                    }`}
+                  >
+                    <div className="text-xs font-bold">{pro.name}</div>
+                    <div className="text-[11px] text-stone-400">
+                      {pro.specialty} • {pro.chairLabel}
+                    </div>
+                  </button>
+                ))}
+              </div>
 
-              {formError && (
-                <p role="alert" className="text-xs font-medium text-[#B91C1C]">
-                  {formError}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                className="w-full min-h-[46px] inline-flex items-center justify-center gap-2 rounded-lg bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0B5C56]"
-              >
-                <CalendarPlus size={19} weight="bold" />
-                <span>
-                  Confirmar Agendamento ({formatBRL(totalAmount)} · {selectedSlot})
+              <div className="pt-2">
+                <span className="block text-xs text-stone-400 mb-2">
+                  Horários Livres Hoje:
                 </span>
-              </button>
-            </form>
-          )}
-        </div>
-
-        {/* Coluna Direita (5 cols): Telemetria de Conversão & Confirmação ao Vivo */}
-        <aside className="lg:col-span-5 bg-[#F6F5F0]/50 p-4 sm:p-6 space-y-4">
-          <h2 className="text-base font-semibold text-[#141413]">
-            Espelho de Regras Aplicadas na Reserva Pública
-          </h2>
-
-          {bookingConfirmed && (
-            <div
-              role="status"
-              className="rounded-lg border border-[#0F766E] bg-[#E6F4F1] p-4 space-y-3 text-xs text-[#141413]"
-            >
-              <strong className="flex items-center gap-1.5 text-sm font-semibold text-[#0F766E]">
-                <CheckCircle size={18} weight="fill" />
-                <span>Horário Confirmado e Inserido na Agenda!</span>
-              </strong>
-              <p className="text-[#4A4843]">
-                A reserva de <strong>{customerName}</strong> às{' '}
-                <strong className="num-tabular">{selectedSlot}</strong> já está visível no Quadro de Cadeiras do gestor.
-              </p>
-              <button
-                type="button"
-                onClick={onNavigateToAgenda}
-                className="rounded-lg bg-[#0F766E] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#0B5C56]"
-              >
-                Ver Horário no Quadro de Cadeiras
-              </button>
-            </div>
-          )}
-
-          <div className="rounded-lg border border-[#DEDAD0] bg-white p-4 space-y-3 text-xs">
-            <div className="flex justify-between border-b border-[#DEDAD0] pb-2">
-              <span className="text-[#4A4843]">Canal de Origem Detectado:</span>
-              <span className="font-semibold text-[#141413]">{simulatedOrigin}</span>
-            </div>
-
-            <div className="flex justify-between border-b border-[#DEDAD0] pb-2">
-              <span className="text-[#4A4843]">Histórico do WhatsApp Informado:</span>
-              <span className="font-medium text-[#141413]">
-                {matchedClient
-                  ? `${matchedClient.visitsCount} visitas / ${matchedClient.noShowCount} faltas`
-                  : 'Cliente Inédito na Base'}
-              </span>
-            </div>
-
-            <div className="flex justify-between border-b border-[#DEDAD0] pb-2">
-              <span className="text-[#4A4843]">Comissão de Marketplace (Boost):</span>
-              <span className="num-tabular font-semibold text-[#0F766E]">
-                {simulatedOrigin === 'MARKETPLACE_BOOST' && !matchedClient
-                  ? `15% na 1ª visita (${formatBRL((totalAmount * 15) / 100)})`
-                  : 'R$ 0,00 (100% Isento)'}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-[#4A4843]">Cota Mensal Freemium:</span>
-              <span className="num-tabular font-semibold text-[#141413]">
-                {business.monthlyBookingsUsed} /{' '}
-                {business.planTier === 'PRO'
-                  ? 'Ilimitado'
-                  : business.monthlyBookingsLimit}
-              </span>
+                <div className="grid grid-cols-5 gap-2">
+                  {AVAILABLE_TIMES.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setSelectedTime(t)}
+                      className={`py-2 rounded-xl font-mono text-xs font-semibold border transition-all cursor-pointer ${
+                        selectedTime === t
+                          ? 'bg-amber-500 text-stone-950 border-amber-400 font-bold'
+                          : 'bg-stone-950 text-stone-300 border-stone-800 hover:border-stone-700'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        </aside>
-      </div>
-    </section>
+
+          {/* Right 5 Cols: Client Info + Pix Signal + WhatsApp Confirm */}
+          <div className="lg:col-span-5 bg-stone-900 border border-stone-800 rounded-2xl p-5 space-y-4">
+            <h3 className="text-sm font-bold text-stone-100">
+              3. Seus Dados para Confirmar
+            </h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-stone-300 mb-1">
+                  Seu Nome Completo *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Ex: Matheus Henrique"
+                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-stone-300 mb-1">
+                  Seu WhatsApp (com DDD) *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={clientPhone}
+                  onChange={(e) => setClientPhone(e.target.value)}
+                  placeholder="(11) 99999-0000"
+                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            {/* Opção de Sinal Pix e Comprovante */}
+            <div className="p-3.5 rounded-xl bg-stone-950 border border-stone-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
+                  <QrCode className="w-4 h-4" />
+                  <span>
+                    Adiantar Sinal Pix ({business.noShowDepositPercent}%)
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={requireDeposit}
+                  onChange={(e) => setRequireDeposit(e.target.checked)}
+                  className="accent-amber-500 w-4 h-4 cursor-pointer"
+                />
+              </div>
+              {business.pixKey && (
+                <div className="text-[11px] font-mono text-stone-300 bg-stone-900 px-2.5 py-1.5 rounded-lg border border-stone-800">
+                  Chave Pix da Barbearia: <strong>{business.pixKey}</strong>
+                </div>
+              )}
+              <p className="text-[11px] text-stone-400">
+                Valor do sinal:{' '}
+                <span className="font-mono font-bold text-stone-200">
+                  {formatCurrencyBRL(depositAmount)}
+                </span>{' '}
+                (abatido do valor do corte na hora).
+              </p>
+
+              {requireDeposit && (
+                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-amber-300 border border-stone-700 text-[11px] font-semibold cursor-pointer">
+                  <Paperclip className="w-3.5 h-3.5" />
+                  {proofFileName
+                    ? `Comprovante: ${proofFileName}`
+                    : 'Anexar Comprovante do Pix'}
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) =>
+                      setProofFileName(e.target.files?.[0]?.name ?? '')
+                    }
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 text-[11px] text-stone-400">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                Cancelamento gratuito até {business.cancelNoticeHours}h antes do horário.
+              </span>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold text-sm transition-all cursor-pointer shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Confirmar Agendamento ({formatCurrencyBRL(totalPrice)})
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 };

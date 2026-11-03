@@ -1,205 +1,339 @@
 import React, { useState } from 'react';
 import {
-  ArrowClockwise,
-  BellRinging,
-  CheckCircle,
-  ClockCounterClockwise,
-  PaperPlaneTilt,
-  WhatsappLogo,
+  BellRinging as BellRing,
+  CheckCircle as CheckCircle2,
+  Clock,
+  WhatsappLogo as MessageCircle,
+  PaperPlaneRight as Send,
+  DeviceMobile as Smartphone,
 } from '@phosphor-icons/react';
-import { Client, ReminderLog } from '../types';
+import {
+  Appointment,
+  BusinessConfig,
+  ReminderLog,
+  ServiceItem,
+  StaffMember,
+} from '../types';
+import { formatCurrencyBRL } from '../utils/finance';
 
 interface RemindersModuleProps {
   reminders: ReminderLog[];
-  clients: Client[];
-  onSendReminder: (reminderId: string) => void;
-  onSimulateClientReply: (reminderId: string, reply: 'CONFIRM' | 'CANCEL') => void;
+  appointments: Appointment[];
+  business: BusinessConfig;
+  staff: StaffMember[];
+  services: ServiceItem[];
+  onDispatchAllPending: () => void;
+  onSimulateClientReply: (
+    reminderId: string,
+    reply: 'CONFIRMED_BY_CLIENT' | 'CANCELLED_BY_CLIENT'
+  ) => void;
 }
 
 export const RemindersModule: React.FC<RemindersModuleProps> = ({
-  reminders,
-  clients,
-  onSendReminder,
-  onSimulateClientReply,
+  appointments,
+  business,
+  staff,
+  services,
 }) => {
-  const [contactedClientIds, setContactedClientIds] = useState<string[]>([]);
-  const [customTemplate, setCustomTemplate] = useState<string>(
-    'Olá {nome}! Confirmamos seu horário hoje às {hora} com {profissional} na Barbearia & Estúdio Dom Pedro. Responda 1 para CONFIRMAR ou 2 para reagendar.'
+  const [template24h, setTemplate24h] = useState(
+    'Olá {nome}! Tudo bem? Passando para confirmar seu horário na *{barbearia}* hoje às *{hora}* com *{profissional}* ({servico} - {valor}). Podemos confirmar sua presença?'
   );
 
-  const overdueClients = clients.filter((c) => c.lastVisitDaysAgo >= 21);
+  // Disparo avulso rápido
+  const [quickName, setQuickName] = useState('');
+  const [quickPhone, setQuickPhone] = useState('');
+  const [quickTime, setQuickTime] = useState('15:00');
+  const [sentIds, setSentIds] = useState<string[]>([]);
 
-  const handleMarkCycleContacted = (clientId: string) => {
-    setContactedClientIds((prev) =>
-      prev.includes(clientId) ? prev : [...prev, clientId]
+  const buildPersonalizedMessage = (params: {
+    clientName: string;
+    time: string;
+    staffName: string;
+    serviceName: string;
+    priceFormatted: string;
+  }) => {
+    return template24h
+      .replace(/\{nome\}/g, params.clientName)
+      .replace(/\{hora\}/g, params.time)
+      .replace(/\{profissional\}/g, params.staffName)
+      .replace(/\{barbearia\}/g, business.name)
+      .replace(/\{servico\}/g, params.serviceName)
+      .replace(/\{valor\}/g, params.priceFormatted);
+  };
+
+  const handleSendWhatsAppForAppointment = (apt: Appointment) => {
+    const digits = (apt.clientPhone || '').replace(/\D/g, '');
+    if (!digits) {
+      alert(
+        `O cliente "${apt.clientName}" está sem WhatsApp cadastrado. Clique nele na aba Agenda ou Clientes para adicionar o DDD + número.`
+      );
+      return;
+    }
+
+    const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
+    const staffMember = staff.find((s) => s.id === apt.staffId);
+    const aptServices = services.filter((s) => apt.serviceIds.includes(s.id));
+    const serviceNames =
+      aptServices.map((s) => s.name).join(' + ') || 'Corte / Atendimento';
+    const price =
+      apt.customPrice !== undefined
+        ? apt.customPrice
+        : aptServices.reduce((acc, s) => acc + s.price, 0);
+
+    const msg = buildPersonalizedMessage({
+      clientName: apt.clientName,
+      time: apt.startTime,
+      staffName: staffMember?.name ?? 'Barbeiro',
+      serviceName: serviceNames,
+      priceFormatted: formatCurrencyBRL(price),
+    });
+
+    setSentIds((prev) => (prev.includes(apt.id) ? prev : [...prev, apt.id]));
+
+    window.open(
+      `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(msg)}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
+
+  const handleQuickSendWhatsApp = (e: React.FormEvent) => {
+    e.preventDefault();
+    const digits = quickPhone.replace(/\D/g, '');
+    if (!digits) {
+      alert('Digite o DDD + WhatsApp do cliente para abrir a conversa.');
+      return;
+    }
+    const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
+    const msg = buildPersonalizedMessage({
+      clientName: quickName.trim() || 'Cliente',
+      time: quickTime || 'horário agendado',
+      staffName: staff[0]?.name ?? 'Barbeiro',
+      serviceName: services[0]?.name ?? 'Corte',
+      priceFormatted: formatCurrencyBRL(services[0]?.price ?? 45),
+    });
+
+    window.open(
+      `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(msg)}`,
+      '_blank',
+      'noopener,noreferrer'
     );
   };
 
   return (
-    <section aria-label="Central de Lembretes WhatsApp e Ciclo de Retorno">
-      <div className="border-b border-[#DEDAD0] bg-white px-4 py-4 sm:px-6">
-        <h1 className="text-xl font-semibold tracking-tight text-[#141413]">
-          Lembretes & Retorno de Clientes
-        </h1>
-        <p className="mt-0.5 text-xs text-[#4A4843]">
-          Disparo automático de confirmação via WhatsApp que atualiza o status na Agenda em tempo real.
-        </p>
+    <div className="space-y-6">
+      {/* Header Banner */}
+      <div className="bg-stone-900/70 border border-stone-800/80 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-emerald-400">
+            <BellRing className="w-3.5 h-3.5" />
+            <span>Confirmação Direta no WhatsApp Real do Cliente</span>
+          </div>
+          <h2 className="text-lg font-bold text-stone-100">
+            Central de Lembretes Anti-Falta via WhatsApp
+          </h2>
+          <p className="text-xs text-stone-400">
+            Clique em &ldquo;Enviar no WhatsApp&rdquo; em qualquer cliente agendado para abrir a conversa oficial com a mensagem pronta.
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#DEDAD0] bg-white">
-        {/* Coluna Esquerda (7 cols): Fila de Confirmações do Dia */}
-        <div className="lg:col-span-7 p-4 sm:p-6 space-y-4">
-          <h2 className="text-base font-semibold text-[#141413]">
-            Fila de Confirmação de Presença (24h e 2h Antes)
-          </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left 7 Cols: Lista de Clientes Agendados para Enviar Lembrete Real */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className="bg-stone-900/50 border border-stone-800/80 rounded-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-stone-800 bg-stone-950/50 flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-300">
+                Clientes na Agenda para Confirmar ({appointments.length})
+              </span>
+              <span className="text-[11px] text-emerald-400 font-mono">
+                Abre WhatsApp Web / App Oficial
+              </span>
+            </div>
 
-          <div className="divide-y divide-[#DEDAD0] rounded-lg border border-[#DEDAD0]">
-            {reminders.map((rem) => (
-              <div key={rem.id} className="p-4 space-y-3 bg-white">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-[#141413]">
-                        {rem.clientName}
-                      </span>
-                      <span className="num-tabular rounded bg-[#F6F5F0] border border-[#DEDAD0] px-2 py-0.5 text-xs font-medium text-[#141413]">
-                        Hoje às {rem.startTime}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-xs text-[#4A4843]">
-                      {rem.serviceSummary} · Profissional: <strong>{rem.staffName}</strong>
-                    </p>
-                  </div>
-
-                  <span
-                    className={`self-start sm:self-center rounded border px-2.5 py-1 text-xs font-medium ${
-                      rem.status === 'CONFIRMED_BY_CLIENT'
-                        ? 'border-[#0F766E]/30 bg-[#E6F4F1] text-[#0F766E]'
-                        : rem.status === 'CANCELLED_BY_CLIENT'
-                        ? 'border-[#B91C1C]/30 bg-[#FEE2E2] text-[#B91C1C]'
-                        : rem.status === 'SENT'
-                        ? 'border-[#DEDAD0] bg-[#EFECE6] text-[#141413]'
-                        : 'border-[#B45309]/30 bg-[#FEF3C7] text-[#B45309]'
-                    }`}
-                  >
-                    {rem.status === 'CONFIRMED_BY_CLIENT'
-                      ? 'Confirmado pelo Cliente ("1")'
-                      : rem.status === 'CANCELLED_BY_CLIENT'
-                      ? 'Cancelado — Vaga Liberada'
-                      : rem.status === 'SENT'
-                      ? `Enviado (${rem.sentAt || 'Agora'})`
-                      : 'Disparo Pendente'}
-                  </span>
+            {appointments.length === 0 ? (
+              <div className="p-8 text-center space-y-2">
+                <MessageCircle className="w-8 h-8 text-stone-500 mx-auto" />
+                <div className="text-sm font-semibold text-stone-200">
+                  Nenhum horário agendado no momento
                 </div>
-
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  {rem.status === 'PENDING' && (
-                    <button
-                      type="button"
-                      onClick={() => onSendReminder(rem.id)}
-                      className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg bg-[#0F766E] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0B5C56]"
-                    >
-                      <PaperPlaneTilt size={15} weight="bold" />
-                      <span>Disparar WhatsApp Agora</span>
-                    </button>
-                  )}
-
-                  {rem.status !== 'CONFIRMED_BY_CLIENT' && (
-                    <button
-                      type="button"
-                      onClick={() => onSimulateClientReply(rem.id, 'CONFIRM')}
-                      className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-[#0F766E] bg-[#E6F4F1]/60 px-3 py-1.5 text-xs font-medium text-[#0F766E] hover:bg-[#E6F4F1]"
-                    >
-                      <CheckCircle size={15} weight="bold" />
-                      <span>Simular Resposta "1 - Confirmar" (Atualiza Agenda)</span>
-                    </button>
-                  )}
-
-                  {rem.status !== 'CANCELLED_BY_CLIENT' && (
-                    <button
-                      type="button"
-                      onClick={() => onSimulateClientReply(rem.id, 'CANCEL')}
-                      className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-[#DEDAD0] bg-white px-3 py-1.5 text-xs font-medium text-[#4A4843] hover:bg-[#F6F5F0]"
-                    >
-                      <span>Simular Cancelamento Antecipado</span>
-                    </button>
-                  )}
-                </div>
+                <p className="text-xs text-stone-400 max-w-md mx-auto">
+                  Assim que você cadastrar um cliente na aba <strong>Agenda</strong> ou o cliente reservar pelo <strong>Link de Reserva</strong>, ele aparecerá aqui pronto para você disparar o lembrete pelo WhatsApp.
+                </p>
               </div>
-            ))}
+            ) : (
+              <div className="divide-y divide-stone-800/60">
+                {appointments.map((apt) => {
+                  const staffMember = staff.find((s) => s.id === apt.staffId);
+                  const aptServices = services.filter((s) =>
+                    apt.serviceIds.includes(s.id)
+                  );
+                  const price =
+                    apt.customPrice !== undefined
+                      ? apt.customPrice
+                      : aptServices.reduce((acc, s) => acc + s.price, 0);
+                  const wasSent = sentIds.includes(apt.id);
+
+                  return (
+                    <div
+                      key={apt.id}
+                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-stone-800/25 transition-colors"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                            {apt.startTime}
+                          </span>
+                          <span className="font-semibold text-stone-100 text-sm">
+                            {apt.clientName}
+                          </span>
+                          <span className="text-xs font-mono text-stone-400">
+                            ({apt.clientPhone || 'Sem telefone'})
+                          </span>
+                        </div>
+                        <p className="text-xs text-stone-400">
+                          {aptServices.map((s) => s.name).join(' + ') || 'Corte'}{' '}
+                          • Com <strong className="text-stone-200">{staffMember?.name}</strong> •{' '}
+                          <span className="text-amber-400 font-mono font-semibold">
+                            {formatCurrencyBRL(price)}
+                          </span>
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {wasSent && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Enviado
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleSendWhatsAppForAppointment(apt)}
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold text-xs shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          Enviar Lembrete no WhatsApp
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Editor de Template Personalizável */}
-          <div className="rounded-lg border border-[#DEDAD0] bg-[#F6F5F0]/60 p-4 space-y-2">
-            <label
-              htmlFor="whatsapp-template"
-              className="block text-xs font-semibold text-[#141413]"
+          {/* Disparo Rápido Avulso para Qualquer Número */}
+          <form
+            onSubmit={handleQuickSendWhatsApp}
+            className="bg-stone-900/70 border border-stone-800 rounded-2xl p-5 space-y-4"
+          >
+            <div className="flex items-center gap-2">
+              <Send className="w-4 h-4 text-amber-400" />
+              <h3 className="text-sm font-bold text-stone-100">
+                Disparo Rápido de Confirmação para Qualquer WhatsApp
+              </h3>
+            </div>
+            <p className="text-xs text-stone-400">
+              Quer mandar o lembrete para um cliente no WhatsApp agora mesmo digitando o número? Preencha abaixo:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] text-stone-400 mb-1">
+                  Nome do Cliente
+                </label>
+                <input
+                  type="text"
+                  value={quickName}
+                  onChange={(e) => setQuickName(e.target.value)}
+                  placeholder="Ex: Gabriel"
+                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-stone-400 mb-1">
+                  WhatsApp com DDD *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={quickPhone}
+                  onChange={(e) => setQuickPhone(e.target.value)}
+                  placeholder="(11) 99999-9999"
+                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs font-mono text-stone-100 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-stone-400 mb-1">
+                  Horário do Corte
+                </label>
+                <input
+                  type="time"
+                  value={quickTime}
+                  onChange={(e) => setQuickTime(e.target.value)}
+                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs font-mono text-stone-100 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold text-xs transition-all cursor-pointer"
             >
-              Mensagem Padrão de Confirmação (Variáveis: {'{nome}'}, {'{hora}'},{' '}
-              {'{profissional}'})
-            </label>
-            <textarea
-              id="whatsapp-template"
-              rows={3}
-              value={customTemplate}
-              onChange={(e) => setCustomTemplate(e.target.value)}
-              className="w-full rounded-lg border border-[#DEDAD0] bg-white p-3 text-xs text-[#141413]"
-            />
-          </div>
+              <MessageCircle className="w-4 h-4" />
+              Abrir Conversa no WhatsApp Agora
+            </button>
+          </form>
         </div>
 
-        {/* Coluna Direita (5 cols): Motor de Retorno de 21 Dias */}
-        <div className="lg:col-span-5 bg-[#F6F5F0]/50 p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="text-base font-semibold text-[#141413]">
-              Clientes Ausentes (&gt; 21 Dias sem Visitar)
-            </h2>
-            <p className="mt-1 text-xs text-[#4A4843]">
-              Identifica clientes cujo ciclo médio de retorno venceu e envia convite direto no WhatsApp.
+        {/* Right 5 Cols: Editor do Texto da Mensagem */}
+        <div className="lg:col-span-5 bg-stone-900 border border-stone-800 rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2 border-b border-stone-800 pb-3">
+            <Smartphone className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-sm font-bold text-stone-100">
+              Personalizar Mensagem do WhatsApp
+            </h3>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-stone-300">
+              Texto que será preenchido automaticamente no seu WhatsApp:
+            </label>
+            <textarea
+              rows={5}
+              value={template24h}
+              onChange={(e) => setTemplate24h(e.target.value)}
+              className="w-full bg-stone-950 border border-stone-800 rounded-xl p-3 text-xs text-stone-200 leading-relaxed focus:outline-none focus:border-amber-500"
+            />
+            <p className="text-[11px] text-stone-400">
+              Variáveis automáticas disponíveis:{' '}
+              <code className="text-amber-300">{'{nome}'}</code>,{' '}
+              <code className="text-amber-300">{'{hora}'}</code>,{' '}
+              <code className="text-amber-300">{'{profissional}'}</code>,{' '}
+              <code className="text-amber-300">{'{barbearia}'}</code>,{' '}
+              <code className="text-amber-300">{'{servico}'}</code>,{' '}
+              <code className="text-amber-300">{'{valor}'}</code>.
             </p>
           </div>
 
-          <div className="divide-y divide-[#DEDAD0] rounded-lg border border-[#DEDAD0] bg-white">
-            {overdueClients.map((client) => {
-              const sent = contactedClientIds.includes(client.id);
-              return (
-                <div
-                  key={client.id}
-                  className="p-3.5 flex items-center justify-between gap-3"
-                >
-                  <div>
-                    <span className="text-xs font-semibold text-[#141413] block">
-                      {client.fullName}
-                    </span>
-                    <span className="num-tabular text-[11px] text-[#B45309] font-medium block">
-                      Última visita há {client.lastVisitDaysAgo} dias · {client.visitsCount} cortes históricos
-                    </span>
-                    <span className="num-tabular text-[11px] text-[#6E6A63]">
-                      {client.phoneWhatsapp}
-                    </span>
-                  </div>
-
-                  {sent ? (
-                    <span className="inline-flex items-center gap-1 rounded border border-[#0F766E]/30 bg-[#E6F4F1] px-2.5 py-1.5 text-xs font-medium text-[#0F766E]">
-                      <CheckCircle size={14} weight="fill" />
-                      <span>Convite Enviado</span>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleMarkCycleContacted(client.id)}
-                      className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg bg-[#141413] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2B2A28]"
-                    >
-                      <WhatsappLogo size={15} weight="fill" />
-                      <span>Convidar Retorno</span>
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+          <div className="p-3.5 rounded-xl bg-stone-950/90 border border-stone-800/80 space-y-1.5 text-xs">
+            <div className="flex items-center gap-1.5 text-amber-400 font-semibold">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Prévia de como chega no celular do cliente:</span>
+            </div>
+            <p className="text-stone-300 italic leading-relaxed">
+              &ldquo;
+              {buildPersonalizedMessage({
+                clientName: 'Lucas',
+                time: '16:00',
+                staffName: staff[0]?.name ?? 'Barbeiro',
+                serviceName: services[0]?.name ?? 'Corte Masculino',
+                priceFormatted: formatCurrencyBRL(services[0]?.price ?? 45),
+              })}
+              &rdquo;
+            </p>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };

@@ -122,6 +122,50 @@ body {
   color: var(--accent-emerald);
 }
 
+/* Automatic Light Mode mapping for stone-* utility classes when Light Mode is active */
+:root:has(> head > meta[name="color-scheme"][content="light"]) {
+  & .bg-stone-950,
+  & .bg-stone-950\/95,
+  & .bg-stone-950\/90,
+  & .bg-stone-950\/80,
+  & .bg-stone-950\/70,
+  & .bg-stone-950\/60,
+  & .bg-stone-950\/50 {
+    background-color: var(--bg-canvas-light) !important;
+  }
+  & .bg-stone-900,
+  & .bg-stone-900\/90,
+  & .bg-stone-900\/80,
+  & .bg-stone-900\/70,
+  & .bg-stone-900\/60,
+  & .bg-stone-900\/50 {
+    background-color: var(--bg-surface-light) !important;
+  }
+  & .bg-stone-800,
+  & .bg-stone-800\/60,
+  & .bg-stone-800\/40 {
+    background-color: var(--bg-subtle-light) !important;
+  }
+  & .text-stone-100,
+  & .text-stone-200 {
+    color: var(--ink-primary-light) !important;
+  }
+  & .text-stone-300 {
+    color: var(--ink-secondary-light) !important;
+  }
+  & .text-stone-400,
+  & .text-stone-500 {
+    color: var(--ink-muted-light) !important;
+  }
+  & .border-stone-800,
+  & .border-stone-800\/80,
+  & .border-stone-800\/60,
+  & .border-stone-700,
+  & .divide-stone-800\/60 > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--border-hairline-light) !important;
+  }
+}
+
 /* Automatic Dark Mode mapping for utility classes across all views */
 :root:has(> head > meta[name="color-scheme"][content="dark"]) {
   & .bg-white {

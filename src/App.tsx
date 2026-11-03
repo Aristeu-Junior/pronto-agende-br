@@ -1,204 +1,202 @@
 import React, { useEffect, useState } from 'react';
 import {
-  BellRinging,
-  CalendarBlank,
-  ChartBar,
-  Compass,
-  CurrencyDollar,
-  GlobeHemisphereWest,
+  Bell,
+  Calendar,
+  CreditCard,
+  ArrowSquareOut as ExternalLink,
+  SquaresFour as LayoutDashboard,
   Moon,
+  PencilSimple as Pencil,
   Scissors,
-  ShieldCheck,
+  Sparkle as Sparkles,
   Sun,
   Users,
 } from '@phosphor-icons/react';
 import {
+  INITIAL_APPOINTMENTS,
+  INITIAL_BANK_STATEMENTS,
+  INITIAL_BUSINESS_CONFIG,
+  INITIAL_CLIENTS,
+  INITIAL_POS_TRANSACTIONS,
+  INITIAL_REMINDERS,
+  INITIAL_SERVICES,
+  INITIAL_STAFF,
+} from './data/seedData';
+import {
   Appointment,
   AppointmentStatus,
+  BankStatementEntry,
   BusinessConfig,
   Client,
-  FeeSplitRule,
-  InventoryProduct,
-  MarketplaceVenue,
-  OriginChannel,
   PosTransaction,
   ReminderLog,
   ServiceItem,
   StaffMember,
-  VerifiedReview,
 } from './types';
-import {
-  INITIAL_APPOINTMENTS,
-  INITIAL_BUSINESS_CONFIG,
-  INITIAL_CLIENTS,
-  INITIAL_MARKETPLACE_VENUES,
-  INITIAL_PRODUCTS,
-  INITIAL_REMINDERS,
-  INITIAL_SERVICES,
-  INITIAL_STAFF,
-  INITIAL_POS_TRANSACTIONS,
-  INITIAL_VERIFIED_REVIEWS,
-} from './data/seedData';
 import { AgendaModule } from './components/AgendaModule';
-import { PosModule } from './components/PosModule';
 import { ClientsModule } from './components/ClientsModule';
+import { PosModule } from './components/PosModule';
 import { RemindersModule } from './components/RemindersModule';
 import { PublicBookingModule } from './components/PublicBookingModule';
 import { ManagerDashboardModule } from './components/ManagerDashboardModule';
-import { MarketplaceDiscoveryModule } from './components/MarketplaceDiscoveryModule';
 
 type ActiveTab =
   | 'AGENDA'
   | 'POS'
   | 'CLIENTS'
   | 'REMINDERS'
-  | 'MARKETPLACE'
-  | 'PUBLIC_PAGE'
+  | 'PUBLIC_BOOKING'
   | 'MANAGER';
 
-const STORAGE_KEY = 'pronto_agende_br_state_v1';
+const STORAGE_KEY = 'pronto_agende_br_state_v2_clean';
+const THEME_STORAGE_KEY = 'pronto_agende_br_theme';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('AGENDA');
+  const [pendingCheckoutAppointmentId, setPendingCheckoutAppointmentId] =
+    useState<string | null>(null);
+  const [editingHeaderName, setEditingHeaderName] = useState(false);
+
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem(THEME_STORAGE_KEY);
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch {
+      // ignore
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    const meta = document.querySelector(
+      'meta[name="color-scheme"]'
+    ) as HTMLMetaElement | null;
+    if (meta) {
+      meta.content = theme;
+    }
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // ignore
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   const [business, setBusiness] = useState<BusinessConfig>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved).business || INITIAL_BUSINESS_CONFIG;
-    } catch {}
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.business) return parsed.business;
+      }
+    } catch {
+      // ignore
+    }
     return INITIAL_BUSINESS_CONFIG;
   });
 
-  const [staff] = useState<StaffMember[]>(INITIAL_STAFF);
-  const [services] = useState<ServiceItem[]>(INITIAL_SERVICES);
-
-  const [products, setProducts] = useState<InventoryProduct[]>(() => {
+  const [staff, setStaff] = useState<StaffMember[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved).products || INITIAL_PRODUCTS;
-    } catch {}
-    return INITIAL_PRODUCTS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.staff) && parsed.staff.length > 0) {
+          return parsed.staff;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return INITIAL_STAFF;
+  });
+
+  const [services, setServices] = useState<ServiceItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.services) && parsed.services.length > 0) {
+          return parsed.services;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return INITIAL_SERVICES;
   });
 
   const [clients, setClients] = useState<Client[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved).clients || INITIAL_CLIENTS;
-    } catch {}
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.clients)) return parsed.clients;
+      }
+    } catch {
+      // ignore
+    }
     return INITIAL_CLIENTS;
   });
 
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved).appointments || INITIAL_APPOINTMENTS;
-    } catch {}
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.appointments)) return parsed.appointments;
+      }
+    } catch {
+      // ignore
+    }
     return INITIAL_APPOINTMENTS;
   });
 
   const [transactions, setTransactions] = useState<PosTransaction[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved)
-        return JSON.parse(saved).transactions || INITIAL_POS_TRANSACTIONS;
-    } catch {}
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.transactions)) return parsed.transactions;
+      }
+    } catch {
+      // ignore
+    }
     return INITIAL_POS_TRANSACTIONS;
   });
 
   const [reminders, setReminders] = useState<ReminderLog[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved).reminders || INITIAL_REMINDERS;
-    } catch {}
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.reminders)) return parsed.reminders;
+      }
+    } catch {
+      // ignore
+    }
     return INITIAL_REMINDERS;
   });
 
-  const [marketplaceVenues] = useState<MarketplaceVenue[]>(
-    INITIAL_MARKETPLACE_VENUES
-  );
-
-  const [verifiedReviews, setVerifiedReviews] = useState<VerifiedReview[]>(
+  const [bankStatements, setBankStatements] = useState<BankStatementEntry[]>(
     () => {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved)
-          return JSON.parse(saved).verifiedReviews || INITIAL_VERIFIED_REVIEWS;
-      } catch {}
-      return INITIAL_VERIFIED_REVIEWS;
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.bankStatements)) {
+            return parsed.bankStatements;
+          }
+        }
+      } catch {
+        // ignore
+      }
+      return INITIAL_BANK_STATEMENTS;
     }
   );
-
-  const [publicOriginChannel, setPublicOriginChannel] =
-    useState<OriginChannel>('GOOGLE_RESERVE');
-
-  const [posTargetAppointment, setPosTargetAppointment] =
-    useState<Appointment | null>(null);
-
-  const [resolvedScheme, setResolvedScheme] = useState<'light' | 'dark'>(() => {
-    try {
-      const stored = localStorage.getItem('color-scheme');
-      if (stored === 'dark' || stored === 'light') return stored;
-    } catch {}
-    if (
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches
-    ) {
-      return 'dark';
-    }
-    return 'light';
-  });
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const syncScheme = () => {
-      let stored: string | null = null;
-      try {
-        stored = localStorage.getItem('color-scheme');
-      } catch {}
-      const meta = document.querySelector('meta[name="color-scheme"]');
-      if (meta) {
-        meta.setAttribute('content', stored ?? 'light dark');
-      }
-      if (stored === 'dark' || stored === 'light') {
-        setResolvedScheme(stored);
-      } else {
-        setResolvedScheme(mq.matches ? 'dark' : 'light');
-      }
-    };
-
-    syncScheme();
-    mq.addEventListener('change', syncScheme);
-    window.addEventListener('storage', syncScheme);
-    return () => {
-      mq.removeEventListener('change', syncScheme);
-      window.removeEventListener('storage', syncScheme);
-    };
-  }, []);
-
-  const handleToggleColorScheme = () => {
-    const target: 'light' | 'dark' =
-      resolvedScheme === 'dark' ? 'light' : 'dark';
-    const systemIsDark = window.matchMedia(
-      '(prefers-color-scheme: dark)'
-    ).matches;
-    const systemScheme: 'light' | 'dark' = systemIsDark ? 'dark' : 'light';
-
-    try {
-      if (target === systemScheme) {
-        localStorage.removeItem('color-scheme');
-      } else {
-        localStorage.setItem('color-scheme', target);
-      }
-    } catch {}
-
-    const meta = document.querySelector('meta[name="color-scheme"]');
-    if (meta) {
-      meta.setAttribute(
-        'content',
-        target === systemScheme ? 'light dark' : target
-      );
-    }
-    setResolvedScheme(target);
-  };
 
   useEffect(() => {
     try {
@@ -206,51 +204,74 @@ export function App() {
         STORAGE_KEY,
         JSON.stringify({
           business,
-          products,
+          staff,
+          services,
           clients,
           appointments,
           transactions,
           reminders,
-          verifiedReviews,
+          bankStatements,
         })
       );
-    } catch {}
+    } catch {
+      // ignore
+    }
   }, [
     business,
-    products,
+    staff,
+    services,
     clients,
     appointments,
     transactions,
     reminders,
-    verifiedReviews,
+    bankStatements,
   ]);
+
+  // Handlers
+  const handleUpdateBusiness = (patch: Partial<BusinessConfig>) => {
+    setBusiness((prev) => ({ ...prev, ...patch }));
+  };
 
   const handleUpdateAppointmentStatus = (
     appointmentId: string,
-    status: AppointmentStatus
+    newStatus: AppointmentStatus
   ) => {
+    const targetApt = appointments.find((a) => a.id === appointmentId);
     setAppointments((prev) =>
-      prev.map((a) => (a.id === appointmentId ? { ...a, status } : a))
+      prev.map((apt) =>
+        apt.id === appointmentId ? { ...apt, status: newStatus } : apt
+      )
     );
 
-    if (status === 'NO_SHOW') {
-      const target = appointments.find((a) => a.id === appointmentId);
-      if (target) {
-        setClients((prev) =>
-          prev.map((c) =>
-            c.id === target.clientId
-              ? {
-                  ...c,
-                  noShowCount: c.noShowCount + 1,
-                  tags: c.tags.includes('ALERTA_FALTA')
-                    ? c.tags
-                    : [...c.tags, 'ALERTA_FALTA'],
-                }
-              : c
-          )
-        );
-      }
+    if (newStatus === 'NO_SHOW' && targetApt) {
+      setClients((prev) =>
+        prev.map((cli) =>
+          cli.id === targetApt.clientId ||
+          cli.fullName.toLowerCase() === targetApt.clientName.toLowerCase()
+            ? {
+                ...cli,
+                noShowCount: cli.noShowCount + 1,
+                tags: cli.tags.includes('ALERTA_FALTA')
+                  ? cli.tags
+                  : [...cli.tags, 'ALERTA_FALTA'],
+              }
+            : cli
+        )
+      );
     }
+  };
+
+  const handleUpdateAppointment = (
+    appointmentId: string,
+    patch: Partial<Appointment>
+  ) => {
+    setAppointments((prev) =>
+      prev.map((apt) => (apt.id === appointmentId ? { ...apt, ...patch } : apt))
+    );
+  };
+
+  const handleDeleteAppointment = (appointmentId: string) => {
+    setAppointments((prev) => prev.filter((apt) => apt.id !== appointmentId));
   };
 
   const handleCreateAppointment = (newApt: Omit<Appointment, 'id'>) => {
@@ -259,403 +280,272 @@ export function App() {
       id: `apt_${Date.now()}`,
     };
     setAppointments((prev) => [...prev, created]);
+
+    // Se o cliente ainda não estiver na lista de Clientes, cadastra automaticamente
+    const exists = clients.some(
+      (c) =>
+        c.fullName.toLowerCase() === newApt.clientName.toLowerCase() ||
+        (newApt.clientPhone && c.phoneWhatsapp === newApt.clientPhone)
+    );
+    if (!exists && newApt.clientName.trim()) {
+      setClients((prev) => [
+        {
+          id: newApt.clientId || `cli_${Date.now()}`,
+          fullName: newApt.clientName.trim(),
+          phoneWhatsapp: newApt.clientPhone || '',
+          cpf: '',
+          email: '',
+          visitsCount: 1,
+          noShowCount: 0,
+          lastVisitDaysAgo: 0,
+          totalSpent: 0,
+          tags: ['NOVO'],
+          notes: newApt.notes || '',
+          passes: [],
+        },
+        ...prev,
+      ]);
+    }
+
     setBusiness((prev) => ({
       ...prev,
       monthlyBookingsUsed: prev.monthlyBookingsUsed + 1,
     }));
   };
 
-  const handleOpenInPos = (appointment: Appointment) => {
-    setPosTargetAppointment(appointment);
+  const handleOpenPosForAppointment = (appointmentId: string) => {
+    setPendingCheckoutAppointmentId(appointmentId);
     setActiveTab('POS');
   };
 
-  const handleTriggerWhatsAppReminder = (appointment: Appointment) => {
-    const existing = reminders.find((r) => r.appointmentId === appointment.id);
-    if (!existing) {
-      const srvNames = services
-        .filter((s) => appointment.serviceIds.includes(s.id))
-        .map((s) => s.name)
-        .join(' + ');
-      const profName =
-        staff.find((s) => s.id === appointment.staffId)?.name || 'Profissional';
-      setReminders((prev) => [
-        {
-          id: `rem_${Date.now()}`,
-          appointmentId: appointment.id,
-          clientName: appointment.clientName,
-          clientPhone: appointment.clientPhone,
-          serviceSummary: srvNames,
-          startTime: appointment.startTime,
-          staffName: profName,
-          type: 'REMINDER_2H',
-          channel: 'WHATSAPP',
-          status: 'SENT',
-          sentAt: 'Agora mesmo',
-        },
-        ...prev,
-      ]);
-    }
-    setActiveTab('REMINDERS');
-  };
-
-  const handleCompletePosSale = (
-    txData: Omit<PosTransaction, 'id' | 'closedAt'>
+  const handleCompleteTransaction = (
+    newTx: PosTransaction,
+    appointmentId?: string
   ) => {
-    const now = new Date();
-    const formattedTime = `31/10/2026 ${String(now.getHours()).padStart(
-      2,
-      '0'
-    )}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-    const createdTx: PosTransaction = {
-      ...txData,
-      id: `pos_${Date.now()}`,
-      closedAt: formattedTime,
-    };
-
-    setTransactions((prev) => [createdTx, ...prev]);
-
-    // Se vinculado a um agendamento, marca como COMPLETED
-    if (txData.appointmentId) {
+    setTransactions((prev) => [newTx, ...prev]);
+    if (appointmentId) {
       setAppointments((prev) =>
-        prev.map((a) =>
-          a.id === txData.appointmentId ? { ...a, status: 'COMPLETED' } : a
+        prev.map((apt) =>
+          apt.id === appointmentId ? { ...apt, status: 'COMPLETED' } : apt
         )
       );
     }
-
-    // Dá baixa automática no estoque dos produtos vendidos
-    if (txData.productItems.length > 0) {
-      setProducts((prev) =>
-        prev.map((prd) => {
-          const sold = txData.productItems.find((i) => i.productId === prd.id);
-          if (!sold) return prd;
-          return {
-            ...prd,
-            stockQuantity: Math.max(0, prd.stockQuantity - sold.quantity),
-          };
-        })
-      );
-    }
-
-    // Atualiza LTV, visitas e eventual baixa de passe do cliente
     setClients((prev) =>
-      prev.map((c) => {
-        if (c.id !== txData.clientId) return c;
-        const updatedPasses =
-          txData.paymentMethod === 'CLIENT_PASS'
-            ? c.passes.map((p, idx) =>
-                idx === 0
-                  ? {
-                      ...p,
-                      remainingSessions: Math.max(0, p.remainingSessions - 1),
-                    }
-                  : p
-              )
-            : c.passes;
-        return {
-          ...c,
-          visitsCount: c.visitsCount + 1,
-          lastVisitDaysAgo: 0,
-          totalSpent: Number((c.totalSpent + txData.totalAmount).toFixed(2)),
-          passes: updatedPasses,
-        };
-      })
+      prev.map((cli) =>
+        cli.id === newTx.clientId ||
+        cli.fullName.toLowerCase() === newTx.clientName.toLowerCase()
+          ? {
+              ...cli,
+              visitsCount: cli.visitsCount + 1,
+              lastVisitDaysAgo: 0,
+              totalSpent: cli.totalSpent + newTx.totalAmount,
+            }
+          : cli
+      )
     );
-
-    setPosTargetAppointment(null);
+    setPendingCheckoutAppointmentId(null);
   };
 
-  const handleChangeFeeSplitRule = (feeSplitRule: FeeSplitRule) => {
-    setBusiness((prev) => ({ ...prev, feeSplitRule }));
+  const handleDeleteTransaction = (txId: string) => {
+    setTransactions((prev) => prev.filter((t) => t.id !== txId));
   };
 
-  const handleAddClient = (clientData: Omit<Client, 'id'>) => {
+  const handleAddClient = (newCli: Omit<Client, 'id'>) => {
     const created: Client = {
-      ...clientData,
+      ...newCli,
       id: `cli_${Date.now()}`,
     };
     setClients((prev) => [created, ...prev]);
   };
 
-  const handleAddPassToClient = (
-    clientId: string,
-    serviceId: string,
-    sessions: number
-  ) => {
-    const srv = services.find((s) => s.id === serviceId);
+  const handleUpdateClient = (clientId: string, patch: Partial<Client>) => {
     setClients((prev) =>
-      prev.map((c) => {
-        if (c.id !== clientId) return c;
-        return {
-          ...c,
-          tags: c.tags.includes('PACOTE_ATIVO')
-            ? c.tags
-            : [...c.tags, 'PACOTE_ATIVO'],
-          passes: [
-            ...c.passes,
-            {
-              id: `pass_${Date.now()}`,
-              serviceId,
-              name: `Pacote ${sessions}x ${srv?.name || 'Serviço'}`,
-              totalSessions: sessions,
-              remainingSessions: sessions,
-              expiresAt: '2027-04-30',
-            },
-          ],
-        };
-      })
+      prev.map((cli) => (cli.id === clientId ? { ...cli, ...patch } : cli))
     );
   };
 
-  const handleSendReminder = (reminderId: string) => {
-    setReminders((prev) =>
-      prev.map((r) =>
-        r.id === reminderId
-          ? { ...r, status: 'SENT', sentAt: 'Enviado agora' }
-          : r
-      )
-    );
+  const handleDeleteClient = (clientId: string) => {
+    setClients((prev) => prev.filter((cli) => cli.id !== clientId));
   };
 
-  const handleSimulateClientReply = (
-    reminderId: string,
-    reply: 'CONFIRM' | 'CANCEL'
+  const handleUpdateService = (
+    serviceId: string,
+    patch: Partial<ServiceItem>
   ) => {
-    const targetRem = reminders.find((r) => r.id === reminderId);
-    setReminders((prev) =>
-      prev.map((r) =>
-        r.id === reminderId
-          ? {
-              ...r,
-              status:
-                reply === 'CONFIRM'
-                  ? 'CONFIRMED_BY_CLIENT'
-                  : 'CANCELLED_BY_CLIENT',
-            }
-          : r
-      )
+    setServices((prev) =>
+      prev.map((s) => (s.id === serviceId ? { ...s, ...patch } : s))
     );
-
-    if (targetRem) {
-      setAppointments((prev) =>
-        prev.map((a) =>
-          a.id === targetRem.appointmentId
-            ? {
-                ...a,
-                status: reply === 'CONFIRM' ? 'CONFIRMED' : 'CANCELLED',
-              }
-            : a
-        )
-      );
-    }
   };
 
-  const handleUpdateBusiness = (patch: Partial<BusinessConfig>) => {
-    setBusiness((prev) => ({ ...prev, ...patch }));
+  const handleAddService = (newSrv: Omit<ServiceItem, 'id'>) => {
+    setServices((prev) => [...prev, { ...newSrv, id: `srv_${Date.now()}` }]);
   };
 
-  const handleAddVerifiedReview = (
-    reviewData: Omit<VerifiedReview, 'id' | 'verifiedAt'>
-  ) => {
-    const created: VerifiedReview = {
-      ...reviewData,
-      id: `rev_${Date.now()}`,
-      verifiedAt: 'Agora mesmo',
-    };
-    setVerifiedReviews((prev) => [created, ...prev]);
-    setBusiness((prev) => ({
+  const handleDeleteService = (serviceId: string) => {
+    setServices((prev) => prev.filter((s) => s.id !== serviceId));
+  };
+
+  const handleUpdateStaff = (staffId: string, patch: Partial<StaffMember>) => {
+    setStaff((prev) =>
+      prev.map((st) => (st.id === staffId ? { ...st, ...patch } : st))
+    );
+  };
+
+  const handleAddStaff = (newMember: Omit<StaffMember, 'id'>) => {
+    setStaff((prev) => [...prev, { ...newMember, id: `st_${Date.now()}` }]);
+  };
+
+  const handleDeleteStaff = (staffId: string) => {
+    setStaff((prev) => prev.filter((st) => st.id !== staffId));
+  };
+
+  const handleAddBankStatement = (entry: Omit<BankStatementEntry, 'id'>) => {
+    setBankStatements((prev) => [
+      { ...entry, id: `stmt_${Date.now()}` },
       ...prev,
-      reviewsCount: prev.reviewsCount + 1,
-    }));
+    ]);
   };
 
-  const handleSelectVenueForBooking = (
-    origin: 'GOOGLE_RESERVE' | 'MARKETPLACE_BOOST'
-  ) => {
-    setPublicOriginChannel(origin);
-    setActiveTab('PUBLIC_PAGE');
+  const handleDeleteBankStatement = (entryId: string) => {
+    setBankStatements((prev) => prev.filter((e) => e.id !== entryId));
   };
 
-  const handleResetDemoData = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setBusiness(INITIAL_BUSINESS_CONFIG);
-    setProducts(INITIAL_PRODUCTS);
-    setClients(INITIAL_CLIENTS);
-    setAppointments(INITIAL_APPOINTMENTS);
-    setTransactions(INITIAL_POS_TRANSACTIONS);
-    setReminders(INITIAL_REMINDERS);
-    setVerifiedReviews(INITIAL_VERIFIED_REVIEWS);
+  const handleResetAllData = () => {
+    setClients([]);
+    setAppointments([]);
+    setTransactions([]);
+    setReminders([]);
+    setBankStatements([]);
   };
 
   const navItems: Array<{
     id: ActiveTab;
     label: string;
     shortLabel: string;
-    badge?: string;
     icon: React.ReactNode;
+    badge?: number;
   }> = [
     {
       id: 'AGENDA',
-      label: 'Agenda',
+      label: 'Agenda & Encaixes',
       shortLabel: 'Agenda',
-      badge: String(
-        appointments.filter(
-          (a) => a.status !== 'CANCELLED' && a.status !== 'COMPLETED'
-        ).length
-      ),
-      icon: <CalendarBlank size={18} weight="bold" />,
+      icon: <Calendar className="w-4 h-4" />,
+      badge: appointments.filter(
+        (a) => a.status !== 'COMPLETED' && a.status !== 'CANCELLED'
+      ).length,
     },
     {
       id: 'POS',
-      label: 'Caixa (PDV)',
+      label: 'Caixa / PDV',
       shortLabel: 'Caixa',
-      icon: <CurrencyDollar size={18} weight="bold" />,
+      icon: <CreditCard className="w-4 h-4" />,
     },
     {
       id: 'CLIENTS',
       label: 'Clientes',
       shortLabel: 'Clientes',
-      badge: String(clients.length),
-      icon: <Users size={18} weight="bold" />,
+      icon: <Users className="w-4 h-4" />,
+      badge: clients.length,
     },
     {
       id: 'REMINDERS',
-      label: 'Lembretes',
+      label: 'Lembretes WhatsApp',
       shortLabel: 'Lembretes',
-      badge: String(
-        reminders.filter((r) => r.status === 'PENDING').length || ''
-      ),
-      icon: <BellRinging size={18} weight="bold" />,
+      icon: <Bell className="w-4 h-4" />,
     },
     {
-      id: 'MARKETPLACE',
-      label: 'Vitrine Local',
-      shortLabel: 'Vitrine',
-      icon: <Compass size={18} weight="bold" />,
-    },
-    {
-      id: 'PUBLIC_PAGE',
+      id: 'PUBLIC_BOOKING',
       label: 'Link de Reserva',
-      shortLabel: 'Reservar',
-      icon: <GlobeHemisphereWest size={18} weight="bold" />,
+      shortLabel: 'Link',
+      icon: <ExternalLink className="w-4 h-4" />,
     },
     {
       id: 'MANAGER',
-      label: 'Gestão',
+      label: 'Gestão & Preços',
       shortLabel: 'Gestão',
-      icon: <ChartBar size={18} weight="bold" />,
+      icon: <LayoutDashboard className="w-4 h-4" />,
     },
   ];
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-[#F6F5F0] text-[#141413] pb-20 md:pb-8">
-      {/* Barra Operacional Superior */}
-      <header className="sticky top-0 z-30 border-b border-[#DEDAD0] bg-[#FFFFFF]/95 backdrop-blur-sm">
-        <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
-          <div className="flex h-16 items-center justify-between gap-3">
-            {/* Identidade da Plataforma + Unidade Ativa */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0F766E] text-white">
-                <Scissors size={20} weight="bold" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-bold tracking-tight text-[#141413] truncate">
-                    ProntoAgende BR
-                  </span>
-                </div>
-                <p className="text-xs text-[#4A4843] truncate">
-                  {business.name} · {business.neighborhood}
-                </p>
-              </div>
+    <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col pb-20 md:pb-8">
+      {/* Top App Header */}
+      <header className="sticky top-0 z-40 bg-stone-950/90 backdrop-blur-md border-b border-stone-800/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+          {/* Brand Identity + Inline Editable Barbershop Name */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-stone-950 shadow-lg shadow-amber-500/20 shrink-0">
+              <Scissors className="w-5 h-5 stroke-[2.2]" />
             </div>
-
-            {/* Ações Superiores: Alternador Modo Claro/Escuro + Link de Reserva */}
-            <div className="flex items-center gap-2">
-              <div className="hidden lg:flex items-center gap-2 rounded-lg border border-[#DEDAD0] bg-[#F6F5F0] px-3 py-1.5 text-xs">
-                <ShieldCheck size={16} weight="fill" className="text-[#0F766E]" />
-                <span>
-                  {business.planTier === 'FREE' ? 'Plano Grátis:' : 'Plano Pro:'}{' '}
-                  <strong className="num-tabular font-semibold text-[#141413]">
-                    {business.monthlyBookingsUsed}/
-                    {business.planTier === 'PRO'
-                      ? 'Ilimitado'
-                      : business.monthlyBookingsLimit}
-                  </strong>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-bold tracking-tight text-base text-stone-100">
+                  ProntoAgende
+                </span>
+                <span className="text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold">
+                  BR
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={handleToggleColorScheme}
-                aria-label={
-                  resolvedScheme === 'dark'
-                    ? 'Alternar para Modo Claro'
-                    : 'Alternar para Modo Escuro'
-                }
-                title={
-                  resolvedScheme === 'dark'
-                    ? 'Mudar para Modo Claro'
-                    : 'Mudar para Modo Escuro'
-                }
-                className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg border border-[#DEDAD0] bg-white px-3 py-1.5 text-xs font-semibold text-[#141413] hover:bg-[#EFECE6]"
-              >
-                {resolvedScheme === 'dark' ? (
-                  <>
-                    <Sun size={16} weight="bold" className="text-[#F59E0B]" />
-                    <span>Modo Claro</span>
-                  </>
-                ) : (
-                  <>
-                    <Moon size={16} weight="bold" className="text-[#0F766E]" />
-                    <span>Modo Escuro</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('PUBLIC_PAGE')}
-                className={`hidden sm:inline-flex min-h-[38px] items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold ${
-                  activeTab === 'PUBLIC_PAGE'
-                    ? 'border-[#0F766E] bg-[#0F766E] text-white'
-                    : 'border-[#DEDAD0] bg-white text-[#141413] hover:bg-[#EFECE6]'
-                }`}
-              >
-                <GlobeHemisphereWest size={16} weight="bold" />
-                <span>Link de Agendamento</span>
-              </button>
+              {editingHeaderName ? (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={business.name}
+                    onChange={(e) =>
+                      handleUpdateBusiness({
+                        name: e.target.value,
+                        isConfigured: true,
+                      })
+                    }
+                    onBlur={() => setEditingHeaderName(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setEditingHeaderName(false);
+                    }}
+                    placeholder="Digite o nome da sua barbearia..."
+                    className="bg-stone-900 border border-amber-500 rounded-lg px-2 py-0.5 text-xs text-stone-100 focus:outline-none w-52 sm:w-64"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingHeaderName(true)}
+                  title="Clique para editar o nome da sua barbearia"
+                  className="text-xs text-stone-400 hover:text-amber-300 flex items-center gap-1.5 truncate max-w-[230px] sm:max-w-md cursor-pointer"
+                >
+                  <span className="truncate">{business.name}</span>
+                  <Pencil className="w-3 h-3 text-amber-400 shrink-0" />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Navegação Horizontal Desktop / Tablet */}
+          {/* Desktop Navigation Pills */}
           <nav
-            aria-label="Módulos principais do sistema"
-            className="hidden md:flex items-center gap-1 border-t border-[#DEDAD0] py-2 overflow-x-auto"
+            aria-label="Navegação Principal"
+            className="hidden lg:flex items-center gap-1 bg-stone-900/90 p-1 rounded-xl border border-stone-800"
           >
             {navItems.map((item) => {
               const active = activeTab === item.id;
               return (
                 <button
                   key={item.id}
-                  type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`min-h-[38px] inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                     active
-                      ? 'bg-[#0F766E] text-white'
-                      : 'text-[#4A4843] hover:bg-[#EFECE6] hover:text-[#141413]'
+                      ? 'bg-amber-500 text-stone-950 font-semibold shadow-sm'
+                      : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
                   }`}
                 >
                   {item.icon}
                   <span>{item.label}</span>
-                  {item.badge && (
+                  {item.badge !== undefined && item.badge > 0 && (
                     <span
-                      className={`num-tabular rounded px-1.5 py-0.5 text-[11px] ${
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
                         active
-                          ? 'bg-white/20 text-white'
-                          : 'bg-[#EFECE6] text-[#141413]'
+                          ? 'bg-stone-950/20 text-stone-950 font-bold'
+                          : 'bg-amber-500/20 text-amber-300'
                       }`}
                     >
                       {item.badge}
@@ -665,113 +555,156 @@ export function App() {
               );
             })}
           </nav>
+
+          {/* Right Status Pill & Theme Toggle */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={
+                theme === 'dark' ? 'Ativar Modo Claro' : 'Ativar Modo Escuro'
+              }
+              title={
+                theme === 'dark'
+                  ? 'Mudar para Modo Claro'
+                  : 'Mudar para Modo Escuro'
+              }
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-200 hover:border-amber-500/50 transition-all cursor-pointer text-xs font-medium"
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Modo Claro</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="hidden sm:inline">Modo Escuro</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('MANAGER')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer bg-amber-500/10 border-amber-500/30 text-amber-300"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Configurar Barbearia</span>
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Conteúdo Principal Contido (max-w-[1400px]) */}
-      <main className="mx-auto w-full max-w-[1400px] flex-1 px-0 sm:px-6 sm:pt-5">
-        <div className="overflow-hidden border-y sm:border border-[#DEDAD0] sm:rounded-xl bg-white shadow-[0_12px_32px_-12px_rgba(20,20,19,0.06)]">
-          {activeTab === 'AGENDA' && (
-            <AgendaModule
-              business={business}
-              staff={staff}
-              services={services}
-              clients={clients}
-              appointments={appointments}
-              onUpdateStatus={handleUpdateAppointmentStatus}
-              onCreateAppointment={handleCreateAppointment}
-              onOpenInPos={handleOpenInPos}
-              onTriggerWhatsAppReminder={handleTriggerWhatsAppReminder}
-            />
-          )}
+      {/* Main Workspace Container */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-6">
+        {activeTab === 'AGENDA' && (
+          <AgendaModule
+            appointments={appointments}
+            staff={staff}
+            services={services}
+            clients={clients}
+            business={business}
+            onUpdateStatus={handleUpdateAppointmentStatus}
+            onUpdateAppointment={handleUpdateAppointment}
+            onDeleteAppointment={handleDeleteAppointment}
+            onCreateAppointment={handleCreateAppointment}
+            onOpenInPos={(apt) => handleOpenPosForAppointment(apt.id)}
+          />
+        )}
 
-          {activeTab === 'POS' && (
-            <PosModule
-              business={business}
-              staff={staff}
-              services={services}
-              products={products}
-              clients={clients}
-              transactions={transactions}
-              initialAppointment={posTargetAppointment}
-              onCompleteSale={handleCompletePosSale}
-              onChangeFeeSplitRule={handleChangeFeeSplitRule}
-            />
-          )}
+        {activeTab === 'POS' && (
+          <PosModule
+            business={business}
+            staff={staff}
+            services={services}
+            clients={clients}
+            appointments={appointments}
+            transactions={transactions}
+            pendingCheckoutAppointmentId={pendingCheckoutAppointmentId}
+            onCompleteTransaction={handleCompleteTransaction}
+            onDeleteTransaction={handleDeleteTransaction}
+          />
+        )}
 
-          {activeTab === 'CLIENTS' && (
-            <ClientsModule
-              clients={clients}
-              services={services}
-              onAddClient={handleAddClient}
-              onAddPassToClient={handleAddPassToClient}
-            />
-          )}
+        {activeTab === 'CLIENTS' && (
+          <ClientsModule
+            clients={clients}
+            businessName={business.name}
+            onAddClient={handleAddClient}
+            onUpdateClient={handleUpdateClient}
+            onDeleteClient={handleDeleteClient}
+          />
+        )}
 
-          {activeTab === 'REMINDERS' && (
-            <RemindersModule
-              reminders={reminders}
-              clients={clients}
-              onSendReminder={handleSendReminder}
-              onSimulateClientReply={handleSimulateClientReply}
-            />
-          )}
+        {activeTab === 'REMINDERS' && (
+          <RemindersModule
+            reminders={reminders}
+            appointments={appointments}
+            business={business}
+            staff={staff}
+            services={services}
+            onDispatchAllPending={() => {}}
+            onSimulateClientReply={() => {}}
+          />
+        )}
 
-          {activeTab === 'MARKETPLACE' && (
-            <MarketplaceDiscoveryModule
-              business={business}
-              venues={marketplaceVenues}
-              reviews={verifiedReviews}
-              transactions={transactions}
-              onAddVerifiedReview={handleAddVerifiedReview}
-              onSelectVenueForBooking={handleSelectVenueForBooking}
-            />
-          )}
+        {activeTab === 'PUBLIC_BOOKING' && (
+          <PublicBookingModule
+            business={business}
+            staff={staff}
+            services={services}
+            onCreatePublicBooking={handleCreateAppointment}
+          />
+        )}
 
-          {activeTab === 'PUBLIC_PAGE' && (
-            <PublicBookingModule
-              business={business}
-              staff={staff}
-              services={services}
-              clients={clients}
-              initialOrigin={publicOriginChannel}
-              onCreatePublicBooking={handleCreateAppointment}
-              onNavigateToAgenda={() => setActiveTab('AGENDA')}
-            />
-          )}
-
-          {activeTab === 'MANAGER' && (
-            <ManagerDashboardModule
-              business={business}
-              staff={staff}
-              appointments={appointments}
-              transactions={transactions}
-              clients={clients}
-              onUpdateBusiness={handleUpdateBusiness}
-              onResetDemoData={handleResetDemoData}
-            />
-          )}
-        </div>
+        {activeTab === 'MANAGER' && (
+          <ManagerDashboardModule
+            business={business}
+            staff={staff}
+            services={services}
+            appointments={appointments}
+            transactions={transactions}
+            bankStatements={bankStatements}
+            onUpdateBusiness={handleUpdateBusiness}
+            onUpdateService={handleUpdateService}
+            onAddService={handleAddService}
+            onDeleteService={handleDeleteService}
+            onUpdateStaff={handleUpdateStaff}
+            onAddStaff={handleAddStaff}
+            onDeleteStaff={handleDeleteStaff}
+            onAddBankStatement={handleAddBankStatement}
+            onDeleteBankStatement={handleDeleteBankStatement}
+            onResetAllData={handleResetAllData}
+          />
+        )}
       </main>
 
-      {/* Barra de Navegação Inferior Fixa para Mobile (< 768px) — Operação com 1 Polegar */}
+      {/* Mobile Bottom Navigation Bar */}
       <nav
-        aria-label="Navegação rápida mobile"
-        className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-[#DEDAD0] bg-white/95 backdrop-blur-sm px-2 py-1.5 flex items-center gap-1 overflow-x-auto"
+        aria-label="Navegação Mobile"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-stone-950/95 backdrop-blur-lg border-t border-stone-800 px-1 py-1.5 grid grid-cols-6 gap-0.5"
       >
         {navItems.map((item) => {
           const active = activeTab === item.id;
           return (
             <button
               key={item.id}
-              type="button"
               onClick={() => setActiveTab(item.id)}
-              className={`min-h-[48px] min-w-[54px] flex-1 flex flex-col items-center justify-center rounded-lg px-1 py-1 text-[10px] font-semibold ${
-                active ? 'bg-[#E6F4F1] text-[#0F766E]' : 'text-[#4A4843]'
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
+                active
+                  ? 'text-amber-400 bg-amber-500/10 font-semibold'
+                  : 'text-stone-400 hover:text-stone-200'
               }`}
             >
-              {item.icon}
-              <span className="mt-0.5 truncate max-w-full">{item.shortLabel}</span>
+              <div className="relative">
+                {item.icon}
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="absolute -top-1.5 -right-2.5 px-1 rounded-full bg-amber-500 text-stone-950 text-[9px] font-mono font-bold">
+                    {item.badge}
+                  </span>
+                )}
+              </div>
+              <span className="mt-1 truncate max-w-full">{item.shortLabel}</span>
             </button>
           );
         })}
@@ -779,5 +712,4 @@ export function App() {
     </div>
   );
 }
-
 export default App;
