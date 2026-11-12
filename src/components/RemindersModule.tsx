@@ -15,6 +15,7 @@ import {
   StaffMember,
 } from '../types';
 import { formatCurrencyBRL } from '../utils/finance';
+import { addDaysISO, formatDateBR, formatDateLong, localISODate } from '../utils/schedule';
 
 interface RemindersModuleProps {
   reminders: ReminderLog[];
@@ -30,13 +31,32 @@ interface RemindersModuleProps {
 }
 
 export const RemindersModule: React.FC<RemindersModuleProps> = ({
-  appointments,
+  appointments: allAppointments,
   business,
   staff,
   services,
 }) => {
+  const todayISO = localISODate();
+  const appointments = allAppointments
+    .filter(
+      (a) =>
+        a.date >= todayISO &&
+        a.status !== 'COMPLETED' &&
+        a.status !== 'CANCELLED' &&
+        a.status !== 'NO_SHOW'
+    )
+    .sort((a, b) =>
+      a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date)
+    );
+  const dayLabel = (iso: string) =>
+    iso === todayISO
+      ? 'hoje'
+      : iso === addDaysISO(todayISO, 1)
+        ? 'amanhã'
+        : formatDateLong(iso);
+
   const [template24h, setTemplate24h] = useState(
-    'Olá {nome}! Tudo bem? Passando para confirmar seu horário na *{barbearia}* hoje às *{hora}* com *{profissional}* ({servico} - {valor}). Podemos confirmar sua presença?'
+    'Olá {nome}! Tudo bem? Passando para confirmar seu horário na *{barbearia}* {data} às *{hora}* com *{profissional}* ({servico} - {valor}). Podemos confirmar sua presença?'
   );
 
   // Disparo avulso rápido
@@ -48,12 +68,14 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
   const buildPersonalizedMessage = (params: {
     clientName: string;
     time: string;
+    day?: string;
     staffName: string;
     serviceName: string;
     priceFormatted: string;
   }) => {
     return template24h
       .replace(/\{nome\}/g, params.clientName)
+      .replace(/\{data\}/g, params.day ?? 'hoje')
       .replace(/\{hora\}/g, params.time)
       .replace(/\{profissional\}/g, params.staffName)
       .replace(/\{barbearia\}/g, business.name)
@@ -83,6 +105,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
     const msg = buildPersonalizedMessage({
       clientName: apt.clientName,
       time: apt.startTime,
+      day: dayLabel(apt.date),
       staffName: staffMember?.name ?? 'Barbeiro',
       serviceName: serviceNames,
       priceFormatted: formatCurrencyBRL(price),
@@ -182,7 +205,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-800 border border-amber-500/30">
-                            {apt.startTime}
+                            {apt.date === todayISO ? '' : `${formatDateBR(apt.date).slice(0, 5)} · `}{apt.startTime}
                           </span>
                           <span className="font-semibold text-stone-100 text-sm">
                             {apt.clientName}
@@ -307,6 +330,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
             <p className="text-[11px] text-stone-400">
               Variáveis automáticas disponíveis:{' '}
               <code className="text-amber-800">{'{nome}'}</code>,{' '}
+              <code className="text-amber-800">{'{data}'}</code>,{' '}
               <code className="text-amber-800">{'{hora}'}</code>,{' '}
               <code className="text-amber-800">{'{profissional}'}</code>,{' '}
               <code className="text-amber-800">{'{barbearia}'}</code>,{' '}

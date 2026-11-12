@@ -26,6 +26,7 @@ import {
   PAYMENT_METHOD_LABELS,
 } from '../utils/finance';
 import { sanitizeUserText, validateSafeReceiptFile } from '../utils/security';
+import { localISODate } from '../utils/schedule';
 
 interface PosModuleProps {
   business: BusinessConfig;
@@ -229,8 +230,10 @@ export const PosModule: React.FC<PosModuleProps> = ({
     );
   }, [transactions]);
 
+  const todayISO = localISODate();
   const openAppointments = appointments.filter(
-    (a) => a.status !== 'COMPLETED' && a.status !== 'CANCELLED'
+    (a) =>
+      a.date === todayISO && a.status !== 'COMPLETED' && a.status !== 'CANCELLED'
   );
 
   return (

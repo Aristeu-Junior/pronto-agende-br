@@ -24,6 +24,20 @@ import {
 } from '../types';
 import { formatBRL, formatPhoneBR, isValidPhoneBR } from '../utils/validators';
 import { LightDismissDialog } from './LightDismissDialog';
+import { MonthCalendar } from './MonthCalendar';
+import { SlotPicker } from './SlotPicker';
+import {
+  addDaysISO,
+  formatDateBR,
+  formatDateLong,
+  getDayState,
+  getFreeSlots,
+  getSchedule,
+  hasConflict,
+  localISODate,
+  servicesSpan,
+  weekSummary,
+} from '../utils/schedule';
 
 interface AgendaModuleProps {
   business: BusinessConfig;
@@ -37,6 +51,7 @@ interface AgendaModuleProps {
   onCreateAppointment: (apt: Omit<Appointment, 'id'>) => void;
   onOpenInPos: (appointment: Appointment) => void;
   onOpenReminders?: () => void;
+  onUpdateStaff?: (staffId: string, patch: Partial<StaffMember>) => void;
 }
 
 const STATUS_META: Record<
@@ -93,6 +108,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
   onCreateAppointment,
   onOpenInPos,
   onOpenReminders,
+  onUpdateStaff,
 }) => {
   const professionals = useMemo(
     () => staff.filter((s) => s.role === 'PROFESSIONAL'),
@@ -102,6 +118,12 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
   const [selectedStaffId, setSelectedStaffId] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>(localISODate());
+  const [calendarOpen, setCalendarOpen] = useState<boolean>(false);
+  const [pendingSlot, setPendingSlot] = useState<string>('');
+  const [newAptDate, setNewAptDate] = useState<string>(localISODate());
+  const [editDate, setEditDate] = useState<string>(localISODate());
+  const [editError, setEditError] = useState<string>('');
   const [selectedAptId, setSelectedAptId] = useState<string>(
     appointments[0]?.id || ''
   );
@@ -143,13 +165,15 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
   const [newAptServiceIds, setNewAptServiceIds] = useState<string[]>(
     services[0] ? [services[0].id] : []
   );
-  const [newAptTime, setNewAptTime] = useState<string>('14:00');
+  const [newAptTime, setNewAptTime] = useState<string>('');
   const [newAptDeposit, setNewAptDeposit] = useState<string>('0');
   const [newAptError, setNewAptError] = useState<string>('');
 
   const filteredAppointments = useMemo(() => {
+    const searching = searchQuery.trim() !== '';
     return appointments
       .filter((apt) => {
+        if (!searching && apt.date !== selectedDate) return false;
         if (selectedStaffId !== 'ALL' && apt.staffId !== selectedStaffId) {
           return false;
         }
@@ -165,8 +189,12 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         }
         return true;
       })
-      .sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }, [appointments, selectedStaffId, selectedStatus, searchQuery]);
+      .sort((a, b) =>
+        a.date === b.date
+          ? a.startTime.localeCompare(b.startTime)
+          : a.date.localeCompare(b.date)
+      );
+  }, [appointments, selectedStaffId, selectedStatus, searchQuery, selectedDate]);
 
   const activeAppointment = useMemo(() => {
     return (
@@ -188,12 +216,96 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
 
   const getStaffById = (id?: string) => staff.find((s) => s.id === id);
 
+  const dayStaff = useMemo(
+    () =>
+      selectedStaffId === 'ALL'
+        ? professionals
+        : professionals.filter((p) => p.id === selectedStaffId),
+    [professionals, selectedStaffId]
+  );
+
+  const calendarMarker = (iso: string) => {
+    const count = appointments.filter(
+      (a) =>
+        a.date === iso &&
+        a.status !== 'CANCELLED' &&
+        (selectedStaffId === 'ALL' || a.staffId === selectedStaffId)
+    ).length;
+    const closed =
+      dayStaff.length > 0 && dayStaff.every((p) => getDayState(p, iso) !== 'OPEN');
+    return { count, closed };
+  };
+
+  const defaultSpan = servicesSpan(services.slice(0, 1));
+  const daySlots = (staffMember: StaffMember) =>
+    getFreeSlots({
+      staff: staffMember,
+      date: selectedDate,
+      durationMinutes: defaultSpan.duration,
+      bufferMinutes: defaultSpan.buffer,
+      appointments,
+    });
+
+  const toggleDayOff = (staffMember: StaffMember) => {
+    if (!onUpdateStaff) return;
+    const sch = getSchedule(staffMember);
+    const blocked = sch.blockedDates.includes(selectedDate)
+      ? sch.blockedDates.filter((d) => d !== selectedDate)
+      : [...sch.blockedDates, selectedDate].sort();
+    onUpdateStaff(staffMember.id, { schedule: { ...sch, blockedDates: blocked } });
+  };
+
+  const openNewAptWithSlot = (staffId: string, time: string) => {
+    setNewAptStaffId(staffId);
+    setPendingSlot(time);
+    setNewAptOpen(true);
+  };
+
+  useEffect(() => {
+    if (!newAptOpen) return;
+    setNewAptDate(selectedDate);
+    setNewAptTime(pendingSlot);
+    setPendingSlot('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newAptOpen]);
+
+  const newAptSpan = servicesSpan(getServicesForApt(newAptServiceIds));
+  const newAptSlots = useMemo(
+    () =>
+      getFreeSlots({
+        staff: professionals.find((p) => p.id === newAptStaffId),
+        date: newAptDate,
+        durationMinutes: newAptSpan.duration,
+        bufferMinutes: newAptSpan.buffer,
+        appointments,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [professionals, newAptStaffId, newAptDate, newAptSpan.duration, newAptSpan.buffer, appointments]
+  );
+
+  const editSpan = servicesSpan(getServicesForApt(editServiceIds));
+  const editSlots = useMemo(
+    () =>
+      getFreeSlots({
+        staff: professionals.find((p) => p.id === editStaffId),
+        date: editDate,
+        durationMinutes: editSpan.duration,
+        bufferMinutes: editSpan.buffer,
+        appointments,
+        ignoreAppointmentId: activeAppointment?.id,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [professionals, editStaffId, editDate, editSpan.duration, editSpan.buffer, appointments, activeAppointment?.id]
+  );
+
   // Sincroniza formulário de edição lateral ao trocar de agendamento
   useEffect(() => {
     if (!activeAppointment) return;
     setEditClientName(activeAppointment.clientName);
     setEditClientPhone(activeAppointment.clientPhone);
     setEditStartTime(activeAppointment.startTime);
+    setEditDate(activeAppointment.date);
+    setEditError('');
     setEditStaffId(activeAppointment.staffId);
     setEditServiceIds(activeAppointment.serviceIds);
     setEditCustomPrice(String(getAptTotal(activeAppointment)));
@@ -201,7 +313,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
     setEditProofName(activeAppointment.paymentProofName || '');
     setEditNotes(activeAppointment.notes || '');
     setSavedSuccess(false);
-  }, [activeAppointment?.id]);
+  }, [activeAppointment?.id, activeAppointment?.depositPixPaid, activeAppointment?.depositRequested]);
 
   const handleSaveInlineEdits = (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,9 +327,25 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
     const endH = String(Math.floor(endMinutes / 60)).padStart(2, '0');
     const endM = String(endMinutes % 60).padStart(2, '0');
 
+    if (
+      hasConflict(
+        appointments,
+        editStaffId,
+        editDate,
+        editStartTime,
+        `${endH}:${endM}`,
+        activeAppointment.id
+      )
+    ) {
+      setEditError('Esse horário já está ocupado por outro agendamento. Escolha um horário livre.');
+      return;
+    }
+    setEditError('');
+
     onUpdateAppointment(activeAppointment.id, {
       clientName: editClientName.trim() || 'Cliente',
       clientPhone: editClientPhone.trim(),
+      date: editDate,
       startTime: editStartTime,
       endTime: `${endH}:${endM}`,
       staffId: editStaffId,
@@ -255,7 +383,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
       .join(' + ');
     const profName = getStaffById(apt.staffId)?.name || 'Barbeiro';
     const total = formatBRL(getAptTotal(apt));
-    const msg = `Olá, *${apt.clientName}*! Tudo bem?\n\nPassando para confirmar seu horário na *${business.name}*:\n- *Horário:* Hoje às ${apt.startTime}\n- *Serviço:* ${srvNames} (${total})\n- *Profissional:* ${profName}\n\nPodemos confirmar sua presença?`;
+    const msg = `Olá, *${apt.clientName}*! Tudo bem?\n\nPassando para confirmar seu horário na *${business.name}*:\n- *Horário:* ${apt.date === localISODate() ? 'Hoje' : formatDateLong(apt.date)} às ${apt.startTime}\n- *Serviço:* ${srvNames} (${total})\n- *Profissional:* ${profName}\n\nPodemos confirmar sua presença?`;
 
     window.open(
       `https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`,
@@ -284,7 +412,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
       staffId: walkInStaffId || professionals[0]?.id || 'st_01',
       serviceIds: srv ? [srv.id] : [],
       customPrice: Math.max(0, Number(walkInPrice) || srv?.price || 0),
-      date: new Date().toISOString().slice(0, 10),
+      date: localISODate(),
       startTime,
       endTime: `${endH}:${endM}`,
       status: 'IN_SERVICE',
@@ -312,6 +440,10 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
       return;
     }
 
+    if (!newAptTime) {
+      setNewAptError('Escolha um horário livre.');
+      return;
+    }
     const totalDuration =
       getServicesForApt(newAptServiceIds).reduce(
         (acc, s) => acc + s.durationMinutes,
@@ -326,6 +458,19 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
       0
     );
 
+    if (
+      hasConflict(
+        appointments,
+        newAptStaffId || professionals[0]?.id || 'st_01',
+        newAptDate,
+        newAptTime,
+        `${String(Math.floor(endTotal / 60) % 24).padStart(2, '0')}:${String(endTotal % 60).padStart(2, '0')}`
+      )
+    ) {
+      setNewAptError('Esse horário já está ocupado. Escolha um horário livre.');
+      return;
+    }
+
     onCreateAppointment({
       clientId: `cli_${Date.now()}`,
       clientName: newAptClientName.trim(),
@@ -333,7 +478,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
       staffId: newAptStaffId || professionals[0]?.id || 'st_01',
       serviceIds: newAptServiceIds,
       customPrice: defaultTotal,
-      date: new Date().toISOString().slice(0, 10),
+      date: newAptDate,
       startTime: newAptTime,
       endTime: `${endH}:${endM}`,
       status: 'CONFIRMED',
@@ -349,6 +494,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
     setNewAptDeposit('0');
     setNewAptError('');
     setNewAptOpen(false);
+    setSelectedDate(newAptDate);
   };
 
   const toggleNewAptService = (id: string) => {
@@ -491,6 +637,133 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         </div>
       </div>
 
+      {/* Calendário vivo + resumo do dia */}
+      <div className="grid grid-cols-1 gap-4 border-b border-[#F4DDD2] bg-white px-4 py-4 sm:px-6 lg:grid-cols-12">
+        <div className="lg:col-span-4">
+          <button
+            type="button"
+            onClick={() => setCalendarOpen((v) => !v)}
+            aria-expanded={calendarOpen}
+            className="mb-2 min-h-[36px] w-full rounded-lg border border-[#F4DDD2] px-3 text-xs font-semibold text-[#1C1410] lg:hidden"
+          >
+            {calendarOpen ? 'Fechar calendário' : 'Abrir calendário'}
+          </button>
+          <div className={`${calendarOpen ? 'block' : 'hidden'} lg:block`}>
+            <MonthCalendar
+              value={selectedDate}
+              onChange={(iso) => {
+                setSelectedDate(iso);
+                setCalendarOpen(false);
+              }}
+              getMarker={calendarMarker}
+            />
+          </div>
+        </div>
+
+        <div className="lg:col-span-8">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                aria-label="Dia anterior"
+                onClick={() => setSelectedDate(addDaysISO(selectedDate, -1))}
+                className="min-h-[36px] rounded-lg border border-[#F4DDD2] px-3 text-sm font-semibold text-[#1C1410]"
+              >
+                ‹
+              </button>
+              <h2 className="min-w-[10rem] text-center text-sm font-semibold text-[#1C1410]">
+                {formatDateLong(selectedDate)}
+                {selectedDate === localISODate() ? ' · hoje' : ''}
+              </h2>
+              <button
+                type="button"
+                aria-label="Próximo dia"
+                onClick={() => setSelectedDate(addDaysISO(selectedDate, 1))}
+                className="min-h-[36px] rounded-lg border border-[#F4DDD2] px-3 text-sm font-semibold text-[#1C1410]"
+              >
+                ›
+              </button>
+              {selectedDate !== localISODate() && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(localISODate())}
+                  className="min-h-[36px] rounded-lg px-2 text-xs font-semibold text-[#D93800]"
+                >
+                  Ir para hoje
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 space-y-3">
+            {dayStaff.length === 0 && (
+              <p className="text-xs text-[#5A463C]">Cadastre um barbeiro em Ajustes para montar a escala.</p>
+            )}
+            {dayStaff.map((member) => {
+              const state = getDayState(member, selectedDate);
+              const sch = getSchedule(member);
+              const day = sch.days[new Date(selectedDate + 'T12:00:00').getDay()];
+              const free = state === 'OPEN' ? daySlots(member) : [];
+              const isPast = selectedDate < localISODate();
+              return (
+                <div key={member.id} className="rounded-xl border border-[#F4DDD2] p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <span className="text-xs font-semibold text-[#1C1410]">{member.name}</span>
+                      <span className="ml-2 text-[11px] text-[#7A5F52]">
+                        {state === 'OPEN'
+                          ? `Atende ${day.start}–${day.end}${day.breakStart && day.breakEnd ? ` · pausa ${day.breakStart}–${day.breakEnd}` : ''} · de ${sch.slotIntervalMinutes} em ${sch.slotIntervalMinutes} min`
+                          : state === 'BLOCKED'
+                            ? 'Folga marcada'
+                            : 'Fora da escala'}
+                      </span>
+                    </div>
+                    {onUpdateStaff && !isPast && (
+                      <button
+                        type="button"
+                        onClick={() => toggleDayOff(member)}
+                        className="min-h-[32px] rounded-lg border border-[#F4DDD2] px-2.5 text-[11px] font-semibold text-[#5A463C] hover:border-[#FA4100]"
+                      >
+                        {state === 'BLOCKED' ? 'Remover folga' : 'Marcar folga neste dia'}
+                      </button>
+                    )}
+                  </div>
+                  {state === 'OPEN' && !isPast && (
+                    <div className="mt-2">
+                      <p className="mb-1.5 text-[11px] text-[#7A5F52]">
+                        {free.length > 0
+                          ? `${free.length} horários livres (toque para agendar):`
+                          : 'Dia lotado: sem horários livres.'}
+                      </p>
+                      {free.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {free.slice(0, 14).map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => openNewAptWithSlot(member.id, t)}
+                              className="num-tabular min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs font-semibold text-[#1C1410] hover:border-[#FA4100]"
+                            >
+                              {t}
+                            </button>
+                          ))}
+                          {free.length > 14 && (
+                            <span className="self-center text-[11px] text-[#7A5F52]">+{free.length - 14}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <p className="text-[11px] text-[#7A5F52]">
+              {dayStaff.length === 1 ? weekSummary(dayStaff[0]) : 'Escala de cada barbeiro: Ajustes › Escala de Trabalho.'}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Lista + Painel de Edição Direta */}
       <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#F4DDD2] bg-white">
         <div className="lg:col-span-7">
@@ -500,10 +773,10 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 <CalendarCheck size={24} />
               </div>
               <h2 className="mt-3 text-sm font-semibold text-[#1C1410]">
-                Sua agenda está zerada e pronta para começar
+                Nenhum agendamento neste dia
               </h2>
               <p className="mx-auto mt-1 max-w-md text-xs text-[#5A463C]">
-                Adicione seu primeiro agendamento ou lance um encaixe rápido de balcão nos botões abaixo.
+                Escolha um horário livre acima, crie um agendamento ou lance um encaixe rápido de balcão.
               </p>
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                 <button
@@ -655,6 +928,54 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 </select>
               </div>
 
+              {activeAppointment.depositRequested ? (
+                <div className="flex flex-col gap-2 rounded-lg border border-[#FA4100]/40 bg-[#FFE9DF] p-3 text-xs text-[#1C1410] sm:flex-row sm:items-center sm:justify-between">
+                  <span>
+                    <strong>Sinal pedido: {formatBRL(activeAppointment.depositRequested)}.</strong>{' '}
+                    Confira o Pix no seu banco antes de confirmar.
+                    {activeAppointment.paymentProofName
+                      ? ` Comprovante: ${activeAppointment.paymentProofName}.`
+                      : ''}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onUpdateAppointment(activeAppointment.id, {
+                        depositPixPaid:
+                          (activeAppointment.depositPixPaid || 0) +
+                          (activeAppointment.depositRequested || 0),
+                        depositRequested: 0,
+                        status: 'CONFIRMED',
+                      })
+                    }
+                    className="min-h-[36px] shrink-0 rounded-lg bg-[#81F002] px-3 py-1.5 font-bold text-[#1C1410]"
+                  >
+                    Confirmar sinal recebido
+                  </button>
+                </div>
+              ) : null}
+
+              {editError && (
+                <p role="alert" className="text-xs font-medium text-[#B33000]">
+                  {editError}
+                </p>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-[#1C1410]">
+                  Reagendar: horários livres em {formatDateBR(editDate)}
+                </span>
+                <SlotPicker
+                  slots={editSlots}
+                  value={editStartTime}
+                  onChange={(t) => {
+                    setEditStartTime(t);
+                    setEditError('');
+                  }}
+                  emptyMessage="Sem horários livres nessa data para esse profissional."
+                />
+              </div>
+
               {savedSuccess && (
                 <div className="rounded-lg border border-[#FA4100]/40 bg-[#FFE9DF] px-3 py-2 text-xs font-semibold text-[#FA4100] flex items-center gap-1.5">
                   <CheckCircle size={15} weight="fill" />
@@ -693,12 +1014,30 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-[#1C1410]">
+                    Data
+                  </label>
+                  <input
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => {
+                      setEditDate(e.target.value);
+                      setEditError('');
+                    }}
+                    className="num-tabular min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-[#1C1410]">
                     Horário
                   </label>
                   <input
                     type="time"
                     value={editStartTime}
-                    onChange={(e) => setEditStartTime(e.target.value)}
+                    onChange={(e) => {
+                      setEditStartTime(e.target.value);
+                      setEditError('');
+                    }}
                     className="num-tabular min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
                   />
                 </div>
@@ -1055,12 +1394,17 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-[#1C1410]">
-                Horário
+                Data
               </label>
               <input
-                type="time"
-                value={newAptTime}
-                onChange={(e) => setNewAptTime(e.target.value)}
+                type="date"
+                value={newAptDate}
+                min={localISODate()}
+                onChange={(e) => {
+                  setNewAptDate(e.target.value);
+                  setNewAptTime('');
+                  if (newAptError) setNewAptError('');
+                }}
                 className="num-tabular min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
               />
             </div>
@@ -1078,6 +1422,21 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 className="num-tabular min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
               />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold text-[#1C1410]">
+              Horários livres em {formatDateBR(newAptDate)}
+            </span>
+            <SlotPicker
+              slots={newAptSlots}
+              value={newAptTime}
+              onChange={(t) => {
+                setNewAptTime(t);
+                if (newAptError) setNewAptError('');
+              }}
+              emptyMessage="Sem horários livres para esse profissional e serviço nessa data (dia de folga, fora da escala ou lotado)."
+            />
           </div>
 
           <div className="flex flex-col gap-1">

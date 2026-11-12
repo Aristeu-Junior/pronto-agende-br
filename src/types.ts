@@ -108,6 +108,26 @@ export interface BusinessConfig {
   reviewsCount: number;
   bestBadge: boolean;
   isConfigured: boolean;
+  /** antecedencia minima para agendar online, em minutos */
+  minNoticeMinutes?: number;
+  /** ate quantos dias a frente o cliente pode agendar */
+  maxAdvanceDays?: number;
+}
+
+export interface DaySchedule {
+  enabled: boolean;
+  start: string;
+  end: string;
+  breakStart?: string;
+  breakEnd?: string;
+}
+
+export interface WorkSchedule {
+  /** indice 0 = domingo ... 6 = sabado */
+  days: DaySchedule[];
+  slotIntervalMinutes: number;
+  /** datas YYYY-MM-DD em que o profissional nao atende (folgas, feriados) */
+  blockedDates: string[];
 }
 
 export interface StaffMember {
@@ -120,6 +140,7 @@ export interface StaffMember {
   defaultProductCommissionPct: number;
   acceptsWalkIns: boolean;
   workingHours: string;
+  schedule?: WorkSchedule;
   avatarInitials: string;
 }
 
@@ -186,6 +207,8 @@ export interface Appointment {
   originChannel: OriginChannel;
   deviceFingerprint: string;
   depositPixPaid: number;
+  /** sinal pedido ao cliente e ainda nao confirmado pelo barbeiro */
+  depositRequested?: number;
   paymentProofName?: string;
   notes?: string;
 }

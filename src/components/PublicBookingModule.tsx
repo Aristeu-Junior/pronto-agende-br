@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   CalendarCheck,
   Clock,
@@ -20,31 +20,34 @@ import {
 } from '../types';
 import { formatCurrencyBRL } from '../utils/finance';
 import { sanitizeUserText, validateSafeReceiptFile } from '../utils/security';
+import { MonthCalendar } from './MonthCalendar';
+import { SlotPicker } from './SlotPicker';
+import { buildPixPayload } from '../utils/pix';
+import {
+  bookingWindow,
+  formatDateBR,
+  formatDateLong,
+  getDayState,
+  getFreeSlots,
+  localISODate,
+  minToTime,
+  servicesSpan,
+  timeToMin,
+} from '../utils/schedule';
 
 interface PublicBookingModuleProps {
   business: BusinessConfig;
   staff: StaffMember[];
   services: ServiceItem[];
+  appointments: Appointment[];
   onCreatePublicBooking: (booking: Omit<Appointment, 'id'>) => void;
 }
-
-const AVAILABLE_TIMES = [
-  '09:00',
-  '10:00',
-  '11:00',
-  '13:30',
-  '14:30',
-  '15:30',
-  '16:30',
-  '17:30',
-  '18:30',
-  '19:30',
-];
 
 export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
   business,
   staff,
   services,
+  appointments,
   onCreatePublicBooking,
 }) => {
   const professionals = staff.filter((s) => s.role === 'PROFESSIONAL');
@@ -54,7 +57,15 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
   const [selectedStaffId, setSelectedStaffId] = useState<string>(
     professionals[0]?.id ?? staff[0]?.id ?? ''
   );
-  const [selectedTime, setSelectedTime] = useState<string>('15:30');
+  const [selectedTime, setSelectedTime] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>(localISODate());
+  const [copiedPix, setCopiedPix] = useState(false);
+  const [bookedSummary, setBookedSummary] = useState<{
+    date: string;
+    time: string;
+    pix: string | null;
+    deposit: number;
+  } | null>(null);
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [originChannel] = useState<OriginChannel>('DIRECT_LINK');
@@ -76,6 +87,68 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
   const depositAmount =
     Math.round(totalPrice * (business.noShowDepositPercent / 100) * 100) / 100;
 
+  const windowRange = bookingWindow(business);
+  const selectedStaff = staff.find((s) => s.id === selectedStaffId);
+  const span = servicesSpan(selectedServices);
+  const minNotice = business.minNoticeMinutes ?? 60;
+
+  const slots = useMemo(
+    () =>
+      getFreeSlots({
+        staff: selectedStaff,
+        date: selectedDate,
+        durationMinutes: span.duration,
+        bufferMinutes: span.buffer,
+        appointments,
+        minNoticeMinutes: minNotice,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedStaff, selectedDate, span.duration, span.buffer, appointments, minNotice]
+  );
+
+  // Se o horário escolhido deixou de existir (trocou serviço, barbeiro ou data), limpa a escolha.
+  useEffect(() => {
+    if (selectedTime && !slots.includes(selectedTime)) setSelectedTime('');
+  }, [slots, selectedTime]);
+
+  // Ao abrir ou trocar de barbeiro, pula para o primeiro dia com horário livre.
+  useEffect(() => {
+    if (!selectedStaff) return;
+    let day = windowRange.min;
+    for (let i = 0; i < 60 && day <= windowRange.max; i++) {
+      const has =
+        getFreeSlots({
+          staff: selectedStaff,
+          date: day,
+          durationMinutes: span.duration,
+          bufferMinutes: span.buffer,
+          appointments,
+          minNoticeMinutes: minNotice,
+        }).length > 0;
+      if (has) {
+        setSelectedDate(day);
+        return;
+      }
+      const d = new Date(day + 'T12:00:00');
+      d.setDate(d.getDate() + 1);
+      day = localISODate(d);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStaffId]);
+
+  const pixPayload = useMemo(
+    () =>
+      business.pixKey
+        ? buildPixPayload({
+            key: business.pixKey,
+            amount: depositAmount,
+            merchantName: business.name,
+            city: (business.cityState || '').split('-')[0],
+          })
+        : null,
+    [business.pixKey, business.name, business.cityState, depositAmount]
+  );
+
   const toggleService = (id: string) => {
     setSelectedServiceIds((prev) =>
       prev.includes(id)
@@ -94,12 +167,14 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
 
   const handleConfirmBooking = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientName.trim() || !clientPhone.trim()) return;
+    if (!clientName.trim() || !clientPhone.trim() || !selectedTime) return;
+    // Reconfere na hora de salvar: outro agendamento pode ter ocupado o horário.
+    if (!slots.includes(selectedTime)) {
+      setSelectedTime('');
+      return;
+    }
 
-    const [h, m] = selectedTime.split(':').map(Number);
-    const endMinutes = h * 60 + m + (totalDuration || 40);
-    const endH = String(Math.floor(endMinutes / 60)).padStart(2, '0');
-    const endM = String(endMinutes % 60).padStart(2, '0');
+    const endTime = minToTime(timeToMin(selectedTime) + (totalDuration || 40));
 
     onCreatePublicBooking({
       clientId: `cli_pub_${Date.now()}`,
@@ -107,20 +182,27 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
       clientPhone: sanitizeUserText(clientPhone.trim(), 30),
       staffId: selectedStaffId || staff[0]?.id || 'st_01',
       serviceIds: selectedServiceIds,
-      date: new Date().toISOString().slice(0, 10),
+      date: selectedDate,
       startTime: selectedTime,
-      endTime: `${endH}:${endM}`,
+      endTime,
       customPrice: totalPrice,
-      status: 'CONFIRMED',
+      status: requireDeposit ? 'PENDING' : 'CONFIRMED',
       isWalkIn: false,
       isFirstVisitBoost: false,
       originChannel,
       deviceFingerprint: `fp_web_${Math.random().toString(36).slice(2, 7)}`,
-      depositPixPaid: requireDeposit ? depositAmount : 0,
+      depositPixPaid: 0,
+      depositRequested: requireDeposit ? depositAmount : 0,
       paymentProofName: proofFileName || undefined,
       notes: 'Agendado pelo Link de Reserva da Barbearia',
     });
 
+    setBookedSummary({
+      date: selectedDate,
+      time: selectedTime,
+      pix: requireDeposit ? pixPayload : null,
+      deposit: requireDeposit ? depositAmount : 0,
+    });
     setBookingCompleted(true);
 
     // Se a barbearia cadastrou WhatsApp na aba Ajustes, abre confirmação via WhatsApp
@@ -133,7 +215,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
       const servicesText = selectedServices.map((s) => s.name).join(' + ');
       const text = `Olá! Me chamo *${clientName.trim()}* (${clientPhone.trim()}). Acabei de agendar *${servicesText}* (${formatCurrencyBRL(
         totalPrice
-      )}) para hoje às *${selectedTime}* com *${
+      )}) para *${formatDateLong(selectedDate)}* às *${selectedTime}* com *${
         selectedStaffObj?.name ?? 'Barbeiro'
       }* na *${business.name}*.`;
       window.open(
@@ -153,7 +235,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
             Página Pública de Agendamento da Sua Barbearia
           </span>
           <span className="text-stone-300">
-            Envie este link na bio do Instagram ou no WhatsApp dos seus clientes. Quando eles agendarem abaixo, o horário cai direto na sua aba <strong>Agenda</strong> e <strong>Clientes</strong>.
+            Esta é a tela de agendamento do cliente. Os horários livres vêm da sua escala e do que já está na <strong>Agenda</strong>. Por enquanto, a reserva só é salva quando feita neste aparelho (balcão ou tablet da barbearia).
           </span>
         </div>
         <button
@@ -191,8 +273,13 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
           </div>
           <div className="text-[11px] text-stone-400 flex items-center justify-end gap-1 mt-0.5">
             <Clock className="w-3 h-3" />
-            <span>Duração média: {totalDuration} min</span>
+            <span>Duração: {totalDuration} min</span>
           </div>
+          {selectedTime && (
+            <div className="mt-1 text-[11px] font-semibold text-stone-200">
+              {formatDateLong(selectedDate)} · {selectedTime}
+            </div>
+          )}
         </div>
       </div>
 
@@ -205,15 +292,56 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
             Horário Reservado com Sucesso para {clientName}!
           </h3>
           <p className="text-sm text-stone-300 max-w-md mx-auto">
-            O agendamento hoje às{' '}
+            O agendamento em{' '}
             <span className="font-mono font-bold text-emerald-700">
-              {selectedTime}
+              {formatDateLong(bookedSummary?.date ?? selectedDate)} às {bookedSummary?.time ?? selectedTime}
             </span>{' '}
             já foi salvo na <strong>Agenda</strong> da barbearia.
           </p>
+          {bookedSummary && bookedSummary.deposit > 0 && (
+            <div className="mx-auto max-w-md space-y-2 rounded-2xl border border-stone-800 bg-stone-900 p-4 text-left">
+              <p className="text-xs font-semibold text-stone-100">
+                Falta o sinal de {formatCurrencyBRL(bookedSummary.deposit)} para garantir o horário.
+              </p>
+              {bookedSummary.pix ? (
+                <>
+                  <p className="text-[11px] text-stone-400">
+                    No app do banco, escolha Pix Copia e Cola e cole o código:
+                  </p>
+                  <textarea
+                    readOnly
+                    value={bookedSummary.pix}
+                    rows={3}
+                    aria-label="Pix copia e cola"
+                    className="w-full resize-none rounded-lg border border-stone-800 bg-stone-950 p-2 font-mono text-[11px] text-stone-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(bookedSummary.pix as string);
+                      setCopiedPix(true);
+                      setTimeout(() => setCopiedPix(false), 2500);
+                    }}
+                    className="w-full rounded-lg bg-amber-500 py-2 text-xs font-bold text-stone-950 cursor-pointer"
+                  >
+                    {copiedPix ? 'Código copiado!' : 'Copiar código Pix'}
+                  </button>
+                </>
+              ) : (
+                <p className="text-[11px] text-stone-400">
+                  A barbearia ainda não cadastrou uma chave Pix válida. Combine o pagamento pelo WhatsApp.
+                </p>
+              )}
+              <p className="text-[11px] text-stone-400">
+                O horário fica como <strong>aguardando sinal</strong> até a barbearia confirmar o recebimento.
+              </p>
+            </div>
+          )}
           <button
             onClick={() => {
               setBookingCompleted(false);
+              setBookedSummary(null);
+              setSelectedTime('');
               setClientName('');
               setClientPhone('');
               setProofFileName('');
@@ -291,25 +419,35 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
               </div>
 
               <div className="pt-2">
-                <span className="block text-xs text-stone-400 mb-2">
-                  Horários Livres Hoje:
+                <span className="block text-xs font-semibold text-stone-300 mb-2">
+                  Escolha o dia
                 </span>
-                <div className="grid grid-cols-5 gap-2">
-                  {AVAILABLE_TIMES.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setSelectedTime(t)}
-                      className={`py-2 rounded-xl font-mono text-xs font-semibold border transition-all cursor-pointer ${
-                        selectedTime === t
-                          ? 'bg-amber-500 text-stone-950 border-amber-400 font-bold'
-                          : 'bg-stone-950 text-stone-300 border-stone-800 hover:border-stone-700'
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
+                <MonthCalendar
+                  value={selectedDate}
+                  onChange={(iso) => {
+                    setSelectedDate(iso);
+                    setSelectedTime('');
+                  }}
+                  min={windowRange.min}
+                  max={windowRange.max}
+                  getMarker={(iso) => ({ closed: getDayState(selectedStaff, iso) !== 'OPEN' })}
+                />
+              </div>
+
+              <div className="pt-2">
+                <span className="block text-xs font-semibold text-stone-300 mb-2">
+                  Horários livres em {formatDateBR(selectedDate)}
+                </span>
+                <SlotPicker
+                  slots={slots}
+                  value={selectedTime}
+                  onChange={setSelectedTime}
+                  emptyMessage={
+                    getDayState(selectedStaff, selectedDate) === 'OPEN'
+                      ? 'Sem horários livres nesta data para os serviços escolhidos. Tente outro dia.'
+                      : 'O barbeiro não atende neste dia. Escolha outra data.'
+                  }
+                />
               </div>
             </div>
           </div>
@@ -366,10 +504,10 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
                   className="accent-amber-500 w-4 h-4 cursor-pointer"
                 />
               </div>
-              {business.pixKey && (
-                <div className="text-[11px] font-mono text-stone-300 bg-stone-900 px-2.5 py-1.5 rounded-lg border border-stone-800">
-                  Chave Pix da Barbearia: <strong>{business.pixKey}</strong>
-                </div>
+              {requireDeposit && !pixPayload && (
+                <p className="text-[11px] font-medium text-rose-700">
+                  Cadastre uma chave Pix válida em Ajustes para gerar o código de pagamento.
+                </p>
               )}
               <p className="text-[11px] text-stone-400">
                 Valor do sinal:{' '}
@@ -414,10 +552,11 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
 
             <button
               type="submit"
-              className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-stone-100 font-bold text-sm transition-all cursor-pointer shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2"
+              disabled={!selectedTime}
+              className="w-full py-3.5 px-4 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed bg-emerald-500 hover:bg-emerald-600 text-stone-100 font-bold text-sm transition-all cursor-pointer shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2"
             >
               <MessageCircle className="w-4 h-4" />
-              Confirmar Agendamento ({formatCurrencyBRL(totalPrice)})
+              {selectedTime ? `Confirmar Agendamento (${formatCurrencyBRL(totalPrice)})` : 'Escolha um horário'}
             </button>
           </div>
         </form>

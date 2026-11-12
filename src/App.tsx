@@ -801,6 +801,7 @@ export function App() {
             onDeleteAppointment={handleDeleteAppointment}
             onCreateAppointment={handleCreateAppointment}
             onOpenInPos={(apt) => handleOpenPosForAppointment(apt.id)}
+            onUpdateStaff={handleUpdateStaff}
             onOpenReminders={
               perms.canAccessReminders ? () => setActiveTab('REMINDERS') : undefined
             }
@@ -857,6 +858,7 @@ export function App() {
             business={business}
             staff={staff}
             services={services}
+            appointments={appointments}
             onCreatePublicBooking={handleCreateAppointment}
           />
         )}

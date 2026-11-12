@@ -24,6 +24,7 @@ import {
 } from '../types';
 import { FEE_SPLIT_RULE_LABELS, formatCurrencyBRL } from '../utils/finance';
 import { sanitizeUserText, validateSafeReceiptFile } from '../utils/security';
+import { ScheduleSettings } from './ScheduleSettings';
 
 interface ManagerDashboardModuleProps {
   business: BusinessConfig;
@@ -624,6 +625,14 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
           </form>
         </div>
       </div>
+
+      {/* Escala de trabalho: alimenta o calendário e os horários livres do cliente */}
+      <ScheduleSettings
+        staff={staff}
+        business={business}
+        onUpdateStaff={onUpdateStaff}
+        onUpdateBusiness={onUpdateBusiness}
+      />
 
       {/* BLOCO 3: Extratos Bancários & Comprovantes de Recebimento do Dia */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
