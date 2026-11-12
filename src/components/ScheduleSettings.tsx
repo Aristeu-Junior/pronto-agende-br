@@ -12,6 +12,8 @@ import {
 } from '../utils/schedule';
 
 interface ScheduleSettingsProps {
+  /** dentro de um bloco recolhível: sem cartão e sem título próprios */
+  embedded?: boolean;
   staff: StaffMember[];
   business: BusinessConfig;
   onUpdateStaff: (staffId: string, patch: Partial<StaffMember>) => void;
@@ -30,9 +32,10 @@ const NOTICE_OPTIONS = [
 const WINDOW_OPTIONS = [7, 14, 30, 60, 90];
 
 const inputCls =
-  'w-full rounded-lg border border-stone-800 bg-stone-900 px-2.5 py-1.5 text-xs text-stone-100 focus:border-amber-500 focus:outline-none';
+  'w-full min-w-0 rounded-lg border border-stone-800 bg-stone-900 px-2.5 py-2 text-xs text-stone-100 focus:border-amber-500 focus:outline-none';
 
 export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
+  embedded = false,
   staff,
   business,
   onUpdateStaff,
@@ -87,9 +90,9 @@ export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
   }
 
   return (
-    <section className="rounded-2xl border border-stone-800 bg-stone-900 p-5">
+    <section className={embedded ? '' : 'rounded-2xl border border-stone-800 bg-stone-900 p-5'}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-2.5">
+        <div className={`flex items-start gap-2.5 ${embedded ? 'hidden' : ''}`}>
           <CalendarBlank className="mt-0.5 h-5 w-5 text-amber-700" />
           <div>
             <h2 className="text-base font-bold text-stone-100">Escala de Trabalho</h2>
@@ -117,7 +120,7 @@ export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
 
       <div className="mt-4 grid gap-5 lg:grid-cols-2">
         <div>
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-300">Dias e horários</h3>
             <button
               type="button"
@@ -133,7 +136,7 @@ export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
               const hasBreak = !!d.breakStart && !!d.breakEnd;
               return (
                 <div key={i} className="px-3 py-2.5">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                     <label className="flex w-28 shrink-0 items-center gap-2 text-xs font-medium text-stone-200 cursor-pointer">
                       <input
                         type="checkbox"
@@ -143,7 +146,7 @@ export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
                       {WEEKDAY_LONG[i]}
                     </label>
                     {d.enabled ? (
-                      <div className="flex flex-1 items-center gap-1.5">
+                      <div className="flex min-w-0 flex-1 items-center gap-1.5">
                         <input
                           type="time"
                           value={d.start}
@@ -165,7 +168,7 @@ export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
                     )}
                   </div>
                   {d.enabled && (
-                    <div className="mt-1.5 flex items-center gap-2 pl-[7.75rem]">
+                    <div className="mt-2 flex flex-wrap items-center gap-2 sm:pl-[7.75rem]">
                       {hasBreak ? (
                         <>
                           <span className="text-[11px] text-stone-400">Pausa</span>
@@ -174,7 +177,7 @@ export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
                             value={d.breakStart}
                             aria-label={`Início da pausa ${WEEKDAY_LONG[i]}`}
                             onChange={(e) => patchDay(i, { breakStart: e.target.value })}
-                            className={`${inputCls} !w-24`}
+                            className={`${inputCls} !w-[6.5rem]`}
                           />
                           <span className="text-[11px] text-stone-500">às</span>
                           <input
@@ -182,7 +185,7 @@ export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
                             value={d.breakEnd}
                             aria-label={`Fim da pausa ${WEEKDAY_LONG[i]}`}
                             onChange={(e) => patchDay(i, { breakEnd: e.target.value })}
-                            className={`${inputCls} !w-24`}
+                            className={`${inputCls} !w-[6.5rem]`}
                           />
                           <button
                             type="button"
@@ -205,7 +208,7 @@ export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
                     </div>
                   )}
                   {invalid && (
-                    <p className="mt-1 pl-[7.75rem] text-[11px] font-medium text-rose-700">
+                    <p className="mt-1 text-[11px] font-medium text-rose-700 sm:pl-[7.75rem]">
                       O fim precisa ser depois do início.
                     </p>
                   )}

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   Buildings as Building2,
+  CalendarBlank,
   Check,
   FileText,
   Paperclip,
@@ -25,6 +26,8 @@ import {
 import { FEE_SPLIT_RULE_LABELS, formatCurrencyBRL } from '../utils/finance';
 import { sanitizeUserText, validateSafeReceiptFile } from '../utils/security';
 import { ScheduleSettings } from './ScheduleSettings';
+import { AccordionSection } from './AccordionSection';
+import { weekSummary } from '../utils/schedule';
 import { PIX_KEY_TYPE_LABELS, PixKeyType, normalizePixKey } from '../utils/pix';
 
 interface ManagerDashboardModuleProps {
@@ -190,8 +193,8 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
   return (
     <div className="space-y-6">
       {/* KPIs do Dia */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-stone-900/70 border border-stone-800/80 rounded-2xl p-4 space-y-1">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-stone-900/70 border border-stone-800/80 rounded-2xl p-3 sm:p-4 space-y-1">
           <div className="flex items-center justify-between text-xs text-stone-400">
             <span>Faturamento no Caixa</span>
             <TrendingUp className="w-4 h-4 text-emerald-700" />
@@ -244,30 +247,12 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
         </div>
       </div>
 
-      {/* BLOCO 1: Dados da Sua Barbearia (100% Editável) */}
-      <div className="bg-stone-900 border border-stone-800 rounded-2xl p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-800 pb-3">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-amber-700" />
-            <div>
-              <h3 className="text-base font-bold text-stone-100">
-                1. Dados da Sua Barbearia (Edite o Nome, WhatsApp e Pix)
-              </h3>
-              <p className="text-xs text-stone-400">
-                Tudo o que você digitar aqui atualiza na hora o topo do sistema e o seu Link de Reserva.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={triggerSavedToast}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs transition-all cursor-pointer shrink-0"
-          >
-            <Check className="w-4 h-4" />
-            {savedBanner ? 'Dados Salvos!' : 'Salvar Dados da Barbearia'}
-          </button>
-        </div>
-
+      <AccordionSection
+        id="barbearia"
+        title="Dados da barbearia"
+        summary={`${business.name}${business.phone ? ' · WhatsApp ok' : ' · falta WhatsApp'}${business.pixKey ? ' · Pix ok' : ' · falta Pix'}`}
+        icon={<Building2 className="h-5 w-5" />}
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-medium text-stone-300 mb-1">
@@ -379,26 +364,14 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
             />
           </div>
         </div>
-      </div>
+      </AccordionSection>
 
-      {/* BLOCO 2: Tabela de Preços dos Cortes & Serviços + Equipe */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left 7 Cols: Tabela de Preços Editável */}
-        <div className="lg:col-span-7 bg-stone-900/70 border border-stone-800 rounded-2xl p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-stone-800 pb-3">
-            <div className="flex items-center gap-2">
-              <Scissors className="w-4 h-4 text-amber-700" />
-              <div>
-                <h3 className="text-sm font-bold text-stone-100">
-                  2. Tabela de Preços dos Cortes e Serviços
-                </h3>
-                <p className="text-xs text-stone-400">
-                  Altere o nome, o tempo ou o preço (R$) de qualquer serviço abaixo.
-                </p>
-              </div>
-            </div>
-          </div>
-
+      <AccordionSection
+        id="servicos"
+        title="Serviços e preços"
+        summary={`${services.length} ${services.length === 1 ? 'serviço' : 'serviços'}`}
+        icon={<Scissors className="h-5 w-5" />}
+      >
           <div className="space-y-2.5">
             {services.map((srv) => (
               <div
@@ -521,29 +494,21 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
               </button>
             </div>
           </form>
-        </div>
+      </AccordionSection>
 
-        {/* Right 5 Cols: Barbeiros / Profissionais Editáveis */}
-        <div className="lg:col-span-5 bg-stone-900/70 border border-stone-800 rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2 border-b border-stone-800 pb-3">
-            <Users className="w-4 h-4 text-amber-700" />
-            <div>
-              <h3 className="text-sm font-bold text-stone-100">
-                3. Barbeiros e Comissão (%)
-              </h3>
-              <p className="text-xs text-stone-400">
-                Edite o nome dos profissionais da barbearia e a comissão de cada um.
-              </p>
-            </div>
-          </div>
-
+      <AccordionSection
+        id="equipe"
+        title="Barbeiros e comissão"
+        summary={`${staff.length} ${staff.length === 1 ? 'profissional' : 'profissionais'}`}
+        icon={<Users className="h-5 w-5" />}
+      >
           <div className="space-y-2.5">
             {staff.map((member) => (
               <div
                 key={member.id}
                 className="grid grid-cols-12 gap-2 items-center bg-stone-950/90 border border-stone-800 rounded-xl p-2.5"
               >
-                <div className="col-span-6">
+                <div className="col-span-12 sm:col-span-6">
                   <label className="block text-[10px] text-stone-400">
                     Nome do Barbeiro
                   </label>
@@ -556,7 +521,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                     className="w-full bg-transparent text-xs font-semibold text-stone-100 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
                   />
                 </div>
-                <div className="col-span-3">
+                <div className="col-span-5 sm:col-span-3">
                   <label className="block text-[10px] text-stone-400">
                     Cadeira
                   </label>
@@ -569,7 +534,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                     className="w-full bg-transparent text-xs text-stone-300 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
                   />
                 </div>
-                <div className="col-span-2">
+                <div className="col-span-5 sm:col-span-2">
                   <label className="block text-[10px] text-stone-400">
                     Comissão %
                   </label>
@@ -589,7 +554,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                     className="w-full bg-transparent text-xs font-mono font-bold text-emerald-700 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
                   />
                 </div>
-                <div className="col-span-1 flex justify-end">
+                <div className="col-span-2 sm:col-span-1 flex justify-end">
                   <button
                     type="button"
                     onClick={() => onDeleteStaff(member.id)}
@@ -609,7 +574,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
             className="pt-3 border-t border-stone-800 space-y-2.5"
           >
             <div className="grid grid-cols-12 gap-2">
-              <div className="col-span-6">
+              <div className="col-span-12 sm:col-span-6">
                 <label className="block text-[11px] text-stone-400 mb-1">
                   Novo Barbeiro
                 </label>
@@ -621,7 +586,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                   className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-amber-500"
                 />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-6 sm:col-span-3">
                 <label className="block text-[11px] text-stone-400 mb-1">
                   Cadeira
                 </label>
@@ -632,7 +597,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                   className="w-full bg-stone-950 border border-stone-800 rounded-xl px-2.5 py-2 text-xs text-stone-100 focus:outline-none focus:border-amber-500"
                 />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-6 sm:col-span-3">
                 <label className="block text-[11px] text-stone-400 mb-1">
                   Comissão %
                 </label>
@@ -652,32 +617,29 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
               Adicionar Barbeiro à Equipe
             </button>
           </form>
-        </div>
-      </div>
+      </AccordionSection>
 
-      {/* Escala de trabalho: alimenta o calendário e os horários livres do cliente */}
-      <ScheduleSettings
-        staff={staff}
-        business={business}
-        onUpdateStaff={onUpdateStaff}
-        onUpdateBusiness={onUpdateBusiness}
-      />
+      <AccordionSection
+        id="escala"
+        title="Escala de trabalho"
+        summary={weekSummary(staff.find((m) => m.role === 'PROFESSIONAL'))}
+        icon={<CalendarBlank className="h-5 w-5" />}
+      >
+        <ScheduleSettings
+          embedded
+          staff={staff}
+          business={business}
+          onUpdateStaff={onUpdateStaff}
+          onUpdateBusiness={onUpdateBusiness}
+        />
+      </AccordionSection>
 
-      {/* BLOCO 3: Extratos Bancários & Comprovantes de Recebimento do Dia */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-7 bg-stone-900/70 border border-stone-800 rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2 border-b border-stone-800 pb-3">
-            <FileText className="w-5 h-5 text-sky-400" />
-            <div>
-              <h3 className="text-sm font-bold text-stone-100">
-                4. Extratos Bancários & Comprovantes do Dia
-              </h3>
-              <p className="text-xs text-stone-400">
-                Registre o total recebido no banco, comprovantes de Pix de adiantamento ou o fechamento diário da maquininha.
-              </p>
-            </div>
-          </div>
-
+      <AccordionSection
+        id="extratos"
+        title="Extratos e comprovantes"
+        summary={`${bankStatements.length} ${bankStatements.length === 1 ? 'lançamento' : 'lançamentos'}`}
+        icon={<FileText className="h-5 w-5" />}
+      >
           <form
             onSubmit={handleAddStatementForm}
             className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end bg-stone-950/80 border border-stone-800 rounded-xl p-3.5"
@@ -800,17 +762,14 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
               ))}
             </div>
           )}
-        </div>
+      </AccordionSection>
 
-        {/* Right 5 Cols: Regras de Sinal e Botão Zerar Sistema */}
-        <div className="lg:col-span-5 bg-stone-900 border border-stone-800 rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2 border-b border-stone-800 pb-3">
-            <Sliders className="w-4 h-4 text-amber-700" />
-            <h3 className="text-sm font-bold text-stone-100">
-              5. Regras de Sinal Pix & Limpeza de Dados
-            </h3>
-          </div>
-
+      <AccordionSection
+        id="regras"
+        title="Sinal Pix e limpeza de dados"
+        summary={`Sinal ${business.noShowDepositPercent}% · cancelamento até ${business.cancelNoticeHours}h antes`}
+        icon={<Sliders className="h-5 w-5" />}
+      >
           <div className="space-y-2">
             <label className="block text-xs font-medium text-stone-300">
               Regra de Desconto da Taxa da Maquininha
@@ -897,8 +856,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                 : 'Zerar dados (apenas o responsável)'}
             </button>
           </div>
-        </div>
-      </div>
+      </AccordionSection>
     </div>
   );
 };

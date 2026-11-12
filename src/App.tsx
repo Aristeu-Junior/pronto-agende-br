@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import {
   Calendar,
@@ -71,6 +71,9 @@ const ALL_PERMISSIONS: UserPermissions = {
   canManageUsers: false,
 };
 
+// Só existe em desenvolvimento: o build de produção remove este trecho.
+const DevPreview = import.meta.env.DEV ? lazy(() => import('./dev/Preview')) : null;
+
 function parsePublicSlug(hash: string): string | null {
   const m = hash.match(/^#\/reserva\/([a-z0-9-]{3,40})\/?$/i);
   return m ? m[1].toLowerCase() : null;
@@ -86,6 +89,14 @@ export function App() {
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
+
+  if (import.meta.env.DEV && DevPreview && hash.startsWith('#/preview/')) {
+    return (
+      <Suspense fallback={null}>
+        <DevPreview screen={hash.replace('#/preview/', '')} />
+      </Suspense>
+    );
+  }
 
   const publicSlug = parsePublicSlug(hash);
   if (publicSlug) return <PublicBookingPage slug={publicSlug} />;

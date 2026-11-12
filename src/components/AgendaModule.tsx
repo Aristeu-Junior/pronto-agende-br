@@ -732,7 +732,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                     <div className="mt-2">
                       <p className="mb-1.5 text-[11px] text-[#7A5F52]">
                         {free.length > 0
-                          ? `${free.length} horários livres (toque para agendar):`
+                          ? `${free.length} ${free.length === 1 ? 'horário livre' : 'horários livres'} (toque para agendar):`
                           : 'Dia lotado: sem horários livres.'}
                       </p>
                       {free.length > 0 && (
