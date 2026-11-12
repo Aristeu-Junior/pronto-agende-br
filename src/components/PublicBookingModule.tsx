@@ -123,7 +123,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
 
     setBookingCompleted(true);
 
-    // Se a barbearia cadastrou WhatsApp na aba Gestão, abre confirmação via WhatsApp
+    // Se a barbearia cadastrou WhatsApp na aba Ajustes, abre confirmação via WhatsApp
     const barberDigits = (business.phone || '').replace(/\D/g, '');
     if (barberDigits) {
       const barberPhone = barberDigits.startsWith('55')
@@ -149,7 +149,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
       {/* Top Share Bar for the Barber */}
       <div className="bg-stone-900/80 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="text-xs">
-          <span className="font-bold text-amber-400 uppercase tracking-wider block">
+          <span className="font-bold text-amber-700 uppercase tracking-wider block">
             Página Pública de Agendamento da Sua Barbearia
           </span>
           <span className="text-stone-300">
@@ -159,7 +159,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
         <button
           type="button"
           onClick={handleCopyBookingLink}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs shrink-0 transition-all cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs shrink-0 transition-all cursor-pointer"
         >
           <Copy className="w-3.5 h-3.5" />
           {copiedLink ? 'Link Copiado!' : 'Copiar Link de Agendamento'}
@@ -169,13 +169,13 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
       {/* Storefront Hero Banner */}
       <div className="bg-gradient-to-br from-stone-900 via-stone-900 to-amber-950/30 border border-stone-800 rounded-3xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-800 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Agendamento Online 24h • Sem precisar baixar aplicativo</span>
           </div>
           <h2 className="text-2xl font-bold text-stone-100">{business.name}</h2>
           <p className="text-xs text-stone-400 flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <MapPin className="w-3.5 h-3.5 text-amber-700 shrink-0" />
             <span>
               {business.address} • {business.neighborhood}, {business.cityState}
             </span>
@@ -186,7 +186,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
           <span className="text-[11px] uppercase tracking-wider text-stone-400">
             Total Selecionado
           </span>
-          <div className="text-2xl font-bold font-mono text-amber-400">
+          <div className="text-2xl font-bold font-mono text-amber-700">
             {formatCurrencyBRL(totalPrice)}
           </div>
           <div className="text-[11px] text-stone-400 flex items-center justify-end gap-1 mt-0.5">
@@ -198,7 +198,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
 
       {bookingCompleted ? (
         <div className="bg-emerald-950/30 border border-emerald-500/40 rounded-3xl p-8 text-center space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-300">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-700">
             <CalendarCheck className="w-7 h-7" />
           </div>
           <h3 className="text-xl font-bold text-stone-100">
@@ -206,7 +206,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
           </h3>
           <p className="text-sm text-stone-300 max-w-md mx-auto">
             O agendamento hoje às{' '}
-            <span className="font-mono font-bold text-emerald-300">
+            <span className="font-mono font-bold text-emerald-700">
               {selectedTime}
             </span>{' '}
             já foi salvo na <strong>Agenda</strong> da barbearia.
@@ -218,7 +218,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
               setClientPhone('');
               setProofFileName('');
             }}
-            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition-all cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs transition-all cursor-pointer"
           >
             Fazer Outro Agendamento
           </button>
@@ -233,7 +233,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
             {/* Step 1: Services */}
             <div className="bg-stone-900/60 border border-stone-800 rounded-2xl p-5 space-y-3">
               <h3 className="text-sm font-bold text-stone-100 flex items-center gap-2">
-                <Scissors className="w-4 h-4 text-amber-400" />
+                <Scissors className="w-4 h-4 text-amber-700" />
                 <span>1. Escolha os Serviços e Valores</span>
               </h3>
               <div className="space-y-2">
@@ -256,7 +256,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
                           {srv.durationMinutes} min
                         </div>
                       </div>
-                      <span className="font-mono text-sm font-bold text-amber-400">
+                      <span className="font-mono text-sm font-bold text-amber-700">
                         {formatCurrencyBRL(srv.price)}
                       </span>
                     </button>
@@ -353,7 +353,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
             {/* Opção de Sinal Pix e Comprovante */}
             <div className="p-3.5 rounded-xl bg-stone-950 border border-stone-800 space-y-2.5">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-800">
                   <QrCode className="w-4 h-4" />
                   <span>
                     Adiantar Sinal Pix ({business.noShowDepositPercent}%)
@@ -380,7 +380,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
               </p>
 
               {requireDeposit && (
-                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-amber-300 border border-stone-700 text-[11px] font-semibold cursor-pointer">
+                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-amber-800 border border-stone-700 text-[11px] font-semibold cursor-pointer">
                   <Paperclip className="w-3.5 h-3.5" />
                   {proofFileName
                     ? `Comprovante: ${proofFileName}`
@@ -406,7 +406,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
             </div>
 
             <div className="flex items-center gap-2 text-[11px] text-stone-400">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
               <span>
                 Cancelamento gratuito até {business.cancelNoticeHours}h antes do horário.
               </span>
@@ -414,7 +414,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
 
             <button
               type="submit"
-              className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold text-sm transition-all cursor-pointer shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2"
+              className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-stone-100 font-bold text-sm transition-all cursor-pointer shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2"
             >
               <MessageCircle className="w-4 h-4" />
               Confirmar Agendamento ({formatCurrencyBRL(totalPrice)})

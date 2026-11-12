@@ -241,7 +241,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
           <span className="text-[11px] uppercase tracking-wider text-stone-400">
             Total Recebido Hoje
           </span>
-          <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
+          <div className="text-xl font-bold font-mono text-emerald-700 mt-1">
             {formatCurrencyBRL(dailySummary.totalGross)}
           </div>
           <div className="text-[11px] text-stone-400 mt-0.5">
@@ -253,7 +253,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
           <span className="text-[11px] uppercase tracking-wider text-stone-400">
             Recebido em Pix
           </span>
-          <div className="text-xl font-bold font-mono text-amber-400 mt-1">
+          <div className="text-xl font-bold font-mono text-amber-700 mt-1">
             {formatCurrencyBRL(dailySummary.pixTotal)}
           </div>
           <div className="text-[11px] text-stone-400 mt-0.5">
@@ -295,7 +295,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
         >
           <div className="flex items-center justify-between border-b border-stone-800 pb-3">
             <div className="flex items-center gap-2.5">
-              <Wallet className="w-5 h-5 text-amber-400" />
+              <Wallet className="w-5 h-5 text-amber-700" />
               <div>
                 <h2 className="text-base font-bold text-stone-100">
                   Lançar Recebimento no Caixa (Em 3 Passos Simples)
@@ -310,7 +310,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
           {/* Atalho: Puxar da Agenda de Hoje */}
           {openAppointments.length > 0 && (
             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-2">
-              <span className="block text-[11px] font-semibold uppercase tracking-wider text-amber-300">
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-amber-800">
                 Puxar cliente agendado hoje com 1 clique:
               </span>
               <div className="flex flex-wrap gap-2">
@@ -330,7 +330,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
 
           {/* PASSO 1: Cliente e Barbeiro */}
           <div className="space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-amber-400">
+            <div className="text-xs font-bold uppercase tracking-wider text-amber-700">
               Passo 1: Quem foi atendido e por qual barbeiro?
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -374,7 +374,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
 
           {/* PASSO 2: Serviço e Valor Cobrado (Editável) */}
           <div className="space-y-3 pt-2 border-t border-stone-800/80">
-            <div className="text-xs font-bold uppercase tracking-wider text-amber-400">
+            <div className="text-xs font-bold uppercase tracking-wider text-amber-700">
               Passo 2: Qual serviço foi feito e qual o valor cobrado?
             </div>
 
@@ -394,11 +394,11 @@ export const PosModule: React.FC<PosModuleProps> = ({
                   >
                     <div className="pr-2">
                       <div className="text-xs font-semibold flex items-center gap-1.5">
-                        <Scissors className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <Scissors className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                         <span>{srv.name}</span>
                       </div>
                     </div>
-                    <span className="font-mono text-xs font-bold text-amber-400 shrink-0">
+                    <span className="font-mono text-xs font-bold text-amber-700 shrink-0">
                       {formatCurrencyBRL(srv.price)}
                     </span>
                   </button>
@@ -421,7 +421,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
                       : String(defaultServicesSum)
                   }
                   onChange={(e) => setCustomTotalInput(e.target.value)}
-                  className="w-full bg-stone-950 border border-amber-500/50 rounded-xl px-3.5 py-2.5 text-base font-mono font-bold text-amber-400 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-stone-950 border border-amber-500/50 rounded-xl px-3.5 py-2.5 text-base font-mono font-bold text-amber-700 focus:outline-none focus:border-amber-500"
                 />
               </div>
 
@@ -443,7 +443,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
 
           {/* PASSO 3: Forma de Pagamento e Comprovante */}
           <div className="space-y-3 pt-2 border-t border-stone-800/80">
-            <div className="text-xs font-bold uppercase tracking-wider text-amber-400">
+            <div className="text-xs font-bold uppercase tracking-wider text-amber-700">
               Passo 3: Como o cliente pagou?
             </div>
 
@@ -459,7 +459,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
                     onClick={() => setPaymentMethod(method)}
                     className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                       active
-                        ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-300'
+                        ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-700'
                         : 'bg-stone-950 border-stone-800 text-stone-400 hover:text-stone-200'
                     }`}
                   >
@@ -498,7 +498,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
                     : 'Anexe foto do comprovante ou extrato se desejar guardar no histórico'}
                 </span>
               </div>
-              <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs font-semibold cursor-pointer shrink-0">
+              <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-800 text-xs font-semibold cursor-pointer shrink-0">
                 <Paperclip className="w-3.5 h-3.5" />
                 {receiptFileName ? 'Trocar Comprovante' : 'Anexar Comprovante'}
                 <input
@@ -514,14 +514,14 @@ export const PosModule: React.FC<PosModuleProps> = ({
           <button
             type="submit"
             disabled={splitBreakdown.totalAmount <= 0}
-            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-stone-950 font-bold text-sm shadow-lg shadow-emerald-500/10 transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-stone-100 font-bold text-sm shadow-lg shadow-emerald-500/10 transition-all cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
             Confirmar Recebimento de {formatCurrencyBRL(splitBreakdown.totalAmount)}
           </button>
 
           {justClosedSuccess && (
-            <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold text-center">
+            <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 text-xs font-semibold text-center">
               Pagamento registrado no Caixa e somado ao faturamento do dia!
             </div>
           )}
@@ -533,12 +533,12 @@ export const PosModule: React.FC<PosModuleProps> = ({
           <div className="bg-stone-900 border border-stone-800 rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between border-b border-stone-800 pb-3">
               <div className="flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-amber-400" />
+                <Receipt className="w-4 h-4 text-amber-700" />
                 <h3 className="text-sm font-bold text-stone-100">
                   Para onde vai o dinheiro deste corte?
                 </h3>
               </div>
-              <span className="font-mono text-base font-bold text-emerald-400">
+              <span className="font-mono text-base font-bold text-emerald-700">
                 {formatCurrencyBRL(splitBreakdown.totalAmount)}
               </span>
             </div>
@@ -552,7 +552,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
               </div>
 
               {splitBreakdown.acquirerFeeAmount > 0 && (
-                <div className="flex justify-between text-rose-300">
+                <div className="flex justify-between text-rose-700">
                   <span>
                     Taxa da maquininha ({splitBreakdown.acquirerFeePct}%):
                   </span>
@@ -563,7 +563,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
               )}
 
               <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2 mt-2">
-                <div className="flex justify-between items-center text-emerald-400 font-semibold">
+                <div className="flex justify-between items-center text-emerald-700 font-semibold">
                   <span>
                     Parte do Barbeiro ({selectedStaff?.name ?? 'Barbeiro'}):
                   </span>
@@ -571,7 +571,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
                     {formatCurrencyBRL(splitBreakdown.staffNetCommission)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center text-amber-400 font-semibold border-t border-stone-800 pt-2">
+                <div className="flex justify-between items-center text-amber-700 font-semibold border-t border-stone-800 pt-2">
                   <span>Parte que fica no Caixa da Barbearia:</span>
                   <span className="font-mono text-sm">
                     {formatCurrencyBRL(splitBreakdown.salonNetShare)}
@@ -585,7 +585,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
           <div className="bg-stone-900/50 border border-stone-800/80 rounded-2xl p-4 space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-stone-300 flex items-center justify-between">
               <span>Extrato de Cortes Recebidos Hoje ({transactions.length})</span>
-              <span className="font-mono text-emerald-400">
+              <span className="font-mono text-emerald-700">
                 Total: {formatCurrencyBRL(dailySummary.totalGross)}
               </span>
             </h4>
@@ -604,7 +604,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
                     <div>
                       <div className="font-semibold text-stone-200 flex items-center gap-1.5">
                         <span>{tx.clientName}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-800 text-amber-300 font-mono">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-800 text-amber-800 font-mono">
                           {PAYMENT_METHOD_LABELS[tx.paymentMethod]}
                         </span>
                       </div>
@@ -613,7 +613,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
                         {formatCurrencyBRL(tx.staffNetCommission)})
                       </div>
                       {tx.receiptAttachmentName && (
-                        <div className="inline-flex items-center gap-1 text-[10px] text-emerald-400 mt-1">
+                        <div className="inline-flex items-center gap-1 text-[10px] text-emerald-700 mt-1">
                           <FileText className="w-3 h-3" />
                           Comprovante: {tx.receiptAttachmentName}
                         </div>
@@ -622,7 +622,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
 
                     <div className="flex items-center gap-2">
                       <div className="text-right font-mono">
-                        <div className="font-bold text-emerald-400 text-sm">
+                        <div className="font-bold text-emerald-700 text-sm">
                           {formatCurrencyBRL(tx.totalAmount)}
                         </div>
                         <div className="text-[10px] text-stone-400">
@@ -634,7 +634,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
                           type="button"
                           onClick={() => onDeleteTransaction(tx.id)}
                           title="Excluir lançamento"
-                          className="p-1.5 rounded-lg text-stone-500 hover:text-rose-400 hover:bg-stone-900 cursor-pointer"
+                          className="p-1.5 rounded-lg text-stone-500 hover:text-rose-700 hover:bg-stone-900 cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

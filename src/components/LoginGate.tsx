@@ -194,9 +194,9 @@ export const LoginGate: React.FC<LoginGateProps> = ({
           <div
             role="alert"
             aria-live="assertive"
-            className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/40 flex items-start gap-2.5 text-xs text-rose-200"
+            className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/40 flex items-start gap-2.5 text-xs text-rose-700"
           >
-            <ShieldWarning className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <ShieldWarning className="w-5 h-5 text-rose-700 shrink-0 mt-0.5" />
             <span>{errorMessage}</span>
           </div>
         )}
@@ -247,7 +247,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-pressed={showPassword}
                 aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                className="inline-flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 cursor-pointer"
+                className="inline-flex items-center gap-1 text-[11px] text-amber-700 hover:text-amber-800 cursor-pointer"
               >
                 {showPassword ? (
                   <>
@@ -288,7 +288,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({
               PIN de Segurança (6 Dígitos) *
             </label>
             <div className="relative">
-              <Key className="w-4 h-4 text-amber-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Key className="w-4 h-4 text-amber-700 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 id="security-pin"
                 name="security_pin"
@@ -305,7 +305,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({
                   if (errorMessage) setErrorMessage(null);
                 }}
                 placeholder="000000"
-                className="w-full bg-stone-950 border border-stone-800 rounded-xl pl-10 pr-4 py-3 text-base font-mono tracking-widest text-amber-400 font-bold focus:outline-none focus:border-amber-500"
+                className="w-full bg-stone-950 border border-stone-800 rounded-xl pl-10 pr-4 py-3 text-base font-mono tracking-widest text-amber-700 font-bold focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>
@@ -313,7 +313,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({
           <button
             type="submit"
             disabled={isVerifying}
-            className="w-full py-3.5 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-stone-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/15 transition-all cursor-pointer"
+            className="w-full py-3.5 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-stone-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/15 transition-all cursor-pointer"
           >
             <LockKey className="w-5 h-5" weight="bold" />
             {isVerifying ? 'Autenticando...' : 'Entrar'}

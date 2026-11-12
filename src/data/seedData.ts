@@ -17,10 +17,10 @@ import {
 export const INITIAL_BUSINESS_CONFIG: BusinessConfig = {
   id: 'biz_custom_01',
   slug: 'minha-barbearia',
-  name: 'Minha Barbearia (Clique em Gestão p/ Configurar)',
+  name: 'Minha Barbearia',
   neighborhood: 'Centro',
   cityState: 'Sua Cidade - UF',
-  address: 'Cadastre seu endereço na aba Gestão',
+  address: 'Cadastre seu endereço em Ajustes',
   phone: '',
   pixKey: '',
   planTier: 'PRO',
@@ -41,7 +41,7 @@ export const INITIAL_BUSINESS_CONFIG: BusinessConfig = {
 export const INITIAL_STAFF: StaffMember[] = [
   {
     id: 'st_01',
-    name: 'Barbeiro Principal (Edite em Gestão)',
+    name: 'Barbeiro Principal',
     role: 'PROFESSIONAL',
     specialty: 'Corte & Barba',
     chairLabel: 'Cadeira 01',

@@ -1,16 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Bell,
   Calendar,
   CreditCard,
   ArrowSquareOut as ExternalLink,
   SquaresFour as LayoutDashboard,
-  Moon,
   PencilSimple as Pencil,
   Scissors,
   ShieldCheck,
   SignOut,
-  Sun,
   Users,
 } from '@phosphor-icons/react';
 import {
@@ -66,7 +63,6 @@ const STORAGE_KEY = 'pronto_agende_br_state_v2_clean';
 const USERS_STORAGE_KEY = 'pronto_agende_br_users_v1';
 const AUDIT_STORAGE_KEY = 'pronto_agende_br_audit_v1';
 const SESSION_STORAGE_KEY = 'pronto_agende_br_hmac_session_v1';
-const THEME_STORAGE_KEY = 'pronto_agende_br_theme';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('AGENDA');
@@ -207,11 +203,7 @@ export function App() {
       // ignore
     }
     // Se for Admin Master (Aristeu ou Otávio), já pode ver todas as abas incluindo Admin & Segurança
-    if (account.role === 'MASTER_ADMIN') {
-      setActiveTab('ADMIN_SECURITY');
-    } else {
-      setActiveTab('AGENDA');
-    }
+    setActiveTab('AGENDA');
   };
 
   const handleLogout = () => {
@@ -272,34 +264,6 @@ export function App() {
     setAccounts((prev) => prev.filter((a) => a.id !== userId));
   };
 
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    try {
-      const saved = localStorage.getItem(THEME_STORAGE_KEY);
-      if (saved === 'light' || saved === 'dark') return saved;
-    } catch {
-      // ignore
-    }
-    return 'dark';
-  });
-
-  useEffect(() => {
-    const meta = document.querySelector(
-      'meta[name="color-scheme"]'
-    ) as HTMLMetaElement | null;
-    if (meta) {
-      meta.content = theme;
-    }
-    document.documentElement.dataset.theme = theme;
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
-    } catch {
-      // ignore
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  };
 
   const [business, setBusiness] = useState<BusinessConfig>(() => {
     try {
@@ -669,7 +633,7 @@ export function App() {
   }> = [
     {
       id: 'AGENDA',
-      label: 'Agenda & Encaixes',
+      label: 'Agenda',
       shortLabel: 'Agenda',
       icon: <Calendar className="w-4 h-4" />,
       badge: appointments.filter(
@@ -679,7 +643,7 @@ export function App() {
     },
     {
       id: 'POS',
-      label: 'Caixa / PDV',
+      label: 'Caixa',
       shortLabel: 'Caixa',
       icon: <CreditCard className="w-4 h-4" />,
       allowed: perms.canAccessPos,
@@ -693,33 +657,18 @@ export function App() {
       allowed: perms.canAccessClients,
     },
     {
-      id: 'REMINDERS',
-      label: 'Lembretes WhatsApp',
-      shortLabel: 'Lembretes',
-      icon: <Bell className="w-4 h-4" />,
-      allowed: perms.canAccessReminders,
-    },
-    {
       id: 'PUBLIC_BOOKING',
       label: 'Link de Reserva',
-      shortLabel: 'Link',
+      shortLabel: 'Reserva',
       icon: <ExternalLink className="w-4 h-4" />,
       allowed: perms.canAccessPublicBooking,
     },
     {
       id: 'MANAGER',
-      label: 'Gestão & Preços',
-      shortLabel: 'Gestão',
+      label: 'Ajustes',
+      shortLabel: 'Ajustes',
       icon: <LayoutDashboard className="w-4 h-4" />,
       allowed: perms.canAccessManager,
-    },
-    {
-      id: 'ADMIN_SECURITY',
-      label: 'Admin Master',
-      shortLabel: 'Admin',
-      icon: <ShieldCheck className="w-4 h-4" />,
-      badge: accounts.length,
-      allowed: currentUser.role === 'MASTER_ADMIN' && perms.canManageUsers,
     },
   ];
 
@@ -739,9 +688,6 @@ export function App() {
               <div className="flex items-center gap-2">
                 <span className="font-bold tracking-tight text-base text-stone-100">
                   ProntoAgende
-                </span>
-                <span className="text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold">
-                  {currentUser.role === 'MASTER_ADMIN' ? 'ADMIN MASTER' : 'BR'}
                 </span>
               </div>
 
@@ -770,10 +716,10 @@ export function App() {
                   type="button"
                   onClick={() => setEditingHeaderName(true)}
                   title="Clique para editar o nome da sua barbearia"
-                  className="text-xs text-stone-400 hover:text-amber-300 flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-xs cursor-pointer"
+                  className="text-xs text-stone-400 hover:text-amber-800 flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-xs cursor-pointer"
                 >
                   <span className="truncate">{business.name}</span>
-                  <Pencil className="w-3 h-3 text-amber-400 shrink-0" />
+                  <Pencil className="w-3 h-3 text-amber-700 shrink-0" />
                 </button>
               )}
             </div>
@@ -803,7 +749,7 @@ export function App() {
                       className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
                         active
                           ? 'bg-stone-950/20 text-stone-950 font-bold'
-                          : 'bg-amber-500/20 text-amber-300'
+                          : 'bg-amber-500/20 text-amber-800'
                       }`}
                     >
                       {item.badge}
@@ -816,35 +762,23 @@ export function App() {
 
           {/* Right User Badge, Theme Toggle & Logout */}
           <div className="flex items-center gap-2 shrink-0">
-            <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-stone-900 border border-stone-800 text-[11px] font-mono text-emerald-400">
-              <ShieldCheck className="w-3.5 h-3.5" />@{currentUser.username}
-            </span>
+            {currentUser.role === 'MASTER_ADMIN' && perms.canManageUsers && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('ADMIN_SECURITY')}
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-300 hover:border-amber-500/50 text-xs font-medium cursor-pointer"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Contas
+              </button>
+            )}
 
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={
-                theme === 'dark' ? 'Ativar Modo Claro' : 'Ativar Modo Escuro'
-              }
-              title={
-                theme === 'dark'
-                  ? 'Mudar para Modo Claro'
-                  : 'Mudar para Modo Escuro'
-              }
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-200 hover:border-amber-500/50 transition-all cursor-pointer text-xs font-medium"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-              ) : (
-                <Moon className="w-3.5 h-3.5 text-amber-500" />
-              )}
-            </button>
 
             <button
               type="button"
               onClick={handleLogout}
               title="Sair e bloquear sessão"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-semibold transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 text-xs font-semibold transition-all cursor-pointer"
             >
               <SignOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Sair</span>
@@ -867,6 +801,9 @@ export function App() {
             onDeleteAppointment={handleDeleteAppointment}
             onCreateAppointment={handleCreateAppointment}
             onOpenInPos={(apt) => handleOpenPosForAppointment(apt.id)}
+            onOpenReminders={
+              perms.canAccessReminders ? () => setActiveTab('REMINDERS') : undefined
+            }
           />
         )}
 
@@ -895,6 +832,14 @@ export function App() {
         )}
 
         {activeTab === 'REMINDERS' && perms.canAccessReminders && (
+          <>
+          <button
+            type="button"
+            onClick={() => setActiveTab('AGENDA')}
+            className="mb-3 text-xs font-medium text-amber-700 hover:text-amber-800 cursor-pointer"
+          >
+            ← Voltar para a Agenda
+          </button>
           <RemindersModule
             reminders={reminders}
             appointments={appointments}
@@ -904,6 +849,7 @@ export function App() {
             onDispatchAllPending={() => {}}
             onSimulateClientReply={() => {}}
           />
+          </>
         )}
 
         {activeTab === 'PUBLIC_BOOKING' && perms.canAccessPublicBooking && (
@@ -940,6 +886,14 @@ export function App() {
         {activeTab === 'ADMIN_SECURITY' &&
           currentUser.role === 'MASTER_ADMIN' &&
           perms.canManageUsers && (
+            <>
+            <button
+              type="button"
+              onClick={() => setActiveTab('AGENDA')}
+              className="mb-3 text-xs font-medium text-amber-700 hover:text-amber-800 cursor-pointer"
+            >
+              ← Voltar para a Agenda
+            </button>
             <AdminSecurityModule
               currentUser={currentUser}
               accounts={accounts}
@@ -951,6 +905,7 @@ export function App() {
               onUpdateBusiness={handleUpdateBusiness}
               onLogSecurityEvent={handleLogSecurityEvent}
             />
+            </>
           )}
       </main>
 
@@ -967,7 +922,7 @@ export function App() {
               onClick={() => setActiveTab(item.id)}
               className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
                 active
-                  ? 'text-amber-400 bg-amber-500/10 font-semibold'
+                  ? 'text-amber-700 bg-amber-500/10 font-semibold'
                   : 'text-stone-400 hover:text-stone-200'
               }`}
             >

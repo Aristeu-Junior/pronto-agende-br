@@ -125,7 +125,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
       {/* Header Banner */}
       <div className="bg-stone-900/70 border border-stone-800/80 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-emerald-400">
+          <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-emerald-700">
             <BellRing className="w-3.5 h-3.5" />
             <span>Confirmação Direta no WhatsApp Real do Cliente</span>
           </div>
@@ -146,7 +146,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
               <span className="text-xs font-bold uppercase tracking-wider text-stone-300">
                 Clientes na Agenda para Confirmar ({appointments.length})
               </span>
-              <span className="text-[11px] text-emerald-400 font-mono">
+              <span className="text-[11px] text-emerald-700 font-mono">
                 Abre WhatsApp Web / App Oficial
               </span>
             </div>
@@ -158,7 +158,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
                   Nenhum horário agendado no momento
                 </div>
                 <p className="text-xs text-stone-400 max-w-md mx-auto">
-                  Assim que você cadastrar um cliente na aba <strong>Agenda</strong> ou o cliente reservar pelo <strong>Link de Reserva</strong>, ele aparecerá aqui pronto para você disparar o lembrete pelo WhatsApp.
+                  Assim que você cadastrar um cliente na <strong>Agenda</strong> ou o cliente reservar pelo <strong>Link de Reserva</strong>, ele aparecerá aqui pronto para você disparar o lembrete pelo WhatsApp.
                 </p>
               </div>
             ) : (
@@ -181,7 +181,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-800 border border-amber-500/30">
                             {apt.startTime}
                           </span>
                           <span className="font-semibold text-stone-100 text-sm">
@@ -194,7 +194,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
                         <p className="text-xs text-stone-400">
                           {aptServices.map((s) => s.name).join(' + ') || 'Corte'}{' '}
                           • Com <strong className="text-stone-200">{staffMember?.name}</strong> •{' '}
-                          <span className="text-amber-400 font-mono font-semibold">
+                          <span className="text-amber-700 font-mono font-semibold">
                             {formatCurrencyBRL(price)}
                           </span>
                         </p>
@@ -202,7 +202,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
 
                       <div className="flex items-center gap-2 shrink-0">
                         {wasSent && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 text-[11px] font-semibold">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Enviado
                           </span>
@@ -210,7 +210,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSendWhatsAppForAppointment(apt)}
-                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold text-xs shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-stone-100 font-bold text-xs shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
                         >
                           <MessageCircle className="w-4 h-4" />
                           Enviar Lembrete no WhatsApp
@@ -229,7 +229,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
             className="bg-stone-900/70 border border-stone-800 rounded-2xl p-5 space-y-4"
           >
             <div className="flex items-center gap-2">
-              <Send className="w-4 h-4 text-amber-400" />
+              <Send className="w-4 h-4 text-amber-700" />
               <h3 className="text-sm font-bold text-stone-100">
                 Disparo Rápido de Confirmação para Qualquer WhatsApp
               </h3>
@@ -277,7 +277,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
             </div>
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold text-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-stone-100 font-bold text-xs transition-all cursor-pointer"
             >
               <MessageCircle className="w-4 h-4" />
               Abrir Conversa no WhatsApp Agora
@@ -288,7 +288,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
         {/* Right 5 Cols: Editor do Texto da Mensagem */}
         <div className="lg:col-span-5 bg-stone-900 border border-stone-800 rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2 border-b border-stone-800 pb-3">
-            <Smartphone className="w-4 h-4 text-emerald-400" />
+            <Smartphone className="w-4 h-4 text-emerald-700" />
             <h3 className="text-sm font-bold text-stone-100">
               Personalizar Mensagem do WhatsApp
             </h3>
@@ -306,17 +306,17 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
             />
             <p className="text-[11px] text-stone-400">
               Variáveis automáticas disponíveis:{' '}
-              <code className="text-amber-300">{'{nome}'}</code>,{' '}
-              <code className="text-amber-300">{'{hora}'}</code>,{' '}
-              <code className="text-amber-300">{'{profissional}'}</code>,{' '}
-              <code className="text-amber-300">{'{barbearia}'}</code>,{' '}
-              <code className="text-amber-300">{'{servico}'}</code>,{' '}
-              <code className="text-amber-300">{'{valor}'}</code>.
+              <code className="text-amber-800">{'{nome}'}</code>,{' '}
+              <code className="text-amber-800">{'{hora}'}</code>,{' '}
+              <code className="text-amber-800">{'{profissional}'}</code>,{' '}
+              <code className="text-amber-800">{'{barbearia}'}</code>,{' '}
+              <code className="text-amber-800">{'{servico}'}</code>,{' '}
+              <code className="text-amber-800">{'{valor}'}</code>.
             </p>
           </div>
 
           <div className="p-3.5 rounded-xl bg-stone-950/90 border border-stone-800/80 space-y-1.5 text-xs">
-            <div className="flex items-center gap-1.5 text-amber-400 font-semibold">
+            <div className="flex items-center gap-1.5 text-amber-700 font-semibold">
               <Clock className="w-3.5 h-3.5" />
               <span>Prévia de como chega no celular do cliente:</span>
             </div>

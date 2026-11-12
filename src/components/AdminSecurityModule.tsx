@@ -143,7 +143,7 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
   ) {
     return (
       <div className="p-8 rounded-2xl bg-rose-950/30 border border-rose-500/40 text-center space-y-3">
-        <ShieldWarning className="w-10 h-10 text-rose-400 mx-auto" />
+        <ShieldWarning className="w-10 h-10 text-rose-700 mx-auto" />
         <h2 className="text-lg font-bold text-stone-100">
           Acesso Negado (Nível Master Admin Requerido)
         </h2>
@@ -371,7 +371,7 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
       {/* Top Banner Admin Master */}
       <div className="bg-gradient-to-r from-stone-900 via-stone-900 to-amber-950/30 border border-amber-500/40 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-amber-400">
+          <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-amber-700">
             <ShieldCheck className="w-4 h-4" />
             <span>
               Painel Exclusivo Admin Master • Logado como:{' '}
@@ -394,7 +394,7 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
           <div className="bg-stone-900/70 border border-stone-800 rounded-2xl overflow-hidden">
             <div className="px-4 py-3 border-b border-stone-800 bg-stone-950/60 flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-stone-300 flex items-center gap-2">
-                <Users className="w-4 h-4 text-amber-400" />
+                <Users className="w-4 h-4 text-amber-700" />
                 <span>
                   Usuários & Barbearias Cadastradas ({accounts.length})
                 </span>
@@ -424,13 +424,13 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
                         <span className="font-bold text-sm text-stone-100">
                           {acc.displayName}
                         </span>
-                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-stone-950 text-amber-400 border border-stone-800">
+                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-stone-950 text-amber-700 border border-stone-800">
                           @{acc.username}
                         </span>
                         <span
                           className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
                             acc.role === 'MASTER_ADMIN'
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                              ? 'bg-amber-500/20 text-amber-800 border border-amber-500/40'
                               : 'bg-stone-800 text-stone-300'
                           }`}
                         >
@@ -439,7 +439,7 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
                             : 'CLIENTE BARBEARIA'}
                         </span>
                         {isLocked && (
-                          <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                          <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-rose-500/20 text-rose-700 border border-rose-500/40">
                             Bloqueado (Força Bruta)
                           </span>
                         )}
@@ -464,8 +464,8 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
                         }
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                           acc.status === 'ACTIVE'
-                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 hover:bg-rose-500/20 hover:text-rose-300 hover:border-rose-500/40'
-                            : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-emerald-500/20 hover:text-emerald-300'
+                            ? 'bg-emerald-500/15 text-emerald-700 border-emerald-500/40 hover:bg-rose-500/20 hover:text-rose-700 hover:border-rose-500/40'
+                            : 'bg-rose-500/20 text-rose-700 border-rose-500/40 hover:bg-emerald-500/20 hover:text-emerald-700'
                         }`}
                       >
                         {acc.status === 'ACTIVE'
@@ -487,7 +487,7 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
                               }
                             }}
                             title="Excluir usuário"
-                            className="p-2 rounded-xl bg-stone-950 hover:bg-rose-500/20 text-stone-400 hover:text-rose-300 border border-stone-800 cursor-pointer"
+                            className="p-2 rounded-xl bg-stone-950 hover:bg-rose-500/20 text-stone-400 hover:text-rose-700 border border-stone-800 cursor-pointer"
                           >
                             <Trash className="w-4 h-4" />
                           </button>
@@ -504,7 +504,7 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
             <div className="bg-stone-900 border border-stone-800 rounded-2xl p-5 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <Sliders className="w-5 h-5 text-amber-400" />
+                  <Sliders className="w-5 h-5 text-amber-700" />
                   <div>
                     <h3 className="text-sm font-bold text-stone-100">
                       Permissões Liberadas para: {selectedAccount.displayName} (
@@ -553,7 +553,7 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
               {/* Preencher Dados da Barbearia para o Cliente + Redefinir Senha/PIN */}
               <div className="pt-4 border-t border-stone-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <span className="block text-xs font-bold text-amber-400">
+                  <span className="block text-xs font-bold text-amber-700">
                     Preencher Dados da Barbearia pelo Admin
                   </span>
                   <div>
@@ -586,7 +586,7 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
                         })
                       }
                       placeholder="CPF/CNPJ/Celular do cliente"
-                      className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs font-mono text-amber-400"
+                      className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs font-mono text-amber-700"
                     />
                   </div>
                 </div>
@@ -596,7 +596,7 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
                   className="space-y-2 bg-stone-950/80 border border-stone-800 rounded-xl p-3"
                 >
                   <span className="block text-xs font-bold text-stone-200 flex items-center gap-1.5">
-                    <Key className="w-3.5 h-3.5 text-amber-400" />
+                    <Key className="w-3.5 h-3.5 text-amber-700" />
                     <span>Redefinir Senha ou PIN de @{selectedAccount.username}</span>
                   </span>
                   <input
@@ -615,16 +615,16 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
                       setResetPinInput(e.target.value.replace(/\D/g, '').slice(0, 6))
                     }
                     placeholder="Novo PIN 6 dígitos (Ex: 654321)"
-                    className="w-full bg-stone-900 border border-stone-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-400"
+                    className="w-full bg-stone-900 border border-stone-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-700"
                   />
                   <button
                     type="submit"
-                    className="w-full py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs cursor-pointer"
+                    className="w-full py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs cursor-pointer"
                   >
                     Atualizar Credenciais & Desbloquear
                   </button>
                   {resetSuccessMsg && (
-                    <span className="block text-[11px] text-emerald-400 font-semibold">
+                    <span className="block text-[11px] text-emerald-700 font-semibold">
                       {resetSuccessMsg}
                     </span>
                   )}
@@ -642,7 +642,7 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
             className="bg-stone-900 border border-stone-800 rounded-2xl p-5 space-y-4"
           >
             <div className="flex items-center gap-2 border-b border-stone-800 pb-3">
-              <UserPlus className="w-5 h-5 text-emerald-400" />
+              <UserPlus className="w-5 h-5 text-emerald-700" />
               <div>
                 <h3 className="text-sm font-bold text-stone-100">
                   Cadastrar & Liberar Novo Cliente (Barbearia)
@@ -657,8 +657,8 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
               <div
                 className={`p-3 rounded-xl text-xs font-semibold border ${
                   formFeedback.type === 'success'
-                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                    : 'bg-rose-500/15 border-rose-500/40 text-rose-300'
+                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-700'
+                    : 'bg-rose-500/15 border-rose-500/40 text-rose-700'
                 }`}
               >
                 {formFeedback.text}
@@ -764,14 +764,14 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
                     setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))
                   }
                   placeholder="Ex: 102030"
-                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs font-mono text-amber-400 font-bold"
+                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs font-mono text-amber-700 font-bold"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-stone-100 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" weight="bold" />
               Criar Usuário e Liberar Acesso Criptografado
@@ -782,13 +782,13 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
           <div className="bg-stone-900/80 border border-stone-800 rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between border-b border-stone-800 pb-2.5">
               <div className="flex items-center gap-2">
-                <LockKey className="w-4 h-4 text-amber-400" />
+                <LockKey className="w-4 h-4 text-amber-700" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-stone-200">
                   Log de Auditoria & Pentest ({auditLogs.length})
                 </h3>
               </div>
-              <span className="text-[10px] font-mono text-emerald-400">
-                WAF & HMAC Ativos
+              <span className="text-[10px] font-mono text-emerald-700">
+                Registro de acessos ativo
               </span>
             </div>
 
@@ -802,10 +802,10 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
                     <span
                       className={`font-mono font-bold ${
                         log.severity === 'CRITICAL'
-                          ? 'text-rose-400'
+                          ? 'text-rose-700'
                           : log.severity === 'WARNING'
-                          ? 'text-amber-400'
-                          : 'text-emerald-400'
+                          ? 'text-amber-700'
+                          : 'text-emerald-700'
                       }`}
                     >
                       [{log.eventType}]
@@ -825,7 +825,7 @@ export const AdminSecurityModule: React.FC<AdminSecurityModuleProps> = ({
 
           {/* Nota Técnica Validada: Pagamento In-App via SDKs Prontos */}
           <div className="bg-stone-900/70 border border-amber-500/30 rounded-2xl p-5 space-y-2.5 text-xs">
-            <div className="flex items-center gap-2 text-amber-400 font-bold">
+            <div className="flex items-center gap-2 text-amber-700 font-bold">
               <CreditCard className="w-4 h-4" />
               <span>
                 Roadmap Anotado: Pagamentos In-App (Bibliotecas Prontas)
