@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import {
   Calendar,
   CreditCard,
@@ -11,14 +12,10 @@ import {
   Users,
 } from '@phosphor-icons/react';
 import {
-  INITIAL_APPOINTMENTS,
   INITIAL_BANK_STATEMENTS,
-  INITIAL_BUSINESS_CONFIG,
   INITIAL_CLIENTS,
   INITIAL_POS_TRANSACTIONS,
   INITIAL_REMINDERS,
-  INITIAL_SERVICES,
-  INITIAL_STAFF,
 } from './data/seedData';
 import {
   Appointment,
@@ -28,473 +25,394 @@ import {
   Client,
   PosTransaction,
   ReminderLog,
-  SecurityAuditEvent,
   ServiceItem,
   StaffMember,
-  UserAccount,
+  UserPermissions,
 } from './types';
+import { sanitizeUserText } from './utils/security';
+import { servicesSpan } from './utils/schedule';
+import { friendlyError, supabase } from './lib/supabase';
 import {
-  buildInitialAccounts,
-  createAuditEvent,
-  createSignedSession,
-  sanitizeUserText,
-  SignedSessionToken,
-  verifySignedSession,
-} from './utils/security';
+  Profile,
+  appointmentToRow,
+  businessToRow,
+  fetchAppointments,
+  fetchBusiness,
+  fetchProfile,
+  loadOwnerData,
+  newId,
+  serviceFromRow,
+  serviceToRow,
+  staffFromRow,
+  staffToRow,
+} from './lib/cloud';
 import { AgendaModule } from './components/AgendaModule';
 import { ClientsModule } from './components/ClientsModule';
 import { PosModule } from './components/PosModule';
 import { RemindersModule } from './components/RemindersModule';
-import { PublicBookingModule } from './components/PublicBookingModule';
 import { ManagerDashboardModule } from './components/ManagerDashboardModule';
-import { LoginGate } from './components/LoginGate';
-import { AdminSecurityModule } from './components/AdminSecurityModule';
+import { AdminUsersModule } from './components/AdminUsersModule';
+import { ShareLinkModule } from './components/ShareLinkModule';
+import { PublicBookingPage } from './components/PublicBookingPage';
+import { AuthScreen, OnboardingScreen, WaitingScreen } from './components/AuthScreens';
 
-type ActiveTab =
-  | 'AGENDA'
-  | 'POS'
-  | 'CLIENTS'
-  | 'REMINDERS'
-  | 'PUBLIC_BOOKING'
-  | 'MANAGER'
-  | 'ADMIN_SECURITY';
+type ActiveTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'REMINDERS' | 'PUBLIC_BOOKING' | 'MANAGER' | 'ADMIN';
 
-const STORAGE_KEY = 'pronto_agende_br_state_v2_clean';
-const USERS_STORAGE_KEY = 'pronto_agende_br_users_v1';
-const AUDIT_STORAGE_KEY = 'pronto_agende_br_audit_v1';
-const SESSION_STORAGE_KEY = 'pronto_agende_br_hmac_session_v1';
+const ALL_PERMISSIONS: UserPermissions = {
+  canAccessAgenda: true,
+  canAccessPos: true,
+  canAccessClients: true,
+  canAccessReminders: true,
+  canAccessPublicBooking: true,
+  canAccessManager: true,
+  canEditPrices: true,
+  canUploadStatements: true,
+  canExportOrResetData: true,
+  canManageUsers: false,
+};
 
+function parsePublicSlug(hash: string): string | null {
+  const m = hash.match(/^#\/reserva\/([a-z0-9-]{3,40})\/?$/i);
+  return m ? m[1].toLowerCase() : null;
+}
+
+/* ============================================================
+ * Raiz: decide entre página pública do cliente e área da barbearia.
+ * ============================================================ */
 export function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('AGENDA');
-  const [pendingCheckoutAppointmentId, setPendingCheckoutAppointmentId] =
-    useState<string | null>(null);
-  const [editingHeaderName, setEditingHeaderName] = useState(false);
-
-  // Security & Accounts State
-  const [accounts, setAccounts] = useState<UserAccount[]>([]);
-  const [accountsLoaded, setAccountsLoaded] = useState(false);
-  const [sessionToken, setSessionToken] = useState<SignedSessionToken | null>(
-    () => {
-      try {
-        const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
-        return raw ? (JSON.parse(raw) as SignedSessionToken) : null;
-      } catch {
-        return null;
-      }
-    }
-  );
-  const [auditLogs, setAuditLogs] = useState<SecurityAuditEvent[]>(() => {
-    try {
-      const saved = localStorage.getItem(AUDIT_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch {
-      // ignore
-    }
-    return [
-      createAuditEvent(
-        'LOGIN_SUCCESS',
-        'INFO',
-        'sistema',
-        'Motor criptográfico PBKDF2-HMAC-SHA256 (120.000 iterações) + WAF inicializado.'
-      ),
-    ];
-  });
-
-  // Boot accounts with PBKDF2 hashes
+  const [hash, setHash] = useState(window.location.hash);
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const defaults = await buildInitialAccounts();
-      if (!mounted) return;
-      try {
-        const saved = localStorage.getItem(USERS_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved) as UserAccount[];
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // Garante que Aristeu e Otávio sempre existam como MASTER_ADMIN
-            const hasAristeu = parsed.some((a) => a.username === 'aristeu');
-            const hasOtavio = parsed.some((a) => a.username === 'otavio');
-            const merged = [...parsed];
-            if (!hasAristeu) merged.unshift(defaults[0]);
-            if (!hasOtavio) merged.splice(1, 0, defaults[1]);
-            setAccounts(merged);
-            setAccountsLoaded(true);
-            return;
-          }
-        }
-      } catch {
-        // fallback to defaults
-      }
-      setAccounts(defaults);
-      setAccountsLoaded(true);
-    })();
-    return () => {
-      mounted = false;
-    };
+    const onHash = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  useEffect(() => {
-    if (!accountsLoaded || accounts.length === 0) return;
-    try {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(accounts));
-    } catch {
-      // ignore
-    }
-  }, [accounts, accountsLoaded]);
+  const publicSlug = parsePublicSlug(hash);
+  if (publicSlug) return <PublicBookingPage slug={publicSlug} />;
+  return <OwnerGate />;
+}
+
+/* ============================================================
+ * Porta de entrada da barbearia: login, aprovação e cadastro.
+ * ============================================================ */
+function OwnerGate() {
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [business, setBusiness] = useState<BusinessConfig | null | undefined>(undefined);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const userId = session?.user.id;
+
+  const refresh = useCallback(async () => {
+    if (!userId) return;
+    setLoadError('');
     try {
-      localStorage.setItem(
-        AUDIT_STORAGE_KEY,
-        JSON.stringify(auditLogs.slice(0, 150))
-      );
-    } catch {
-      // ignore
+      const p = await fetchProfile(userId);
+      setProfile(p);
+      if (p?.status === 'ACTIVE') setBusiness(await fetchBusiness(userId));
+      else setBusiness(null);
+    } catch (err) {
+      setLoadError(friendlyError((err as Error)?.message));
     }
-  }, [auditLogs]);
+  }, [userId]);
 
-  const currentUser = useMemo(() => {
-    if (!sessionToken) return undefined;
-    return accounts.find((a) => a.id === sessionToken.userId);
-  }, [accounts, sessionToken]);
-
-  // Verify HMAC integrity of the active session whenever accounts or token change
   useEffect(() => {
-    if (!accountsLoaded || !sessionToken) return;
-    let active = true;
-    (async () => {
-      const valid = await verifySignedSession(sessionToken, currentUser);
-      if (active && !valid) {
-        setSessionToken(null);
-        try {
-          sessionStorage.removeItem(SESSION_STORAGE_KEY);
-        } catch {
-          // ignore
-        }
-        setAuditLogs((prev) => [
-          createAuditEvent(
-            'SESSION_TERMINATED',
-            'CRITICAL',
-            sessionToken.username || 'desconhecido',
-            'Sessão encerrada automaticamente: assinatura HMAC inválida, expirada ou permissões alteradas.'
-          ),
-          ...prev,
-        ]);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [sessionToken, currentUser, accountsLoaded]);
-
-  const handleLogSecurityEvent = (event: SecurityAuditEvent) => {
-    setAuditLogs((prev) => [event, ...prev.slice(0, 149)]);
-  };
-
-  const handleLoginSuccess = async (account: UserAccount) => {
-    const signed = await createSignedSession(account);
-    setSessionToken(signed);
-    try {
-      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(signed));
-    } catch {
-      // ignore
+    if (!userId) {
+      setProfile(null);
+      setBusiness(undefined);
+      return;
     }
-    // Se for Admin Master (Aristeu ou Otávio), já pode ver todas as abas incluindo Admin & Segurança
-    setActiveTab('AGENDA');
-  };
+    setProfile(null);
+    setBusiness(undefined);
+    void refresh();
+  }, [userId, refresh]);
 
-  const handleLogout = () => {
-    if (currentUser) {
-      handleLogSecurityEvent(
-        createAuditEvent(
-          'SESSION_TERMINATED',
-          'INFO',
-          currentUser.username,
-          'Logout realizado manualmente pelo usuário.'
-        )
-      );
+  const signOut = () => void supabase.auth.signOut();
+
+  if (session === undefined)
+    return <main className="p-10 text-center text-sm text-stone-400">Carregando…</main>;
+  if (!session) return <AuthScreen />;
+  if (loadError)
+    return (
+      <main className="mx-auto max-w-sm p-10 text-center">
+        <p className="text-sm font-medium text-rose-700">{loadError}</p>
+        <button type="button" onClick={() => void refresh()} className="mt-4 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-stone-950 cursor-pointer">
+          Tentar de novo
+        </button>
+        <button type="button" onClick={signOut} className="mt-2 block w-full text-xs font-semibold text-stone-400 cursor-pointer">
+          Sair
+        </button>
+      </main>
+    );
+  if (!profile) return <main className="p-10 text-center text-sm text-stone-400">Carregando…</main>;
+  if (profile.status !== 'ACTIVE')
+    return (
+      <WaitingScreen
+        email={profile.email}
+        suspended={profile.status === 'SUSPENDED'}
+        onRefresh={() => void refresh()}
+        onSignOut={signOut}
+      />
+    );
+  if (business === undefined) return <main className="p-10 text-center text-sm text-stone-400">Carregando…</main>;
+  if (business === null)
+    return <OnboardingScreen defaultName={profile.display_name} onCreated={setBusiness} onSignOut={signOut} />;
+
+  return <Dashboard key={userId} userId={userId as string} profile={profile} initialBusiness={business} onSignOut={signOut} />;
+}
+
+/* ============================================================
+ * Área da barbearia (conta ativa).
+ * ============================================================ */
+interface LocalState {
+  clients: Client[];
+  transactions: PosTransaction[];
+  reminders: ReminderLog[];
+  bankStatements: BankStatementEntry[];
+}
+
+function readLocal(userId: string): LocalState {
+  try {
+    const saved = localStorage.getItem(`pronto_agende_br_local_${userId}`);
+    if (saved) {
+      const p = JSON.parse(saved);
+      return {
+        clients: Array.isArray(p.clients) ? p.clients : INITIAL_CLIENTS,
+        transactions: Array.isArray(p.transactions) ? p.transactions : INITIAL_POS_TRANSACTIONS,
+        reminders: Array.isArray(p.reminders) ? p.reminders : INITIAL_REMINDERS,
+        bankStatements: Array.isArray(p.bankStatements) ? p.bankStatements : INITIAL_BANK_STATEMENTS,
+      };
     }
-    setSessionToken(null);
-    try {
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
-    } catch {
-      // ignore
-    }
+  } catch {
+    // sem dados locais
+  }
+  return {
+    clients: INITIAL_CLIENTS,
+    transactions: INITIAL_POS_TRANSACTIONS,
+    reminders: INITIAL_REMINDERS,
+    bankStatements: INITIAL_BANK_STATEMENTS,
   };
+}
 
-  const handleCreateAccount = (newAcc: UserAccount) => {
-    setAccounts((prev) => [...prev, newAcc]);
-  };
+function Dashboard({
+  userId,
+  profile,
+  initialBusiness,
+  onSignOut,
+}: {
+  userId: string;
+  profile: Profile;
+  initialBusiness: BusinessConfig;
+  onSignOut: () => void;
+}) {
+  const [activeTab, setActiveTab] = useState<ActiveTab>('AGENDA');
+  const [pendingCheckoutAppointmentId, setPendingCheckoutAppointmentId] = useState<string | null>(null);
+  const [editingHeaderName, setEditingHeaderName] = useState(false);
+  const [pendingAccounts, setPendingAccounts] = useState(0);
+  const [syncError, setSyncError] = useState('');
 
-  const handleUpdateAccount = async (
-    userId: string,
-    patch: Partial<UserAccount>
-  ) => {
-    let updatedTarget: UserAccount | undefined;
-    setAccounts((prev) =>
-      prev.map((acc) => {
-        if (acc.id === userId) {
-          updatedTarget = { ...acc, ...patch };
-          return updatedTarget;
-        }
-        return acc;
+  const [business, setBusiness] = useState<BusinessConfig>(initialBusiness);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const initialLocal = useMemo(() => readLocal(userId), [userId]);
+  const [clients, setClients] = useState<Client[]>(initialLocal.clients);
+  const [transactions, setTransactions] = useState<PosTransaction[]>(initialLocal.transactions);
+  const [reminders] = useState<ReminderLog[]>(initialLocal.reminders);
+  const [bankStatements, setBankStatements] = useState<BankStatementEntry[]>(initialLocal.bankStatements);
+
+  const perms: UserPermissions = { ...ALL_PERMISSIONS, canManageUsers: profile.is_admin };
+
+  // ---------- Carga inicial e atualização periódica ----------
+  useEffect(() => {
+    let alive = true;
+    loadOwnerData(initialBusiness.id)
+      .then((d) => {
+        if (!alive) return;
+        setStaff(d.staff);
+        setServices(d.services);
+        setAppointments(d.appointments);
+        setLoaded(true);
       })
-    );
+      .catch((err) => setSyncError(friendlyError((err as Error)?.message)));
+    return () => {
+      alive = false;
+    };
+  }, [initialBusiness.id]);
 
-    // Se o próprio usuário logado teve dados/permissões atualizados pelo Admin, re-assina o token
-    if (updatedTarget && sessionToken && sessionToken.userId === userId) {
-      if (updatedTarget.status !== 'ACTIVE') {
-        handleLogout();
-      } else {
-        const resigned = await createSignedSession(updatedTarget);
-        setSessionToken(resigned);
-        try {
-          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(resigned));
-        } catch {
-          // ignore
-        }
-      }
-    }
-  };
-
-  const handleDeleteAccount = (userId: string) => {
-    setAccounts((prev) => prev.filter((a) => a.id !== userId));
-  };
-
-
-  const [business, setBusiness] = useState<BusinessConfig>(() => {
+  const refreshAppointments = useCallback(async () => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.business) return parsed.business;
-      }
+      setAppointments(await fetchAppointments(initialBusiness.id));
     } catch {
-      // ignore
+      // mantém a lista atual; tenta de novo no próximo ciclo
     }
-    return INITIAL_BUSINESS_CONFIG;
-  });
+  }, [initialBusiness.id]);
 
-  const [staff, setStaff] = useState<StaffMember[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed.staff) && parsed.staff.length > 0) {
-          return parsed.staff;
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return INITIAL_STAFF;
-  });
+  useEffect(() => {
+    const timer = window.setInterval(() => void refreshAppointments(), 20000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refreshAppointments();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [refreshAppointments]);
 
-  const [services, setServices] = useState<ServiceItem[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed.services) && parsed.services.length > 0) {
-          return parsed.services;
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return INITIAL_SERVICES;
-  });
-
-  const [clients, setClients] = useState<Client[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed.clients)) return parsed.clients;
-      }
-    } catch {
-      // ignore
-    }
-    return INITIAL_CLIENTS;
-  });
-
-  const [appointments, setAppointments] = useState<Appointment[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed.appointments)) return parsed.appointments;
-      }
-    } catch {
-      // ignore
-    }
-    return INITIAL_APPOINTMENTS;
-  });
-
-  const [transactions, setTransactions] = useState<PosTransaction[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed.transactions)) return parsed.transactions;
-      }
-    } catch {
-      // ignore
-    }
-    return INITIAL_POS_TRANSACTIONS;
-  });
-
-  const [reminders, setReminders] = useState<ReminderLog[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed.reminders)) return parsed.reminders;
-      }
-    } catch {
-      // ignore
-    }
-    return INITIAL_REMINDERS;
-  });
-
-  const [bankStatements, setBankStatements] = useState<BankStatementEntry[]>(
-    () => {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed.bankStatements)) {
-            return parsed.bankStatements;
-          }
-        }
-      } catch {
-        // ignore
-      }
-      return INITIAL_BANK_STATEMENTS;
-    }
-  );
-
+  // ---------- Dados locais (caixa, clientes, extratos) por conta ----------
   useEffect(() => {
     try {
       localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          business,
-          staff,
-          services,
-          clients,
-          appointments,
-          transactions,
-          reminders,
-          bankStatements,
-        })
+        `pronto_agende_br_local_${userId}`,
+        JSON.stringify({ clients, transactions, reminders, bankStatements })
       );
     } catch {
       // ignore
     }
-  }, [
-    business,
-    staff,
-    services,
-    clients,
-    appointments,
-    transactions,
-    reminders,
-    bankStatements,
-  ]);
+  }, [userId, clients, transactions, reminders, bankStatements]);
 
-  // Handlers
-  const handleUpdateBusiness = (patch: Partial<BusinessConfig>) => {
-    const cleanPatch = { ...patch };
-    if (typeof cleanPatch.name === 'string') {
-      cleanPatch.name = sanitizeUserText(cleanPatch.name, 100);
-    }
-    setBusiness((prev) => ({ ...prev, ...cleanPatch }));
-  };
-
-  const handleUpdateAppointmentStatus = (
-    appointmentId: string,
-    newStatus: AppointmentStatus
-  ) => {
-    const targetApt = appointments.find((a) => a.id === appointmentId);
-    setAppointments((prev) =>
-      prev.map((apt) =>
-        apt.id === appointmentId ? { ...apt, status: newStatus } : apt
-      )
-    );
-
-    if (newStatus === 'NO_SHOW' && targetApt) {
-      setClients((prev) =>
-        prev.map((cli) =>
-          cli.id === targetApt.clientId ||
-          cli.fullName.toLowerCase() === targetApt.clientName.toLowerCase()
-            ? {
-                ...cli,
-                noShowCount: cli.noShowCount + 1,
-                tags: cli.tags.includes('ALERTA_FALTA')
-                  ? cli.tags
-                  : [...cli.tags, 'ALERTA_FALTA'],
-              }
-            : cli
-        )
-      );
-    }
-  };
-
-  const handleUpdateAppointment = (
-    appointmentId: string,
-    patch: Partial<Appointment>
-  ) => {
-    setAppointments((prev) =>
-      prev.map((apt) => (apt.id === appointmentId ? { ...apt, ...patch } : apt))
-    );
-  };
-
-  const handleDeleteAppointment = (appointmentId: string) => {
-    setAppointments((prev) => prev.filter((apt) => apt.id !== appointmentId));
-  };
-
-  const handleCreateAppointment = (newApt: Omit<Appointment, 'id'>) => {
-    const safeName = sanitizeUserText(newApt.clientName, 80);
-    const created: Appointment = {
-      ...newApt,
-      clientName: safeName,
-      id: `apt_${Date.now()}`,
-    };
-    setAppointments((prev) => [...prev, created]);
-
-    const exists = clients.some(
-      (c) =>
-        c.fullName.toLowerCase() === safeName.toLowerCase() ||
-        (newApt.clientPhone && c.phoneWhatsapp === newApt.clientPhone)
-    );
-    if (!exists && safeName.trim()) {
-      setClients((prev) => [
-        {
-          id: newApt.clientId || `cli_${Date.now()}`,
-          fullName: safeName.trim(),
-          phoneWhatsapp: sanitizeUserText(newApt.clientPhone || '', 30),
+  // Toda reserva (inclusive as do link público) vira cliente na lista, se ainda não existir.
+  useEffect(() => {
+    if (!loaded) return;
+    setClients((prev) => {
+      const known = (a: Appointment) =>
+        prev.some(
+          (c) =>
+            (a.clientPhone && c.phoneWhatsapp.replace(/\D/g, '') === a.clientPhone.replace(/\D/g, '')) ||
+            c.fullName.toLowerCase() === a.clientName.toLowerCase()
+        );
+      const missing = appointments.filter((a) => a.clientName && !known(a));
+      if (missing.length === 0) return prev;
+      const added: Client[] = [];
+      for (const a of missing) {
+        if (added.some((c) => c.fullName.toLowerCase() === a.clientName.toLowerCase())) continue;
+        added.push({
+          id: a.clientId,
+          fullName: a.clientName,
+          phoneWhatsapp: a.clientPhone,
           cpf: '',
           email: '',
-          visitsCount: 1,
+          visitsCount: 0,
           noShowCount: 0,
           lastVisitDaysAgo: 0,
           totalSpent: 0,
           tags: ['NOVO'],
-          notes: sanitizeUserText(newApt.notes || '', 250),
+          notes: '',
           passes: [],
-        },
-        ...prev,
-      ]);
-    }
+        });
+      }
+      return [...added, ...prev];
+    });
+  }, [appointments, loaded]);
 
-    setBusiness((prev) => ({
-      ...prev,
-      monthlyBookingsUsed: prev.monthlyBookingsUsed + 1,
-    }));
+  // ---------- Gravação no servidor (com atraso para campos digitados) ----------
+  const pending = useRef(new Map<string, { table: string; id: string; patch: Record<string, unknown>; timer: number }>());
+
+  const pushUpdate = useCallback((table: 'businesses' | 'staff' | 'services', id: string, patch: Record<string, unknown>) => {
+    if (Object.keys(patch).length === 0) return;
+    const key = `${table}:${id}`;
+    const prev = pending.current.get(key);
+    if (prev) window.clearTimeout(prev.timer);
+    const merged = { ...(prev?.patch ?? {}), ...patch };
+    const timer = window.setTimeout(async () => {
+      pending.current.delete(key);
+      const { error } = await supabase.from(table).update(merged).eq('id', id);
+      if (error) setSyncError(friendlyError(error.message));
+    }, 600);
+    pending.current.set(key, { table, id, patch: merged, timer });
+  }, []);
+
+  // grava o que ficou pendente se a pessoa fechar a aba
+  useEffect(() => {
+    const flush = () => {
+      pending.current.forEach(({ table, id, patch, timer }) => {
+        window.clearTimeout(timer);
+        void supabase.from(table).update(patch).eq('id', id);
+      });
+      pending.current.clear();
+    };
+    window.addEventListener('pagehide', flush);
+    return () => window.removeEventListener('pagehide', flush);
+  }, []);
+
+  const bufferFor = (serviceIds: string[]) =>
+    servicesSpan(services.filter((s) => serviceIds.includes(s.id))).buffer;
+
+  // ---------- Barbearia ----------
+  const handleUpdateBusiness = (patch: Partial<BusinessConfig>) => {
+    const clean = { ...patch };
+    if (typeof clean.name === 'string') clean.name = sanitizeUserText(clean.name, 100);
+    setBusiness((prev) => ({ ...prev, ...clean }));
+    pushUpdate('businesses', business.id, businessToRow(clean));
+  };
+
+  // ---------- Agendamentos ----------
+  const handleCreateAppointment = (newApt: Omit<Appointment, 'id'>) => {
+    const created: Appointment = {
+      ...newApt,
+      clientName: sanitizeUserText(newApt.clientName, 80),
+      id: newId(),
+    };
+    setAppointments((prev) => [...prev, created]);
+    void (async () => {
+      const { error } = await supabase
+        .from('appointments')
+        .insert({ id: created.id, business_id: business.id, ...appointmentToRow(created, bufferFor(created.serviceIds)) });
+      if (error) {
+        setSyncError(friendlyError(error.message));
+        setAppointments((prev) => prev.filter((a) => a.id !== created.id));
+      }
+    })();
+  };
+
+  const handleUpdateAppointment = (appointmentId: string, patch: Partial<Appointment>) => {
+    setAppointments((prev) => prev.map((a) => (a.id === appointmentId ? { ...a, ...patch } : a)));
+    void (async () => {
+      const row = appointmentToRow(patch, patch.serviceIds ? bufferFor(patch.serviceIds) : undefined);
+      const { error } = await supabase.from('appointments').update(row).eq('id', appointmentId);
+      if (error) {
+        setSyncError(friendlyError(error.message));
+        await refreshAppointments();
+      }
+    })();
+  };
+
+  const handleUpdateAppointmentStatus = (appointmentId: string, newStatus: AppointmentStatus) => {
+    const target = appointments.find((a) => a.id === appointmentId);
+    handleUpdateAppointment(appointmentId, { status: newStatus });
+    if (newStatus === 'NO_SHOW' && target) {
+      setClients((prev) =>
+        prev.map((c) =>
+          c.id === target.clientId || c.fullName.toLowerCase() === target.clientName.toLowerCase()
+            ? {
+                ...c,
+                noShowCount: c.noShowCount + 1,
+                tags: c.tags.includes('ALERTA_FALTA') ? c.tags : [...c.tags, 'ALERTA_FALTA'],
+              }
+            : c
+        )
+      );
+    }
+  };
+
+  const handleDeleteAppointment = (appointmentId: string) => {
+    setAppointments((prev) => prev.filter((a) => a.id !== appointmentId));
+    void (async () => {
+      const { error } = await supabase.from('appointments').delete().eq('id', appointmentId);
+      if (error) {
+        setSyncError(friendlyError(error.message));
+        await refreshAppointments();
+      }
+    })();
   };
 
   const handleOpenPosForAppointment = (appointmentId: string) => {
@@ -502,37 +420,21 @@ export function App() {
     setActiveTab('POS');
   };
 
-  const handleCompleteTransaction = (
-    newTx: PosTransaction,
-    appointmentId?: string
-  ) => {
+  // ---------- Caixa e clientes (locais) ----------
+  const handleCompleteTransaction = (newTx: PosTransaction, appointmentId?: string) => {
     setTransactions((prev) => [newTx, ...prev]);
-    if (appointmentId) {
-      setAppointments((prev) =>
-        prev.map((apt) =>
-          apt.id === appointmentId ? { ...apt, status: 'COMPLETED' } : apt
-        )
-      );
-    }
+    if (appointmentId) handleUpdateAppointment(appointmentId, { status: 'COMPLETED' });
     setClients((prev) =>
-      prev.map((cli) =>
-        cli.id === newTx.clientId ||
-        cli.fullName.toLowerCase() === newTx.clientName.toLowerCase()
-          ? {
-              ...cli,
-              visitsCount: cli.visitsCount + 1,
-              lastVisitDaysAgo: 0,
-              totalSpent: cli.totalSpent + newTx.totalAmount,
-            }
-          : cli
+      prev.map((c) =>
+        c.id === newTx.clientId || c.fullName.toLowerCase() === newTx.clientName.toLowerCase()
+          ? { ...c, visitsCount: c.visitsCount + 1, lastVisitDaysAgo: 0, totalSpent: c.totalSpent + newTx.totalAmount }
+          : c
       )
     );
     setPendingCheckoutAppointmentId(null);
   };
 
-  const handleDeleteTransaction = (txId: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== txId));
-  };
+  const handleDeleteTransaction = (txId: string) => setTransactions((prev) => prev.filter((t) => t.id !== txId));
 
   const handleAddClient = (newCli: Omit<Client, 'id'>) => {
     const created: Client = {
@@ -543,166 +445,113 @@ export function App() {
     };
     setClients((prev) => [created, ...prev]);
   };
+  const handleUpdateClient = (clientId: string, patch: Partial<Client>) =>
+    setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, ...patch } : c)));
+  const handleDeleteClient = (clientId: string) => setClients((prev) => prev.filter((c) => c.id !== clientId));
 
-  const handleUpdateClient = (clientId: string, patch: Partial<Client>) => {
-    setClients((prev) =>
-      prev.map((cli) => (cli.id === clientId ? { ...cli, ...patch } : cli))
-    );
-  };
-
-  const handleDeleteClient = (clientId: string) => {
-    setClients((prev) => prev.filter((cli) => cli.id !== clientId));
-  };
-
-  const handleUpdateService = (
-    serviceId: string,
-    patch: Partial<ServiceItem>
-  ) => {
-    if (currentUser && !currentUser.permissions.canEditPrices) return;
-    setServices((prev) =>
-      prev.map((s) => (s.id === serviceId ? { ...s, ...patch } : s))
-    );
+  // ---------- Serviços e equipe (no servidor) ----------
+  const handleUpdateService = (serviceId: string, patch: Partial<ServiceItem>) => {
+    setServices((prev) => prev.map((s) => (s.id === serviceId ? { ...s, ...patch } : s)));
+    pushUpdate('services', serviceId, serviceToRow(patch));
   };
 
   const handleAddService = (newSrv: Omit<ServiceItem, 'id'>) => {
-    if (currentUser && !currentUser.permissions.canEditPrices) return;
-    setServices((prev) => [...prev, { ...newSrv, id: `srv_${Date.now()}` }]);
+    const created: ServiceItem = { ...newSrv, id: newId() };
+    setServices((prev) => [...prev, created]);
+    void (async () => {
+      const { error } = await supabase.from('services').insert({ id: created.id, business_id: business.id, ...serviceToRow(created) });
+      if (error) {
+        setSyncError(friendlyError(error.message));
+        setServices((prev) => prev.filter((s) => s.id !== created.id));
+      }
+    })();
   };
 
   const handleDeleteService = (serviceId: string) => {
-    if (currentUser && !currentUser.permissions.canEditPrices) return;
     setServices((prev) => prev.filter((s) => s.id !== serviceId));
+    void supabase.from('services').update({ active: false }).eq('id', serviceId).then(({ error }) => {
+      if (error) setSyncError(friendlyError(error.message));
+    });
   };
 
   const handleUpdateStaff = (staffId: string, patch: Partial<StaffMember>) => {
-    setStaff((prev) =>
-      prev.map((st) => (st.id === staffId ? { ...st, ...patch } : st))
-    );
+    setStaff((prev) => prev.map((s) => (s.id === staffId ? { ...s, ...patch } : s)));
+    pushUpdate('staff', staffId, staffToRow(patch));
   };
 
   const handleAddStaff = (newMember: Omit<StaffMember, 'id'>) => {
-    setStaff((prev) => [...prev, { ...newMember, id: `st_${Date.now()}` }]);
+    const created: StaffMember = { ...newMember, id: newId() };
+    setStaff((prev) => [...prev, created]);
+    void (async () => {
+      const { data, error } = await supabase
+        .from('staff')
+        .insert({ id: created.id, business_id: business.id, schedule: created.schedule ?? {}, ...staffToRow(created) })
+        .select('*')
+        .single();
+      if (error) {
+        setSyncError(friendlyError(error.message));
+        setStaff((prev) => prev.filter((s) => s.id !== created.id));
+      } else if (data) {
+        setStaff((prev) => prev.map((s) => (s.id === created.id ? staffFromRow(data) : s)));
+      }
+    })();
   };
 
   const handleDeleteStaff = (staffId: string) => {
-    setStaff((prev) => prev.filter((st) => st.id !== staffId));
+    setStaff((prev) => prev.filter((s) => s.id !== staffId));
+    void supabase.from('staff').update({ active: false }).eq('id', staffId).then(({ error }) => {
+      if (error) setSyncError(friendlyError(error.message));
+    });
   };
 
-  const handleAddBankStatement = (entry: Omit<BankStatementEntry, 'id'>) => {
-    if (currentUser && !currentUser.permissions.canUploadStatements) return;
-    setBankStatements((prev) => [
-      { ...entry, id: `stmt_${Date.now()}` },
-      ...prev,
-    ]);
-  };
-
-  const handleDeleteBankStatement = (entryId: string) => {
-    setBankStatements((prev) => prev.filter((e) => e.id !== entryId));
-  };
+  const handleAddBankStatement = (entry: Omit<BankStatementEntry, 'id'>) =>
+    setBankStatements((prev) => [{ ...entry, id: `stmt_${Date.now()}` }, ...prev]);
+  const handleDeleteBankStatement = (entryId: string) => setBankStatements((prev) => prev.filter((e) => e.id !== entryId));
 
   const handleResetAllData = () => {
-    if (currentUser && !currentUser.permissions.canExportOrResetData) return;
     setClients([]);
-    setAppointments([]);
     setTransactions([]);
-    setReminders([]);
     setBankStatements([]);
+    setAppointments([]);
+    void supabase.from('appointments').delete().eq('business_id', business.id).then(({ error }) => {
+      if (error) setSyncError(friendlyError(error.message));
+    });
   };
 
-  // Se ainda não estiver autenticado com token assinado, exibe a Tela de Login Blindada
-  if (!currentUser || !sessionToken) {
-    return (
-      <LoginGate
-        accounts={accounts}
-        onLoginSuccess={handleLoginSuccess}
-        onUpdateAccount={handleUpdateAccount}
-        onLogSecurityEvent={handleLogSecurityEvent}
-      />
-    );
-  }
-
-  const perms = currentUser.permissions;
-
-  const allNavItems: Array<{
-    id: ActiveTab;
-    label: string;
-    shortLabel: string;
-    icon: React.ReactNode;
-    badge?: number;
-    allowed: boolean;
-  }> = [
+  const navItems: Array<{ id: ActiveTab; label: string; shortLabel: string; icon: React.ReactNode; badge?: number }> = [
     {
       id: 'AGENDA',
       label: 'Agenda',
       shortLabel: 'Agenda',
       icon: <Calendar className="w-4 h-4" />,
-      badge: appointments.filter(
-        (a) => a.status !== 'COMPLETED' && a.status !== 'CANCELLED'
-      ).length,
-      allowed: perms.canAccessAgenda,
+      badge: appointments.filter((a) => a.status !== 'COMPLETED' && a.status !== 'CANCELLED' && a.status !== 'NO_SHOW').length,
     },
-    {
-      id: 'POS',
-      label: 'Caixa',
-      shortLabel: 'Caixa',
-      icon: <CreditCard className="w-4 h-4" />,
-      allowed: perms.canAccessPos,
-    },
-    {
-      id: 'CLIENTS',
-      label: 'Clientes',
-      shortLabel: 'Clientes',
-      icon: <Users className="w-4 h-4" />,
-      badge: clients.length,
-      allowed: perms.canAccessClients,
-    },
-    {
-      id: 'PUBLIC_BOOKING',
-      label: 'Link de Reserva',
-      shortLabel: 'Reserva',
-      icon: <ExternalLink className="w-4 h-4" />,
-      allowed: perms.canAccessPublicBooking,
-    },
-    {
-      id: 'MANAGER',
-      label: 'Ajustes',
-      shortLabel: 'Ajustes',
-      icon: <LayoutDashboard className="w-4 h-4" />,
-      allowed: perms.canAccessManager,
-    },
+    { id: 'POS', label: 'Caixa', shortLabel: 'Caixa', icon: <CreditCard className="w-4 h-4" /> },
+    { id: 'CLIENTS', label: 'Clientes', shortLabel: 'Clientes', icon: <Users className="w-4 h-4" />, badge: clients.length },
+    { id: 'PUBLIC_BOOKING', label: 'Link de Reserva', shortLabel: 'Reserva', icon: <ExternalLink className="w-4 h-4" /> },
+    { id: 'MANAGER', label: 'Ajustes', shortLabel: 'Ajustes', icon: <LayoutDashboard className="w-4 h-4" /> },
   ];
 
-  const navItems = allNavItems.filter((item) => item.allowed);
+  if (!loaded && !syncError)
+    return <main className="p-10 text-center text-sm text-stone-400">Carregando sua barbearia…</main>;
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col pb-20 md:pb-8">
-      {/* Top App Header */}
       <header className="sticky top-0 z-40 bg-stone-950/90 backdrop-blur-md border-b border-stone-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-          {/* Brand Identity + Inline Editable Barbershop Name */}
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-stone-950 shadow-lg shadow-amber-500/20 shrink-0">
               <Scissors className="w-5 h-5" weight="bold" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-bold tracking-tight text-base text-stone-100">
-                  ProntoAgende
-                </span>
-              </div>
-
+              <span className="font-bold tracking-tight text-base text-stone-100">ProntoAgende</span>
               {editingHeaderName ? (
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <input
                     type="text"
                     autoFocus
                     value={business.name}
-                    onChange={(e) =>
-                      handleUpdateBusiness({
-                        name: e.target.value,
-                        isConfigured: true,
-                      })
-                    }
+                    onChange={(e) => handleUpdateBusiness({ name: e.target.value })}
                     onBlur={() => setEditingHeaderName(false)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') setEditingHeaderName(false);
@@ -716,7 +565,7 @@ export function App() {
                   type="button"
                   onClick={() => setEditingHeaderName(true)}
                   title="Clique para editar o nome da sua barbearia"
-                  className="text-xs text-stone-400 hover:text-amber-800 flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-xs cursor-pointer"
+                  className="block text-xs text-stone-400 hover:text-amber-800 flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-xs cursor-pointer"
                 >
                   <span className="truncate">{business.name}</span>
                   <Pencil className="w-3 h-3 text-amber-700 shrink-0" />
@@ -725,11 +574,7 @@ export function App() {
             </div>
           </div>
 
-          {/* Desktop Navigation Pills */}
-          <nav
-            aria-label="Navegação Principal"
-            className="hidden lg:flex items-center gap-1 bg-stone-900/90 p-1 rounded-xl border border-stone-800"
-          >
+          <nav aria-label="Navegação Principal" className="hidden lg:flex items-center gap-1 bg-stone-900/90 p-1 rounded-xl border border-stone-800">
             {navItems.map((item) => {
               const active = activeTab === item.id;
               return (
@@ -737,21 +582,13 @@ export function App() {
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                    active
-                      ? 'bg-amber-500 text-stone-950 font-semibold shadow-sm'
-                      : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
+                    active ? 'bg-amber-500 text-stone-950 font-semibold shadow-sm' : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
                   }`}
                 >
                   {item.icon}
                   <span>{item.label}</span>
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span
-                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                        active
-                          ? 'bg-stone-950/20 text-stone-950 font-bold'
-                          : 'bg-amber-500/20 text-amber-800'
-                      }`}
-                    >
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${active ? 'bg-stone-950/20 text-stone-950 font-bold' : 'bg-amber-500/20 text-amber-800'}`}>
                       {item.badge}
                     </span>
                   )}
@@ -760,24 +597,24 @@ export function App() {
             })}
           </nav>
 
-          {/* Right User Badge, Theme Toggle & Logout */}
           <div className="flex items-center gap-2 shrink-0">
-            {currentUser.role === 'MASTER_ADMIN' && perms.canManageUsers && (
+            {profile.is_admin && (
               <button
                 type="button"
-                onClick={() => setActiveTab('ADMIN_SECURITY')}
-                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-300 hover:border-amber-500/50 text-xs font-medium cursor-pointer"
+                onClick={() => setActiveTab('ADMIN')}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-300 hover:border-amber-500/50 text-xs font-medium cursor-pointer"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
-                Contas
+                <span className="hidden sm:inline">Contas</span>
+                {pendingAccounts > 0 && (
+                  <span className="rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-stone-950">{pendingAccounts}</span>
+                )}
               </button>
             )}
-
-
             <button
               type="button"
-              onClick={handleLogout}
-              title="Sair e bloquear sessão"
+              onClick={onSignOut}
+              title="Sair"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 text-xs font-semibold transition-all cursor-pointer"
             >
               <SignOut className="w-3.5 h-3.5" />
@@ -787,9 +624,17 @@ export function App() {
         </div>
       </header>
 
-      {/* Main Workspace Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-6">
-        {activeTab === 'AGENDA' && perms.canAccessAgenda && (
+        {syncError && (
+          <div role="alert" className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-950 px-4 py-2.5 text-xs font-medium text-stone-100">
+            <span>{syncError}</span>
+            <button type="button" onClick={() => setSyncError('')} className="shrink-0 font-bold text-amber-800 cursor-pointer">
+              Fechar
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'AGENDA' && (
           <AgendaModule
             appointments={appointments}
             staff={staff}
@@ -802,13 +647,11 @@ export function App() {
             onCreateAppointment={handleCreateAppointment}
             onOpenInPos={(apt) => handleOpenPosForAppointment(apt.id)}
             onUpdateStaff={handleUpdateStaff}
-            onOpenReminders={
-              perms.canAccessReminders ? () => setActiveTab('REMINDERS') : undefined
-            }
+            onOpenReminders={() => setActiveTab('REMINDERS')}
           />
         )}
 
-        {activeTab === 'POS' && perms.canAccessPos && (
+        {activeTab === 'POS' && (
           <PosModule
             business={business}
             staff={staff}
@@ -822,7 +665,7 @@ export function App() {
           />
         )}
 
-        {activeTab === 'CLIENTS' && perms.canAccessClients && (
+        {activeTab === 'CLIENTS' && (
           <ClientsModule
             clients={clients}
             businessName={business.name}
@@ -832,38 +675,28 @@ export function App() {
           />
         )}
 
-        {activeTab === 'REMINDERS' && perms.canAccessReminders && (
+        {activeTab === 'REMINDERS' && (
           <>
-          <button
-            type="button"
-            onClick={() => setActiveTab('AGENDA')}
-            className="mb-3 text-xs font-medium text-amber-700 hover:text-amber-800 cursor-pointer"
-          >
-            ← Voltar para a Agenda
-          </button>
-          <RemindersModule
-            reminders={reminders}
-            appointments={appointments}
-            business={business}
-            staff={staff}
-            services={services}
-            onDispatchAllPending={() => {}}
-            onSimulateClientReply={() => {}}
-          />
+            <button type="button" onClick={() => setActiveTab('AGENDA')} className="mb-3 text-xs font-medium text-amber-700 hover:text-amber-800 cursor-pointer">
+              ← Voltar para a Agenda
+            </button>
+            <RemindersModule
+              reminders={reminders}
+              appointments={appointments}
+              business={business}
+              staff={staff}
+              services={services}
+              onDispatchAllPending={() => {}}
+              onSimulateClientReply={() => {}}
+            />
           </>
         )}
 
-        {activeTab === 'PUBLIC_BOOKING' && perms.canAccessPublicBooking && (
-          <PublicBookingModule
-            business={business}
-            staff={staff}
-            services={services}
-            appointments={appointments}
-            onCreatePublicBooking={handleCreateAppointment}
-          />
+        {activeTab === 'PUBLIC_BOOKING' && (
+          <ShareLinkModule business={business} staff={staff} services={services} onGoToSettings={() => setActiveTab('MANAGER')} />
         )}
 
-        {activeTab === 'MANAGER' && perms.canAccessManager && (
+        {activeTab === 'MANAGER' && (
           <ManagerDashboardModule
             business={business}
             staff={staff}
@@ -885,37 +718,17 @@ export function App() {
           />
         )}
 
-        {activeTab === 'ADMIN_SECURITY' &&
-          currentUser.role === 'MASTER_ADMIN' &&
-          perms.canManageUsers && (
-            <>
-            <button
-              type="button"
-              onClick={() => setActiveTab('AGENDA')}
-              className="mb-3 text-xs font-medium text-amber-700 hover:text-amber-800 cursor-pointer"
-            >
+        {activeTab === 'ADMIN' && profile.is_admin && (
+          <>
+            <button type="button" onClick={() => setActiveTab('AGENDA')} className="mb-3 text-xs font-medium text-amber-700 hover:text-amber-800 cursor-pointer">
               ← Voltar para a Agenda
             </button>
-            <AdminSecurityModule
-              currentUser={currentUser}
-              accounts={accounts}
-              auditLogs={auditLogs}
-              business={business}
-              onCreateAccount={handleCreateAccount}
-              onUpdateAccount={handleUpdateAccount}
-              onDeleteAccount={handleDeleteAccount}
-              onUpdateBusiness={handleUpdateBusiness}
-              onLogSecurityEvent={handleLogSecurityEvent}
-            />
-            </>
-          )}
+            <AdminUsersModule currentUserId={userId} onPendingCount={setPendingAccounts} />
+          </>
+        )}
       </main>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav
-        aria-label="Navegação Mobile"
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-stone-950/95 backdrop-blur-lg border-t border-stone-800 px-1 py-1.5 flex items-center justify-around"
-      >
+      <nav aria-label="Navegação Mobile" className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-stone-950/95 backdrop-blur-lg border-t border-stone-800 px-1 py-1.5 flex items-center justify-around">
         {navItems.map((item) => {
           const active = activeTab === item.id;
           return (
@@ -923,9 +736,7 @@ export function App() {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
-                active
-                  ? 'text-amber-700 bg-amber-500/10 font-semibold'
-                  : 'text-stone-400 hover:text-stone-200'
+                active ? 'text-amber-700 bg-amber-500/10 font-semibold' : 'text-stone-400 hover:text-stone-200'
               }`}
             >
               <div className="relative">
@@ -944,4 +755,5 @@ export function App() {
     </div>
   );
 }
+
 export default App;
