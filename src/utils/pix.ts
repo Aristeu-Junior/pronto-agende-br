@@ -29,18 +29,42 @@ function validCpf(d: string): boolean {
   return true;
 }
 
-/** Normaliza a chave digitada. Retorna null se não reconhecer o formato. */
-export function normalizePixKey(raw: string): string | null {
+export type PixKeyType = 'CPF' | 'CNPJ' | 'PHONE' | 'EMAIL' | 'RANDOM';
+
+export const PIX_KEY_TYPE_LABELS: Record<PixKeyType, string> = {
+  CPF: 'CPF',
+  CNPJ: 'CNPJ',
+  PHONE: 'Celular',
+  EMAIL: 'E-mail',
+  RANDOM: 'Chave aleatória',
+};
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Normaliza a chave digitada. Com `type` informado, valida só esse formato.
+ * Sem `type`, aceita apenas formatos sem ambiguidade; 11 dígitos puros (CPF ou celular)
+ * retornam null, porque adivinhar errado mandaria o dinheiro para outra pessoa.
+ */
+export function normalizePixKey(raw: string, type?: PixKeyType): string | null {
   const key = raw.trim();
   if (!key) return null;
-  if (key.includes('@')) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(key) ? key.toLowerCase() : null;
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key)) {
-    return key.toLowerCase();
-  }
   const digits = key.replace(/\D/g, '');
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(key);
+
+  if (type === 'EMAIL') return isEmail ? key.toLowerCase() : null;
+  if (type === 'RANDOM') return UUID_RE.test(key) ? key.toLowerCase() : null;
+  if (type === 'CPF') return validCpf(digits) ? digits : null;
+  if (type === 'CNPJ') return digits.length === 14 ? digits : null;
+  if (type === 'PHONE') {
+    const local = digits.startsWith('55') && digits.length >= 12 ? digits.slice(2) : digits;
+    return local.length === 10 || local.length === 11 ? `+55${local}` : null;
+  }
+
+  if (isEmail) return key.toLowerCase();
+  if (UUID_RE.test(key)) return key.toLowerCase();
   if (key.startsWith('+')) return digits.length >= 12 ? `+${digits}` : null;
-  if (digits.length === 14) return digits; // CNPJ
-  if (digits.length === 11) return validCpf(digits) ? digits : `+55${digits}`; // CPF ou celular
+  if (digits.length === 14) return digits;
   if (digits.length === 10) return `+55${digits}`;
   return null;
 }
@@ -57,6 +81,7 @@ function cleanText(text: string, max: number): string {
 
 export interface PixPayloadInput {
   key: string;
+  keyType?: PixKeyType;
   amount: number;
   merchantName: string;
   city: string;
@@ -64,7 +89,7 @@ export interface PixPayloadInput {
 }
 
 export function buildPixPayload(input: PixPayloadInput): string | null {
-  const key = normalizePixKey(input.key);
+  const key = normalizePixKey(input.key, input.keyType);
   if (!key || !(input.amount > 0)) return null;
   const name = cleanText(input.merchantName, 25) || 'BARBEARIA';
   const city = cleanText(input.city, 15) || 'BRASIL';

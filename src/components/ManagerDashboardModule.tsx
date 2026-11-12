@@ -25,6 +25,7 @@ import {
 import { FEE_SPLIT_RULE_LABELS, formatCurrencyBRL } from '../utils/finance';
 import { sanitizeUserText, validateSafeReceiptFile } from '../utils/security';
 import { ScheduleSettings } from './ScheduleSettings';
+import { PIX_KEY_TYPE_LABELS, PixKeyType, normalizePixKey } from '../utils/pix';
 
 interface ManagerDashboardModuleProps {
   business: BusinessConfig;
@@ -300,13 +301,41 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
             <label className="block text-xs font-medium text-stone-300 mb-1">
               Chave Pix da Barbearia (Para Sinal / Caixa)
             </label>
-            <input
-              type="text"
-              value={business.pixKey}
-              onChange={(e) => onUpdateBusiness({ pixKey: e.target.value })}
-              placeholder="CPF, CNPJ, Celular ou E-mail"
-              className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-amber-700 focus:outline-none focus:border-amber-500"
-            />
+            <div className="flex gap-2">
+              <select
+                value={business.pixKeyType ?? ''}
+                onChange={(e) =>
+                  onUpdateBusiness({ pixKeyType: (e.target.value || undefined) as PixKeyType | undefined })
+                }
+                aria-label="Tipo da chave Pix"
+                className="shrink-0 bg-stone-950 border border-stone-800 rounded-xl px-2.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+              >
+                <option value="">Tipo…</option>
+                {(Object.keys(PIX_KEY_TYPE_LABELS) as PixKeyType[]).map((t) => (
+                  <option key={t} value={t}>
+                    {PIX_KEY_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={business.pixKey}
+                onChange={(e) => onUpdateBusiness({ pixKey: e.target.value })}
+                placeholder="Sua chave Pix"
+                className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-amber-700 focus:outline-none focus:border-amber-500"
+              />
+            </div>
+            {business.pixKey.trim() !== '' && (
+              <p
+                className={`mt-1 text-[11px] font-medium ${
+                  normalizePixKey(business.pixKey, business.pixKeyType) ? 'text-emerald-700' : 'text-rose-700'
+                }`}
+              >
+                {normalizePixKey(business.pixKey, business.pixKeyType)
+                  ? `O cliente vai pagar para: ${normalizePixKey(business.pixKey, business.pixKeyType)}`
+                  : 'Escolha o tipo da chave e confira se ela está correta. Sem isso o código Pix não é gerado.'}
+              </p>
+            )}
           </div>
 
           <div>

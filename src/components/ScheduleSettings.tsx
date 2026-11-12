@@ -187,7 +187,7 @@ export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
                           <button
                             type="button"
                             aria-label="Remover pausa"
-                            onClick={() => patchDay(i, { breakStart: undefined, breakEnd: undefined })}
+                            onClick={() => patchDay(i, { breakStart: '', breakEnd: '' })}
                             className="text-stone-500 hover:text-amber-700 cursor-pointer"
                           >
                             <X className="h-3.5 w-3.5" />

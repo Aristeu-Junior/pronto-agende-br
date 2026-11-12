@@ -20,6 +20,11 @@ O calendário, a escala, os horários livres e o código Pix já funcionam, mas 
 > 4. Teste com um cliente anônimo: ele não pode ler a tabela `appointments`, só chamar `get_public_shop`, `get_busy_slots` e `create_public_booking`.
 > 5. Teste duas reservas simultâneas no mesmo horário: a segunda precisa falhar (restrição `no_overlap`).
 
+## Pontos fracos conhecidos do `schema.sql`
+- `create_public_booking` é um insert anônimo: precisa de limite de requisições ou captcha, senão alguém lota todos os horários.
+- A restrição `no_overlap` ignora a folga entre serviços (`buffer_after_minutes`), que o app considera. Alinhar os dois.
+- Escala e folgas ainda não são revalidadas no servidor (ver TODO na função).
+
 ## Depois que o projeto existir (trabalho do app)
 1. Rota pública `#/reserva/<slug>` que pula o login e usa `get_public_shop`, `get_busy_slots` e `create_public_booking`.
 2. Agenda do barbeiro lendo e gravando no Supabase (hoje lê o `localStorage`), com sincronização.

@@ -108,6 +108,7 @@ export interface BusinessConfig {
   reviewsCount: number;
   bestBadge: boolean;
   isConfigured: boolean;
+  pixKeyType?: 'CPF' | 'CNPJ' | 'PHONE' | 'EMAIL' | 'RANDOM';
   /** antecedencia minima para agendar online, em minutos */
   minNoticeMinutes?: number;
   /** ate quantos dias a frente o cliente pode agendar */

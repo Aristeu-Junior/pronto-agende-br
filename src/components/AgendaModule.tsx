@@ -1437,6 +1437,19 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               }}
               emptyMessage="Sem horários livres para esse profissional e serviço nessa data (dia de folga, fora da escala ou lotado)."
             />
+            <label className="mt-1 flex items-center gap-2 text-xs text-[#5A463C]">
+              Outro horário
+              <input
+                type="time"
+                value={newAptTime}
+                onChange={(e) => {
+                  setNewAptTime(e.target.value);
+                  if (newAptError) setNewAptError('');
+                }}
+                className="num-tabular min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+              />
+              <span className="text-[11px]">(fora da grade; o sistema avisa se houver conflito)</span>
+            </label>
           </div>
 
           <div className="flex flex-col gap-1">

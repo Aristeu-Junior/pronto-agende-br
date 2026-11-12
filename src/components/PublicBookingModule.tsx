@@ -72,7 +72,6 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
   const [requireDeposit, setRequireDeposit] = useState(false);
   const [proofFileName, setProofFileName] = useState('');
   const [bookingCompleted, setBookingCompleted] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
 
   const selectedServices = useMemo(
     () => services.filter((s) => selectedServiceIds.includes(s.id)),
@@ -141,12 +140,13 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
       business.pixKey
         ? buildPixPayload({
             key: business.pixKey,
+            keyType: business.pixKeyType,
             amount: depositAmount,
             merchantName: business.name,
             city: (business.cityState || '').split('-')[0],
           })
         : null,
-    [business.pixKey, business.name, business.cityState, depositAmount]
+    [business.pixKey, business.pixKeyType, business.name, business.cityState, depositAmount]
   );
 
   const toggleService = (id: string) => {
@@ -157,12 +157,6 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
           : prev
         : [...prev, id]
     );
-  };
-
-  const handleCopyBookingLink = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
   };
 
   const handleConfirmBooking = (e: React.FormEvent) => {
@@ -232,20 +226,12 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
       <div className="bg-stone-900/80 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="text-xs">
           <span className="font-bold text-amber-700 uppercase tracking-wider block">
-            Página Pública de Agendamento da Sua Barbearia
+            Tela de Agendamento do Cliente
           </span>
           <span className="text-stone-300">
-            Esta é a tela de agendamento do cliente. Os horários livres vêm da sua escala e do que já está na <strong>Agenda</strong>. Por enquanto, a reserva só é salva quando feita neste aparelho (balcão ou tablet da barbearia).
+            Os horários livres vêm da sua escala e do que já está na <strong>Agenda</strong>. Por enquanto, a reserva só é salva quando feita neste aparelho (balcão ou tablet da barbearia).
           </span>
         </div>
-        <button
-          type="button"
-          onClick={handleCopyBookingLink}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs shrink-0 transition-all cursor-pointer"
-        >
-          <Copy className="w-3.5 h-3.5" />
-          {copiedLink ? 'Link Copiado!' : 'Copiar Link de Agendamento'}
-        </button>
       </div>
 
       {/* Storefront Hero Banner */}
@@ -253,7 +239,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-800 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Agendamento Online 24h • Sem precisar baixar aplicativo</span>
+            <span>Escolha serviço, dia e horário • Sem baixar aplicativo</span>
           </div>
           <h2 className="text-2xl font-bold text-stone-100">{business.name}</h2>
           <p className="text-xs text-stone-400 flex items-center gap-1.5">
@@ -506,7 +492,7 @@ export const PublicBookingModule: React.FC<PublicBookingModuleProps> = ({
               </div>
               {requireDeposit && !pixPayload && (
                 <p className="text-[11px] font-medium text-rose-700">
-                  Cadastre uma chave Pix válida em Ajustes para gerar o código de pagamento.
+                  Cadastre uma chave Pix válida em Ajustes (escolha também o tipo da chave) para gerar o código de pagamento.
                 </p>
               )}
               <p className="text-[11px] text-stone-400">

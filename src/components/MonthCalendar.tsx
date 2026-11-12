@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import {
   MONTH_NAMES,
@@ -35,6 +35,13 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
   const [viewYear, setViewYear] = useState(selected.getFullYear());
   const [viewMonth, setViewMonth] = useState(selected.getMonth());
   const today = localISODate();
+
+  // Mantém o mês visível em sincronia com o dia selecionado (setas, "hoje", pulo para o 1º dia livre).
+  useEffect(() => {
+    const d = parseISODate(value);
+    setViewYear(d.getFullYear());
+    setViewMonth(d.getMonth());
+  }, [value]);
 
   const cells = useMemo(() => {
     const first = new Date(viewYear, viewMonth, 1, 12);
