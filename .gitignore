@@ -3,3 +3,8 @@ dist/
 .impeccable/review/
 *.tsbuildinfo
 .DS_Store
+
+# Segredos do Supabase: nunca versionar
+supabase/PROJECT_INFO.md
+.env
+.env.*

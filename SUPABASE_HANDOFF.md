@@ -9,21 +9,16 @@ O calendário, a escala, os horários livres e o código Pix já funcionam, mas 
 - `supabase/schema.sql`: tabelas, regras de acesso (RLS) e três funções públicas. **Proposta, não aplicada em nenhum projeto e não testada.**
 - `src/utils/schedule.ts`: motor de horários livres (testado com casos de borda).
 
-## Pedido para o Antigravity (copiar e colar)
+## Estado do banco (12/11/2026)
+- Projeto Supabase `pronto-agende-br` (ref `nifyfpjpjzrjvebjfftm`, região `sa-east-1`) criado pelo Antigravity, vazio.
+- Ele aplicou `schema.sql` sem mudanças. Eu revisei: 5 tabelas, RLS ligado em todas, só o dono lê e escreve, 3 funções públicas.
+- Apliquei por cima `supabase/migrations/002_harden_public_booking.sql` e `003_pix_key_type.sql`.
+- Testei dentro de uma transação desfeita ao final: a reserva válida entra; domingo, pausa, horário fora da grade, horário repetido, horário colado (folga) e 4ª reserva do mesmo telefone na hora são recusados; cliente anônimo não lê tabelas e não chama `schedule_slot_ok`.
+- Nenhuma chave está no repositório. A URL e a chave `anon` são públicas por desenho, mas a `service_role` e o token `sbp_` nunca entram no código.
 
-> No repositório `pronto-agende-br`, crie um projeto Supabase novo e dedicado (não reaproveite o projeto de outro app).
-> 1. Aplique `supabase/schema.sql`. Antes de aplicar, revise: a função `create_public_booking` ainda precisa revalidar a escala
->    (dia da semana, horário de abertura e fechamento, pausa e folgas em `staff.schedule`) no servidor, igual a `getFreeSlots`
->    em `src/utils/schedule.ts`. Implemente isso em plpgsql ou numa Edge Function.
-> 2. Habilite Supabase Auth (e-mail e senha) para o dono. Isso substitui o login falso do navegador (`LoginGate`).
-> 3. Me devolva só a URL do projeto e a chave `anon` (pública). **Não** envie a chave `service_role`, nem cole nenhuma chave em arquivo do repositório.
-> 4. Teste com um cliente anônimo: ele não pode ler a tabela `appointments`, só chamar `get_public_shop`, `get_busy_slots` e `create_public_booking`.
-> 5. Teste duas reservas simultâneas no mesmo horário: a segunda precisa falhar (restrição `no_overlap`).
-
-## Pontos fracos conhecidos do `schema.sql`
-- `create_public_booking` é um insert anônimo: precisa de limite de requisições ou captcha, senão alguém lota todos os horários.
-- A restrição `no_overlap` ignora a folga entre serviços (`buffer_after_minutes`), que o app considera. Alinhar os dois.
-- Escala e folgas ainda não são revalidadas no servidor (ver TODO na função).
+## Pontos fracos que ainda restam
+- Limite por telefone ajuda, mas um atacante troca de telefone. Para proteção real, adicionar captcha (Turnstile) numa Edge Function na frente de `create_public_booking`.
+- A folga entre serviços usa a maior folga dos serviços escolhidos; serviços com folgas diferentes podem gerar recusa do servidor (o app deve tratar o erro `horario_indisponivel` recarregando os horários).
 
 ## Depois que o projeto existir (trabalho do app)
 1. Rota pública `#/reserva/<slug>` que pula o login e usa `get_public_shop`, `get_busy_slots` e `create_public_booking`.

@@ -178,7 +178,8 @@ export function getFreeSlots(q: SlotQuery): string[] {
   for (let start = open; start + need <= close; start += step) {
     const end = start + need;
     if (hasBreak && start < brEnd && end > brStart) continue;
-    if (busy.some(([bs, be]) => start < be && end + buffer > bs)) continue;
+    // a folga vale dos dois lados, igual à restrição no_overlap do servidor
+    if (busy.some(([bs, be]) => start < be + buffer && end + buffer > bs)) continue;
     const when = parseISODate(q.date);
     when.setHours(Math.floor(start / 60), start % 60, 0, 0);
     if (when.getTime() < limit) continue;
