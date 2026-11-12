@@ -9,14 +9,9 @@ import {
   Scissors,
   ShieldCheck,
   SignOut,
+  UserCircle,
   Users,
 } from '@phosphor-icons/react';
-import {
-  INITIAL_BANK_STATEMENTS,
-  INITIAL_CLIENTS,
-  INITIAL_POS_TRANSACTIONS,
-  INITIAL_REMINDERS,
-} from './data/seedData';
 import {
   Appointment,
   AppointmentStatus,
@@ -35,6 +30,12 @@ import { friendlyError, supabase } from './lib/supabase';
 import {
   Profile,
   appointmentToRow,
+  deleteAllDocs,
+  deleteDoc,
+  insertDocs,
+  isUuid,
+  loadDocs,
+  updateDoc,
   businessToRow,
   fetchAppointments,
   fetchBusiness,
@@ -54,9 +55,11 @@ import { ManagerDashboardModule } from './components/ManagerDashboardModule';
 import { AdminUsersModule } from './components/AdminUsersModule';
 import { ShareLinkModule } from './components/ShareLinkModule';
 import { PublicBookingPage } from './components/PublicBookingPage';
-import { AuthScreen, OnboardingScreen, WaitingScreen } from './components/AuthScreens';
+import { AuthScreen, MfaChallengeScreen, OnboardingScreen, ResetPasswordScreen, WaitingScreen } from './components/AuthScreens';
+import { AccountModule } from './components/AccountModule';
+import { LegalPage } from './components/LegalPages';
 
-type ActiveTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'REMINDERS' | 'PUBLIC_BOOKING' | 'MANAGER' | 'ADMIN';
+type ActiveTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'REMINDERS' | 'PUBLIC_BOOKING' | 'MANAGER' | 'ADMIN' | 'ACCOUNT';
 
 const ALL_PERMISSIONS: UserPermissions = {
   canAccessAgenda: true,
@@ -98,6 +101,9 @@ export function App() {
     );
   }
 
+  if (hash === '#/termos') return <LegalPage kind="termos" />;
+  if (hash === '#/privacidade') return <LegalPage kind="privacidade" />;
+
   const publicSlug = parsePublicSlug(hash);
   if (publicSlug) return <PublicBookingPage slug={publicSlug} />;
   return <OwnerGate />;
@@ -111,10 +117,15 @@ function OwnerGate() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [business, setBusiness] = useState<BusinessConfig | null | undefined>(undefined);
   const [loadError, setLoadError] = useState('');
+  const [recovery, setRecovery] = useState(false);
+  const [mfaState, setMfaState] = useState<'checking' | 'needed' | 'ok'>('checking');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s);
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -137,11 +148,26 @@ function OwnerGate() {
     if (!userId) {
       setProfile(null);
       setBusiness(undefined);
+      setMfaState('checking');
       return;
     }
     setProfile(null);
     setBusiness(undefined);
-    void refresh();
+    setMfaState('checking');
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (!alive) return;
+      if (data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2') {
+        setMfaState('needed');
+        return;
+      }
+      setMfaState('ok');
+      void refresh();
+    })();
+    return () => {
+      alive = false;
+    };
   }, [userId, refresh]);
 
   const signOut = () => void supabase.auth.signOut();
@@ -149,6 +175,17 @@ function OwnerGate() {
   if (session === undefined)
     return <main className="p-10 text-center text-sm text-stone-400">Carregando…</main>;
   if (!session) return <AuthScreen />;
+  if (recovery) return <ResetPasswordScreen onDone={() => setRecovery(false)} />;
+  if (mfaState === 'needed')
+    return (
+      <MfaChallengeScreen
+        onDone={() => {
+          setMfaState('ok');
+          void refresh();
+        }}
+        onSignOut={signOut}
+      />
+    );
   if (loadError)
     return (
       <main className="mx-auto max-w-sm p-10 text-center">
@@ -181,34 +218,19 @@ function OwnerGate() {
 /* ============================================================
  * Área da barbearia (conta ativa).
  * ============================================================ */
-interface LocalState {
-  clients: Client[];
-  transactions: PosTransaction[];
-  reminders: ReminderLog[];
-  bankStatements: BankStatementEntry[];
-}
-
-function readLocal(userId: string): LocalState {
+/** Dados que antes ficavam só no navegador (versões anteriores). Importados uma única vez. */
+function readOldLocal(userId: string): { clients: Client[]; transactions: PosTransaction[]; bankStatements: BankStatementEntry[] } | null {
   try {
     const saved = localStorage.getItem(`pronto_agende_br_local_${userId}`);
-    if (saved) {
-      const p = JSON.parse(saved);
-      return {
-        clients: Array.isArray(p.clients) ? p.clients : INITIAL_CLIENTS,
-        transactions: Array.isArray(p.transactions) ? p.transactions : INITIAL_POS_TRANSACTIONS,
-        reminders: Array.isArray(p.reminders) ? p.reminders : INITIAL_REMINDERS,
-        bankStatements: Array.isArray(p.bankStatements) ? p.bankStatements : INITIAL_BANK_STATEMENTS,
-      };
-    }
+    if (!saved) return null;
+    const p = JSON.parse(saved);
+    const clients = Array.isArray(p.clients) ? p.clients : [];
+    const transactions = Array.isArray(p.transactions) ? p.transactions : [];
+    const bankStatements = Array.isArray(p.bankStatements) ? p.bankStatements : [];
+    return clients.length + transactions.length + bankStatements.length > 0 ? { clients, transactions, bankStatements } : null;
   } catch {
-    // sem dados locais
+    return null;
   }
-  return {
-    clients: INITIAL_CLIENTS,
-    transactions: INITIAL_POS_TRANSACTIONS,
-    reminders: INITIAL_REMINDERS,
-    bankStatements: INITIAL_BANK_STATEMENTS,
-  };
 }
 
 function Dashboard({
@@ -234,30 +256,61 @@ function Dashboard({
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loaded, setLoaded] = useState(false);
 
-  const initialLocal = useMemo(() => readLocal(userId), [userId]);
-  const [clients, setClients] = useState<Client[]>(initialLocal.clients);
-  const [transactions, setTransactions] = useState<PosTransaction[]>(initialLocal.transactions);
-  const [reminders] = useState<ReminderLog[]>(initialLocal.reminders);
-  const [bankStatements, setBankStatements] = useState<BankStatementEntry[]>(initialLocal.bankStatements);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [transactions, setTransactions] = useState<PosTransaction[]>([]);
+  const [reminders] = useState<ReminderLog[]>([]);
+  const [bankStatements, setBankStatements] = useState<BankStatementEntry[]>([]);
 
   const perms: UserPermissions = { ...ALL_PERMISSIONS, canManageUsers: profile.is_admin };
 
   // ---------- Carga inicial e atualização periódica ----------
   useEffect(() => {
     let alive = true;
-    loadOwnerData(initialBusiness.id)
-      .then((d) => {
+    (async () => {
+      try {
+        const d = await loadOwnerData(initialBusiness.id);
+        let [cl, tx, st] = await Promise.all([
+          loadDocs<Client>('crm_clients', initialBusiness.id),
+          loadDocs<PosTransaction>('pos_transactions', initialBusiness.id),
+          loadDocs<BankStatementEntry>('bank_statements', initialBusiness.id),
+        ]);
+
+        // Importação única: dados que estavam só neste navegador sobem para o servidor.
+        if (cl.length + tx.length + st.length === 0) {
+          const old = readOldLocal(userId);
+          if (old) {
+            const idMap = new Map<string, string>();
+            const fix = (id: string) => {
+              if (isUuid(id)) return id;
+              if (!idMap.has(id)) idMap.set(id, newId());
+              return idMap.get(id) as string;
+            };
+            cl = old.clients.map((c) => ({ ...c, id: fix(c.id) }));
+            tx = old.transactions.map((t) => ({ ...t, id: fix(t.id), clientId: idMap.get(t.clientId) ?? t.clientId }));
+            st = old.bankStatements.map((e) => ({ ...e, id: fix(e.id) }));
+            await insertDocs('crm_clients', initialBusiness.id, cl);
+            await insertDocs('pos_transactions', initialBusiness.id, tx);
+            await insertDocs('bank_statements', initialBusiness.id, st);
+            localStorage.removeItem(`pronto_agende_br_local_${userId}`);
+          }
+        }
+
         if (!alive) return;
         setStaff(d.staff);
         setServices(d.services);
         setAppointments(d.appointments);
+        setClients(cl);
+        setTransactions(tx);
+        setBankStatements(st);
         setLoaded(true);
-      })
-      .catch((err) => setSyncError(friendlyError((err as Error)?.message)));
+      } catch (err) {
+        if (alive) setSyncError(friendlyError((err as Error)?.message));
+      }
+    })();
     return () => {
       alive = false;
     };
-  }, [initialBusiness.id]);
+  }, [initialBusiness.id, userId]);
 
   const refreshAppointments = useCallback(async () => {
     try {
@@ -279,50 +332,39 @@ function Dashboard({
     };
   }, [refreshAppointments]);
 
-  // ---------- Dados locais (caixa, clientes, extratos) por conta ----------
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        `pronto_agende_br_local_${userId}`,
-        JSON.stringify({ clients, transactions, reminders, bankStatements })
-      );
-    } catch {
-      // ignore
-    }
-  }, [userId, clients, transactions, reminders, bankStatements]);
-
   // Toda reserva (inclusive as do link público) vira cliente na lista, se ainda não existir.
   useEffect(() => {
     if (!loaded) return;
-    setClients((prev) => {
-      const known = (a: Appointment) =>
-        prev.some(
-          (c) =>
-            (a.clientPhone && c.phoneWhatsapp.replace(/\D/g, '') === a.clientPhone.replace(/\D/g, '')) ||
-            c.fullName.toLowerCase() === a.clientName.toLowerCase()
-        );
-      const missing = appointments.filter((a) => a.clientName && !known(a));
-      if (missing.length === 0) return prev;
-      const added: Client[] = [];
-      for (const a of missing) {
-        if (added.some((c) => c.fullName.toLowerCase() === a.clientName.toLowerCase())) continue;
-        added.push({
-          id: a.clientId,
-          fullName: a.clientName,
-          phoneWhatsapp: a.clientPhone,
-          cpf: '',
-          email: '',
-          visitsCount: 0,
-          noShowCount: 0,
-          lastVisitDaysAgo: 0,
-          totalSpent: 0,
-          tags: ['NOVO'],
-          notes: '',
-          passes: [],
-        });
-      }
-      return [...added, ...prev];
-    });
+    const digits = (v: string) => v.replace(/\D/g, '');
+    const known = (a: Appointment) =>
+      clients.some(
+        (c) =>
+          (digits(a.clientPhone) && digits(c.phoneWhatsapp) === digits(a.clientPhone)) ||
+          c.fullName.toLowerCase() === a.clientName.toLowerCase()
+      );
+    const added: Client[] = [];
+    for (const a of appointments) {
+      if (!a.clientName || known(a)) continue;
+      if (added.some((c) => c.fullName.toLowerCase() === a.clientName.toLowerCase())) continue;
+      added.push({
+        id: newId(),
+        fullName: a.clientName,
+        phoneWhatsapp: a.clientPhone,
+        cpf: '',
+        email: '',
+        visitsCount: 0,
+        noShowCount: 0,
+        lastVisitDaysAgo: 0,
+        totalSpent: 0,
+        tags: ['NOVO'],
+        notes: '',
+        passes: [],
+      });
+    }
+    if (added.length === 0) return;
+    setClients((prev) => [...added, ...prev]);
+    persist(insertDocs('crm_clients', business.id, added));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointments, loaded]);
 
   // ---------- Gravação no servidor (com atraso para campos digitados) ----------
@@ -354,6 +396,17 @@ function Dashboard({
     window.addEventListener('pagehide', flush);
     return () => window.removeEventListener('pagehide', flush);
   }, []);
+
+  const persist = (job: Promise<unknown>) => {
+    job.catch((err) => setSyncError(friendlyError((err as Error)?.message)));
+  };
+
+  const patchClients = (match: (c: Client) => boolean, fn: (c: Client) => Client) => {
+    const changed = clients.filter(match).map(fn);
+    if (changed.length === 0) return;
+    setClients((prev) => prev.map((c) => changed.find((x) => x.id === c.id) ?? c));
+    changed.forEach((c) => persist(updateDoc('crm_clients', c)));
+  };
 
   const bufferFor = (serviceIds: string[]) =>
     servicesSpan(services.filter((s) => serviceIds.includes(s.id))).buffer;
@@ -401,16 +454,13 @@ function Dashboard({
     const target = appointments.find((a) => a.id === appointmentId);
     handleUpdateAppointment(appointmentId, { status: newStatus });
     if (newStatus === 'NO_SHOW' && target) {
-      setClients((prev) =>
-        prev.map((c) =>
-          c.id === target.clientId || c.fullName.toLowerCase() === target.clientName.toLowerCase()
-            ? {
-                ...c,
-                noShowCount: c.noShowCount + 1,
-                tags: c.tags.includes('ALERTA_FALTA') ? c.tags : [...c.tags, 'ALERTA_FALTA'],
-              }
-            : c
-        )
+      patchClients(
+        (c) => c.id === target.clientId || c.fullName.toLowerCase() === target.clientName.toLowerCase(),
+        (c) => ({
+          ...c,
+          noShowCount: c.noShowCount + 1,
+          tags: c.tags.includes('ALERTA_FALTA') ? c.tags : [...c.tags, 'ALERTA_FALTA'],
+        })
       );
     }
   };
@@ -431,34 +481,43 @@ function Dashboard({
     setActiveTab('POS');
   };
 
-  // ---------- Caixa e clientes (locais) ----------
+  // ---------- Caixa e clientes (no servidor) ----------
   const handleCompleteTransaction = (newTx: PosTransaction, appointmentId?: string) => {
-    setTransactions((prev) => [newTx, ...prev]);
+    const tx: PosTransaction = { ...newTx, id: isUuid(newTx.id) ? newTx.id : newId() };
+    setTransactions((prev) => [tx, ...prev]);
+    persist(insertDocs('pos_transactions', business.id, [tx]));
     if (appointmentId) handleUpdateAppointment(appointmentId, { status: 'COMPLETED' });
-    setClients((prev) =>
-      prev.map((c) =>
-        c.id === newTx.clientId || c.fullName.toLowerCase() === newTx.clientName.toLowerCase()
-          ? { ...c, visitsCount: c.visitsCount + 1, lastVisitDaysAgo: 0, totalSpent: c.totalSpent + newTx.totalAmount }
-          : c
-      )
+    patchClients(
+      (c) => c.id === tx.clientId || c.fullName.toLowerCase() === tx.clientName.toLowerCase(),
+      (c) => ({ ...c, visitsCount: c.visitsCount + 1, lastVisitDaysAgo: 0, totalSpent: c.totalSpent + tx.totalAmount })
     );
     setPendingCheckoutAppointmentId(null);
   };
 
-  const handleDeleteTransaction = (txId: string) => setTransactions((prev) => prev.filter((t) => t.id !== txId));
+  const handleDeleteTransaction = (txId: string) => {
+    setTransactions((prev) => prev.filter((t) => t.id !== txId));
+    persist(deleteDoc('pos_transactions', txId));
+  };
 
   const handleAddClient = (newCli: Omit<Client, 'id'>) => {
     const created: Client = {
       ...newCli,
       fullName: sanitizeUserText(newCli.fullName, 80),
       notes: sanitizeUserText(newCli.notes, 250),
-      id: `cli_${Date.now()}`,
+      id: newId(),
     };
     setClients((prev) => [created, ...prev]);
+    persist(insertDocs('crm_clients', business.id, [created]));
   };
   const handleUpdateClient = (clientId: string, patch: Partial<Client>) =>
-    setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, ...patch } : c)));
-  const handleDeleteClient = (clientId: string) => setClients((prev) => prev.filter((c) => c.id !== clientId));
+    patchClients(
+      (c) => c.id === clientId,
+      (c) => ({ ...c, ...patch })
+    );
+  const handleDeleteClient = (clientId: string) => {
+    setClients((prev) => prev.filter((c) => c.id !== clientId));
+    persist(deleteDoc('crm_clients', clientId));
+  };
 
   // ---------- Serviços e equipe (no servidor) ----------
   const handleUpdateService = (serviceId: string, patch: Partial<ServiceItem>) => {
@@ -515,18 +574,46 @@ function Dashboard({
     });
   };
 
-  const handleAddBankStatement = (entry: Omit<BankStatementEntry, 'id'>) =>
-    setBankStatements((prev) => [{ ...entry, id: `stmt_${Date.now()}` }, ...prev]);
-  const handleDeleteBankStatement = (entryId: string) => setBankStatements((prev) => prev.filter((e) => e.id !== entryId));
+  const handleAddBankStatement = (entry: Omit<BankStatementEntry, 'id'>) => {
+    const created: BankStatementEntry = { ...entry, id: newId() };
+    setBankStatements((prev) => [created, ...prev]);
+    persist(insertDocs('bank_statements', business.id, [created]));
+  };
+  const handleDeleteBankStatement = (entryId: string) => {
+    setBankStatements((prev) => prev.filter((e) => e.id !== entryId));
+    persist(deleteDoc('bank_statements', entryId));
+  };
 
   const handleResetAllData = () => {
     setClients([]);
     setTransactions([]);
     setBankStatements([]);
     setAppointments([]);
+    persist(deleteAllDocs(business.id));
     void supabase.from('appointments').delete().eq('business_id', business.id).then(({ error }) => {
       if (error) setSyncError(friendlyError(error.message));
     });
+  };
+
+  const exportMyData = () => {
+    const payload = {
+      exportadoEm: new Date().toISOString(),
+      conta: profile.email,
+      barbearia: business,
+      equipe: staff,
+      servicos: services,
+      agendamentos: appointments,
+      clientes: clients,
+      vendasDoCaixa: transactions,
+      extratos: bankStatements,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `prontoagende-meus-dados-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const navItems: Array<{ id: ActiveTab; label: string; shortLabel: string; icon: React.ReactNode; badge?: number }> = [
@@ -622,6 +709,15 @@ function Dashboard({
                 )}
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setActiveTab('ACCOUNT')}
+              title="Minha conta"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-300 hover:border-amber-500/50 text-xs font-medium cursor-pointer"
+            >
+              <UserCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">Conta</span>
+            </button>
             <button
               type="button"
               onClick={onSignOut}
@@ -727,6 +823,10 @@ function Dashboard({
             onDeleteBankStatement={handleDeleteBankStatement}
             onResetAllData={handleResetAllData}
           />
+        )}
+
+        {activeTab === 'ACCOUNT' && (
+          <AccountModule email={profile.email} isAdmin={profile.is_admin} onExport={exportMyData} onAccountDeleted={() => window.location.reload()} />
         )}
 
         {activeTab === 'ADMIN' && profile.is_admin && (

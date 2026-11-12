@@ -269,3 +269,60 @@ export async function fetchAppointments(businessId: string): Promise<Appointment
   if (error) throw error;
   return (data ?? []).map(appointmentFromRow);
 }
+
+/* ---------- Clientes, caixa e extratos (documentos JSON por barbearia) ---------- */
+
+export type DocTable = 'crm_clients' | 'pos_transactions' | 'bank_statements';
+
+export async function loadDocs<T extends { id: string }>(table: DocTable, businessId: string): Promise<T[]> {
+  const order = table === 'pos_transactions' ? 'closed_at' : table === 'bank_statements' ? 'entry_date' : 'updated_at';
+  const { data, error } = await supabase
+    .from(table)
+    .select('id, data')
+    .eq('business_id', businessId)
+    .order(order, { ascending: false })
+    .limit(3000);
+  if (error) throw error;
+  return (data ?? []).map((r: Row) => ({ ...(r.data as object), id: r.id }) as T);
+}
+
+function docExtra(table: DocTable, doc: Row): Row {
+  if (table === 'pos_transactions' && typeof doc.closedAt === 'string') {
+    const d = new Date(doc.closedAt);
+    if (!Number.isNaN(d.getTime())) return { closed_at: d.toISOString() };
+  }
+  if (table === 'bank_statements' && typeof doc.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(doc.date)) {
+    return { entry_date: doc.date.slice(0, 10) };
+  }
+  return {};
+}
+
+export async function insertDocs(table: DocTable, businessId: string, docs: Array<{ id: string }>) {
+  if (docs.length === 0) return;
+  const rows = docs.map((d) => ({ id: d.id, business_id: businessId, data: d, ...docExtra(table, d as Row) }));
+  const { error } = await supabase.from(table).insert(rows);
+  if (error) throw error;
+}
+
+export async function updateDoc(table: DocTable, doc: { id: string }) {
+  const { error } = await supabase
+    .from(table)
+    .update({ data: doc, ...(table === 'crm_clients' ? { updated_at: new Date().toISOString() } : {}) })
+    .eq('id', doc.id);
+  if (error) throw error;
+}
+
+export async function deleteDoc(table: DocTable, id: string) {
+  const { error } = await supabase.from(table).delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteAllDocs(businessId: string) {
+  for (const t of ['crm_clients', 'pos_transactions', 'bank_statements'] as DocTable[]) {
+    const { error } = await supabase.from(t).delete().eq('business_id', businessId);
+    if (error) throw error;
+  }
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const isUuid = (s: string) => UUID_RE.test(s);

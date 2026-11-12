@@ -13,6 +13,7 @@ import { PosModule } from '../components/PosModule';
 import { ClientsModule } from '../components/ClientsModule';
 import { ShareLinkModule } from '../components/ShareLinkModule';
 import { RemindersModule } from '../components/RemindersModule';
+import { AccountModule } from '../components/AccountModule';
 
 const services: ServiceItem[] = [
   { id: 's1', name: 'Corte Masculino', category: 'CABELO', durationMinutes: 40, bufferAfterMinutes: 5, price: 45, customCommissionPct: 50, assistantSharePct: 0 },
@@ -128,6 +129,7 @@ export const Preview: React.FC<{ screen: string }> = ({ screen }) => {
           <ClientsModule clients={clients} businessName={business.name} onAddClient={() => {}} onUpdateClient={() => {}} onDeleteClient={() => {}} />
         )}
         {screen === 'reserva' && <ShareLinkModule business={business} staff={stf} services={svc} onGoToSettings={() => {}} />}
+        {screen === 'conta' && <AccountModule email="dono@exemplo.com" isAdmin={false} onExport={() => {}} onAccountDeleted={() => {}} />}
         {screen === 'lembretes' && (
           <RemindersModule reminders={[]} appointments={appointments} business={business} staff={stf} services={svc} onDispatchAllPending={() => {}} onSimulateClientReply={() => {}} />
         )}

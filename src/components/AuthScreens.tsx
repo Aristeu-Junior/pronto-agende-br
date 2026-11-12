@@ -3,6 +3,7 @@ import { Scissors, SignOut } from '@phosphor-icons/react';
 import { friendlyError, supabase } from '../lib/supabase';
 import { createBusinessWithDefaults, slugify } from '../lib/cloud';
 import { BusinessConfig } from '../types';
+import { LegalLinks } from './LegalPages';
 
 const field =
   'w-full rounded-xl border border-stone-800 bg-stone-950 px-3.5 py-3 text-sm text-stone-100 focus:border-amber-500 focus:outline-none';
@@ -29,7 +30,7 @@ const Shell: React.FC<{ title: string; subtitle?: string; children: React.ReactN
 );
 
 export const AuthScreen: React.FC = () => {
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [shopName, setShopName] = useState('');
@@ -43,6 +44,16 @@ export const AuthScreen: React.FC = () => {
     setInfo('');
     const cleanEmail = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return setError('Digite um e-mail válido.');
+    if (mode === 'forgot') {
+      setBusy(true);
+      await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: `${window.location.origin}${window.location.pathname}`,
+      });
+      setBusy(false);
+      // mesma resposta exista ou não a conta: não revela quem é cliente
+      setInfo('Se esse e-mail tiver uma conta, enviaremos um link para criar uma nova senha. Confira também o spam.');
+      return;
+    }
     if (password.length < 8) return setError('A senha precisa ter pelo menos 8 caracteres.');
     if (mode === 'signup' && shopName.trim().length < 2) return setError('Digite o nome da barbearia.');
     setBusy(true);
@@ -71,7 +82,9 @@ export const AuthScreen: React.FC = () => {
   return (
     <Shell
       title="ProntoAgende"
-      subtitle={mode === 'login' ? 'Entre na sua barbearia' : 'Crie a conta da sua barbearia'}
+      subtitle={
+        mode === 'login' ? 'Entre na sua barbearia' : mode === 'signup' ? 'Crie a conta da sua barbearia' : 'Recuperar senha'
+      }
     >
       <form onSubmit={submit} className="space-y-3.5" noValidate>
         {mode === 'signup' && (
@@ -97,6 +110,7 @@ export const AuthScreen: React.FC = () => {
             placeholder="voce@email.com"
           />
         </label>
+        {mode !== 'forgot' && (
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-stone-300">Senha</span>
           <input
@@ -108,6 +122,7 @@ export const AuthScreen: React.FC = () => {
             placeholder="Mínimo 8 caracteres"
           />
         </label>
+        )}
         {error && (
           <p role="alert" className="text-xs font-medium text-rose-700">
             {error}
@@ -119,7 +134,7 @@ export const AuthScreen: React.FC = () => {
           disabled={busy}
           className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-stone-950 hover:bg-amber-600 disabled:opacity-50 cursor-pointer"
         >
-          {busy ? 'Aguarde…' : mode === 'login' ? 'Entrar' : 'Criar conta'}
+          {busy ? 'Aguarde…' : mode === 'login' ? 'Entrar' : mode === 'signup' ? 'Criar conta' : 'Enviar link'}
         </button>
       </form>
       <button
@@ -133,11 +148,26 @@ export const AuthScreen: React.FC = () => {
       >
         {mode === 'login' ? 'Ainda não tenho conta' : 'Já tenho conta. Entrar'}
       </button>
+      {mode === 'login' && (
+        <button
+          type="button"
+          onClick={() => {
+            setMode('forgot');
+            setError('');
+            setInfo('');
+          }}
+          className="mt-2 w-full text-center text-xs font-semibold text-stone-400 hover:text-amber-800 cursor-pointer"
+        >
+          Esqueci minha senha
+        </button>
+      )}
       {mode === 'signup' && (
         <p className="mt-3 text-center text-[11px] text-stone-400">
-          Depois de criar a conta, o acesso ao sistema é liberado pelo administrador.
+          Depois de criar a conta, o acesso ao sistema é liberado pelo administrador. Ao criar a conta, você aceita os
+          Termos de Uso e a Política de Privacidade.
         </p>
       )}
+      <LegalLinks className="mt-4" />
     </Shell>
   );
 };
@@ -250,6 +280,92 @@ export const OnboardingScreen: React.FC<{
           className="w-full text-center text-xs font-semibold text-stone-400 cursor-pointer"
         >
           Sair
+        </button>
+      </form>
+    </Shell>
+  );
+};
+
+export const MfaChallengeScreen: React.FC<{ onDone: () => void; onSignOut: () => void }> = ({ onDone, onSignOut }) => {
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    const { data: factors, error: listErr } = await supabase.auth.mfa.listFactors();
+    const factor = factors?.totp?.[0];
+    if (listErr || !factor) {
+      setBusy(false);
+      return setError('Não foi possível carregar a verificação. Tente de novo.');
+    }
+    const { error: err } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code: code.trim() });
+    setBusy(false);
+    if (err) return setError('Código incorreto ou expirado. Confira o aplicativo e tente de novo.');
+    onDone();
+  };
+
+  return (
+    <Shell title="Verificação em duas etapas" subtitle="Digite o código do seu aplicativo autenticador">
+      <form onSubmit={submit} className="space-y-3.5">
+        <input
+          className={`${field} text-center font-mono text-lg tracking-widest`}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          autoFocus
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+          placeholder="000000"
+        />
+        {error && (
+          <p role="alert" className="text-xs font-medium text-rose-700">
+            {error}
+          </p>
+        )}
+        <button type="submit" disabled={code.length !== 6 || busy} className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-stone-950 disabled:opacity-50 cursor-pointer">
+          {busy ? 'Verificando…' : 'Confirmar'}
+        </button>
+        <button type="button" onClick={onSignOut} className="w-full text-center text-xs font-semibold text-stone-400 cursor-pointer">
+          Sair
+        </button>
+      </form>
+    </Shell>
+  );
+};
+
+export const ResetPasswordScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => {
+  const [pw1, setPw1] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pw1.length < 8) return setError('A senha precisa ter pelo menos 8 caracteres.');
+    if (pw1 !== pw2) return setError('As duas senhas não são iguais.');
+    setBusy(true);
+    setError('');
+    const { error: err } = await supabase.auth.updateUser({ password: pw1 });
+    setBusy(false);
+    if (err) return setError(friendlyError(err.message));
+    onDone();
+  };
+
+  return (
+    <Shell title="Nova senha" subtitle="Escolha uma senha nova para a sua conta">
+      <form onSubmit={submit} className="space-y-3.5" noValidate>
+        <input className={field} type="password" autoComplete="new-password" placeholder="Nova senha (mínimo 8 caracteres)" value={pw1} onChange={(e) => setPw1(e.target.value)} />
+        <input className={field} type="password" autoComplete="new-password" placeholder="Repita a nova senha" value={pw2} onChange={(e) => setPw2(e.target.value)} />
+        {error && (
+          <p role="alert" className="text-xs font-medium text-rose-700">
+            {error}
+          </p>
+        )}
+        <button type="submit" disabled={busy} className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-stone-950 disabled:opacity-50 cursor-pointer">
+          {busy ? 'Salvando…' : 'Salvar nova senha'}
         </button>
       </form>
     </Shell>

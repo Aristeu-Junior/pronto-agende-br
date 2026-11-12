@@ -15,6 +15,7 @@ import {
 } from '../utils/schedule';
 import { MonthCalendar } from './MonthCalendar';
 import { SlotPicker } from './SlotPicker';
+import { LegalLinks } from './LegalPages';
 
 interface Shop {
   name: string;
@@ -467,6 +468,10 @@ export const PublicBookingPage: React.FC<{ slug: string }> = ({ slug }) => {
           <p className="text-center text-[11px] text-stone-400">
             Cancelamento gratuito até {shop.cancelNoticeHours}h antes do horário.
           </p>
+          <p className="text-center text-[11px] text-stone-400">
+            Ao reservar, você autoriza {shop.name} a usar seu nome e telefone para este agendamento.
+          </p>
+          <LegalLinks />
         </div>
       </form>
     </main>
