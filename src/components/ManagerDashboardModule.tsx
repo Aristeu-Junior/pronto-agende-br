@@ -840,11 +840,10 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
               disabled={!canResetData}
               onClick={() => {
                 if (!canResetData) return;
-                if (
-                  window.confirm(
-                    'Deseja zerar todos os clientes, agendamentos e lançamentos de caixa para começar do zero?'
-                  )
-                ) {
+                const typed = window.prompt(
+                  'Isto apaga PARA SEMPRE todos os clientes, agendamentos, vendas do caixa e extratos desta barbearia, e não tem volta. Digite ZERAR para confirmar.'
+                );
+                if (typed && typed.trim().toUpperCase() === 'ZERAR') {
                   onResetAllData();
                 }
               }}

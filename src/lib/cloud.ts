@@ -239,35 +239,50 @@ export async function createBusinessWithDefaults(name: string, desiredSlug: stri
 }
 
 export async function loadOwnerData(businessId: string) {
-  const since = new Date();
-  since.setDate(since.getDate() - 60);
-  const sinceISO = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, '0')}-${String(since.getDate()).padStart(2, '0')}`;
-  const [staff, services, appts] = await Promise.all([
+  const [staff, services, appointments] = await Promise.all([
     supabase.from('staff').select('*').eq('business_id', businessId).eq('active', true).order('name'),
     supabase.from('services').select('*').eq('business_id', businessId).eq('active', true).order('name'),
-    supabase.from('appointments').select('*').eq('business_id', businessId).gte('day', sinceISO).order('day').order('start_time'),
+    fetchAppointments(businessId),
   ]);
-  for (const r of [staff, services, appts]) if (r.error) throw r.error;
+  for (const r of [staff, services]) if (r.error) throw r.error;
   return {
     staff: (staff.data ?? []).map(staffFromRow),
     services: (services.data ?? []).map(serviceFromRow),
-    appointments: (appts.data ?? []).map(appointmentFromRow),
+    appointments,
   };
+}
+
+/** O servidor devolve no máximo 1000 linhas por consulta: busca em páginas até acabar (limite de segurança de 10 mil). */
+async function fetchPaged<T>(
+  build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+): Promise<T[]> {
+  const pageSize = 1000;
+  const out: T[] = [];
+  for (let page = 0; page < 10; page++) {
+    const { data, error } = await build(page * pageSize, page * pageSize + pageSize - 1);
+    if (error) throw error;
+    out.push(...(data ?? []));
+    if (!data || data.length < pageSize) break;
+  }
+  return out;
 }
 
 export async function fetchAppointments(businessId: string): Promise<Appointment[]> {
   const since = new Date();
   since.setDate(since.getDate() - 60);
   const sinceISO = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, '0')}-${String(since.getDate()).padStart(2, '0')}`;
-  const { data, error } = await supabase
-    .from('appointments')
-    .select('*')
-    .eq('business_id', businessId)
-    .gte('day', sinceISO)
-    .order('day')
-    .order('start_time');
-  if (error) throw error;
-  return (data ?? []).map(appointmentFromRow);
+  const rows = await fetchPaged<Row>((from, to) =>
+    supabase
+      .from('appointments')
+      .select('*')
+      .eq('business_id', businessId)
+      .gte('day', sinceISO)
+      .order('day')
+      .order('start_time')
+      .order('id')
+      .range(from, to)
+  );
+  return rows.map(appointmentFromRow);
 }
 
 /* ---------- Clientes, caixa e extratos (documentos JSON por barbearia) ---------- */
@@ -276,14 +291,16 @@ export type DocTable = 'crm_clients' | 'pos_transactions' | 'bank_statements';
 
 export async function loadDocs<T extends { id: string }>(table: DocTable, businessId: string): Promise<T[]> {
   const order = table === 'pos_transactions' ? 'closed_at' : table === 'bank_statements' ? 'entry_date' : 'updated_at';
-  const { data, error } = await supabase
-    .from(table)
-    .select('id, data')
-    .eq('business_id', businessId)
-    .order(order, { ascending: false })
-    .limit(3000);
-  if (error) throw error;
-  return (data ?? []).map((r: Row) => ({ ...(r.data as object), id: r.id }) as T);
+  const rows = await fetchPaged<Row>((from, to) =>
+    supabase
+      .from(table)
+      .select('id, data')
+      .eq('business_id', businessId)
+      .order(order, { ascending: false })
+      .order('id')
+      .range(from, to)
+  );
+  return rows.map((r) => ({ ...(r.data as object), id: r.id }) as T);
 }
 
 function docExtra(table: DocTable, doc: Row): Row {

@@ -344,7 +344,7 @@ function Dashboard({
       );
     const added: Client[] = [];
     for (const a of appointments) {
-      if (!a.clientName || known(a)) continue;
+      if (!a.clientName || ignoredApts.current.has(a.id) || known(a)) continue;
       if (added.some((c) => c.fullName.toLowerCase() === a.clientName.toLowerCase())) continue;
       added.push({
         id: newId(),
@@ -396,6 +396,27 @@ function Dashboard({
     window.addEventListener('pagehide', flush);
     return () => window.removeEventListener('pagehide', flush);
   }, []);
+
+  // Reservas cujo cliente foi apagado não recriam o cliente (só reservas novas recriam).
+  const ignoredKey = `pronto_agende_br_ignored_${initialBusiness.id}`;
+  const ignoredApts = useRef<Set<string>>(
+    (() => {
+      try {
+        const raw = localStorage.getItem(ignoredKey);
+        return new Set<string>(raw ? (JSON.parse(raw) as string[]) : []);
+      } catch {
+        return new Set<string>();
+      }
+    })()
+  );
+  const rememberIgnored = (ids: string[]) => {
+    ids.forEach((id) => ignoredApts.current.add(id));
+    try {
+      localStorage.setItem(ignoredKey, JSON.stringify([...ignoredApts.current].slice(-5000)));
+    } catch {
+      // sem armazenamento local
+    }
+  };
 
   const persist = (job: Promise<unknown>) => {
     job.catch((err) => setSyncError(friendlyError((err as Error)?.message)));
@@ -515,6 +536,19 @@ function Dashboard({
       (c) => ({ ...c, ...patch })
     );
   const handleDeleteClient = (clientId: string) => {
+    const gone = clients.find((c) => c.id === clientId);
+    if (gone) {
+      const digits = (v: string) => v.replace(/\D/g, '');
+      rememberIgnored(
+        appointments
+          .filter(
+            (a) =>
+              (digits(a.clientPhone) && digits(a.clientPhone) === digits(gone.phoneWhatsapp)) ||
+              a.clientName.toLowerCase() === gone.fullName.toLowerCase()
+          )
+          .map((a) => a.id)
+      );
+    }
     setClients((prev) => prev.filter((c) => c.id !== clientId));
     persist(deleteDoc('crm_clients', clientId));
   };
