@@ -88,7 +88,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
 
       <div className="grid grid-cols-7 gap-1 text-center">
         {WEEKDAY_SHORT.map((w) => (
-          <span key={w} className="py-1 text-[10px] font-semibold uppercase text-stone-500">
+          <span key={w} className="py-1 text-[11px] font-semibold uppercase text-stone-500">
             {w}
           </span>
         ))}

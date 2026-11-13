@@ -178,7 +178,7 @@ const TourPreview: React.FC = () => {
       <PreviewInner screen={TAB_SCREEN[tab]} />
       <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-stone-800 bg-stone-950 py-1.5">
         {labels.map(([id, label]) => (
-          <button key={id} type="button" data-tour={`nav-${id}`} onClick={() => setTab(id)} className="px-2 py-1.5 text-[10px] text-stone-300">
+          <button key={id} type="button" data-tour={`nav-${id}`} onClick={() => setTab(id)} className="px-2 py-1.5 text-[11px] text-stone-300">
             {label}
           </button>
         ))}

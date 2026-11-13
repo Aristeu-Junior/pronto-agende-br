@@ -14,7 +14,7 @@ const Shell: React.FC<{ title: string; subtitle?: string; children: React.ReactN
   subtitle,
   children,
 }) => (
-  <main className="flex min-h-screen items-center justify-center bg-stone-950 px-4 py-10">
+  <main className="flex min-h-screen items-center justify-center bg-stone-950 px-4 pb-10 pt-20 sm:py-10">
     <ThemeToggle floating />
     <div className="w-full max-w-md rounded-3xl border border-stone-800 bg-stone-900 p-7 shadow-xl">
       <div className="mb-5 flex items-center gap-3 border-b border-stone-800 pb-5">

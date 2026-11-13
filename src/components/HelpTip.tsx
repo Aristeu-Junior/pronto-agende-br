@@ -86,11 +86,11 @@ export const HelpTip: React.FC<HelpTipProps> = ({ text, label, className = '' })
           e.stopPropagation();
           setOpen((o) => (lastPointer.current === 'mouse' ? true : !o));
         }}
-        className={`relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-amber-500/60 bg-amber-950 text-amber-800 hover:bg-amber-500 hover:text-white cursor-pointer ${className}`}
+        className={`group/tip relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-amber-500/40 bg-gradient-to-b from-tint-50 to-amber-950 text-amber-700 shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.35)] transition-all duration-200 hover:scale-110 hover:border-amber-500 hover:from-amber-500 hover:to-amber-600 hover:text-white hover:shadow-[0_0_0_4px_rgba(250,65,0,0.16)] focus-visible:scale-110 focus-visible:from-amber-500 focus-visible:to-amber-600 focus-visible:text-white aria-expanded:from-amber-500 aria-expanded:to-amber-600 aria-expanded:text-white aria-expanded:shadow-[0_0_0_4px_rgba(250,65,0,0.16)] cursor-pointer ${className}`}
       >
         {/* área de toque maior que a bolinha, sem aumentar o visual */}
         <span aria-hidden="true" className="absolute -inset-3" />
-        <Question className="h-3 w-3" weight="bold" aria-hidden="true" />
+        <Question className="h-3.5 w-3.5" weight="bold" aria-hidden="true" />
       </button>
       {open &&
         createPortal(
@@ -105,8 +105,9 @@ export const HelpTip: React.FC<HelpTipProps> = ({ text, label, className = '' })
               width: Math.min(TIP_WIDTH, window.innerWidth - MARGIN * 2),
               zIndex: 90,
             }}
-            className="rounded-xl border border-stone-700 bg-stone-900 p-3 text-xs leading-relaxed text-stone-200 shadow-xl"
+            className="tour-fade overflow-hidden rounded-xl border border-stone-700 border-l-[3px] border-l-amber-500 bg-stone-900 px-3.5 py-3 text-xs leading-relaxed text-stone-300 shadow-xl"
           >
+            {label && <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-amber-800">{label}</p>}
             {text}
           </div>,
           document.body

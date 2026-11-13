@@ -168,16 +168,16 @@ export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
                     )}
                   </div>
                   {d.enabled && (
-                    <div className="mt-2 flex flex-wrap items-center gap-2 sm:pl-[7.75rem]">
+                    <div className="mt-2 grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2 sm:flex sm:flex-wrap sm:pl-[7.75rem]">
                       {hasBreak ? (
                         <>
-                          <span className="text-[11px] text-stone-400">Pausa</span>
+                          <span className="col-span-4 text-[11px] text-stone-400 sm:col-span-1">Pausa (almoço)</span>
                           <input
                             type="time"
                             value={d.breakStart}
                             aria-label={`Início da pausa ${WEEKDAY_LONG[i]}`}
                             onChange={(e) => patchDay(i, { breakStart: e.target.value })}
-                            className={`${inputCls} !w-[6.5rem]`}
+                            className={`${inputCls} min-w-0 !w-full sm:!w-[6.5rem]`}
                           />
                           <span className="text-[11px] text-stone-500">às</span>
                           <input
@@ -185,22 +185,22 @@ export const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({
                             value={d.breakEnd}
                             aria-label={`Fim da pausa ${WEEKDAY_LONG[i]}`}
                             onChange={(e) => patchDay(i, { breakEnd: e.target.value })}
-                            className={`${inputCls} !w-[6.5rem]`}
+                            className={`${inputCls} min-w-0 !w-full sm:!w-[6.5rem]`}
                           />
                           <button
                             type="button"
                             aria-label="Remover pausa"
                             onClick={() => patchDay(i, { breakStart: '', breakEnd: '' })}
-                            className="text-stone-500 hover:text-amber-700 cursor-pointer"
+                            className="flex h-10 w-10 items-center justify-center rounded-lg text-stone-500 hover:text-amber-700 cursor-pointer"
                           >
-                            <X className="h-3.5 w-3.5" />
+                            <X className="h-4 w-4" />
                           </button>
                         </>
                       ) : (
                         <button
                           type="button"
                           onClick={() => patchDay(i, { breakStart: '12:00', breakEnd: '13:00' })}
-                          className="text-[11px] font-semibold text-amber-700 hover:text-amber-800 cursor-pointer"
+                          className="col-span-4 min-h-[40px] text-left text-xs font-semibold text-amber-700 hover:text-amber-800 cursor-pointer"
                         >
                           + Adicionar pausa (almoço)
                         </button>

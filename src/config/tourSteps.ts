@@ -12,7 +12,7 @@ export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
   return [
     {
       title: 'Bem-vindo ao ProntoAgende',
-      body: 'Vamos passar por cada página do sistema, uma de cada vez, e ver para que serve cada parte. Use Próximo para avançar, Voltar para rever, ou Pular tutorial se preferir. Dá para refazer tudo pelo botão Tutorial, no topo.',
+      body: 'Vamos passar por cada página do sistema, uma de cada vez, e ver para que serve cada parte. Use Próximo para avançar, Voltar para rever, ou Pular tutorial se preferir. Dá para refazer tudo em Minha conta.',
       onEnter: on('AGENDA'),
     },
     {
@@ -157,7 +157,7 @@ export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
       section: 'Clientes',
       target: 'clients-list',
       title: 'A lista',
-      body: 'Mostra visitas e faltas de cada cliente. Toque em um nome para abrir a ficha, editar os dados, anotar preferências ou chamar no WhatsApp.',
+      body: 'Mostra visitas e faltas de cada cliente. Toque em um nome para abrir a ficha, editar os dados, anotar preferências ou chamar no WhatsApp. Enquanto não houver clientes, aparece aqui o atalho para cadastrar o primeiro.',
       onEnter: on('CLIENTS'),
     },
 
@@ -252,7 +252,7 @@ export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
     },
     {
       title: 'Tudo pronto',
-      body: 'Onde aparecer uma bolinha com "?", passe o mouse (ou toque) para ver o que aquela área faz. Para rever este tutorial, use o botão Tutorial no topo.',
+      body: 'Onde aparecer uma bolinha com "?", passe o mouse (ou toque) para ver o que aquela área faz. Para rever este tutorial, abra Minha conta (ou use o botão Tutorial no topo, no computador).',
       onEnter: on('AGENDA'),
     },
   ];

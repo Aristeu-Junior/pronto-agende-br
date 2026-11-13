@@ -448,7 +448,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
                     {method === 'PIX' && <QrCode className="h-4 w-4" />}
                     {(method === 'DEBIT_CARD' || method === 'CREDIT_CARD') && <CreditCard className="h-4 w-4" />}
                     {method === 'CASH' && <DollarSign className="h-4 w-4" />}
-                    <span className="font-mono text-[10px] text-stone-400">
+                    <span className="font-mono text-[11px] text-stone-400">
                       {method === 'PIX' || method === 'CASH' ? 'sem taxa' : method === 'DEBIT_CARD' ? '1,49%' : '3,99%'}
                     </span>
                   </div>
@@ -534,7 +534,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5 font-semibold text-stone-100">
                       <span className="truncate">{tx.clientName}</span>
-                      <span className="rounded bg-stone-800 px-1.5 py-0.5 font-mono text-[10px] text-stone-300">
+                      <span className="rounded bg-stone-800 px-1.5 py-0.5 font-mono text-[11px] text-stone-300">
                         {PAYMENT_METHOD_LABELS[tx.paymentMethod]}
                       </span>
                     </div>
@@ -542,7 +542,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
                       {tx.closedAt} · {tx.staffName} ({formatCurrencyBRL(tx.staffNetCommission)})
                     </div>
                     {tx.receiptAttachmentName && (
-                      <div className="mt-1 inline-flex items-center gap-1 text-[10px] text-stone-400">
+                      <div className="mt-1 inline-flex items-center gap-1 text-[11px] text-stone-400">
                         <FileText className="h-3 w-3" />
                         {tx.receiptAttachmentName}
                       </div>
@@ -551,7 +551,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
                   <div className="flex shrink-0 items-center gap-2">
                     <div className="text-right font-mono">
                       <div className="text-sm font-bold text-stone-100">{formatCurrencyBRL(tx.totalAmount)}</div>
-                      <div className="text-[10px] text-stone-400">Barbearia: {formatCurrencyBRL(tx.salonNetShare)}</div>
+                      <div className="text-[11px] text-stone-400">Barbearia: {formatCurrencyBRL(tx.salonNetShare)}</div>
                     </div>
                     {onDeleteTransaction && (
                       <button

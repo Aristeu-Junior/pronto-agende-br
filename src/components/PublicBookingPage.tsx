@@ -333,15 +333,17 @@ export const PublicBookingPage: React.FC<{ slug: string }> = ({ slug }) => {
 
   return (
     <main className="mx-auto max-w-4xl space-y-5 px-4 py-8">
-      <ThemeToggle floating />
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold text-stone-100">{shop.name}</h1>
-        {(shop.address || shop.cityState) && (
-          <p className="flex items-center gap-1.5 text-xs text-stone-400">
-            <MapPin className="h-3.5 w-3.5 shrink-0 text-amber-700" />
-            {[shop.address, shop.neighborhood, shop.cityState].filter(Boolean).join(' • ')}
-          </p>
-        )}
+      <header className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <h1 className="break-words text-2xl font-bold text-stone-100">{shop.name}</h1>
+          {(shop.address || shop.cityState) && (
+            <p className="flex items-start gap-1.5 text-xs text-stone-400">
+              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700" />
+              <span>{[shop.address, shop.neighborhood, shop.cityState].filter(Boolean).join(' • ')}</span>
+            </p>
+          )}
+        </div>
+        <ThemeToggle />
       </header>
 
       <form onSubmit={submit} className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">

@@ -288,14 +288,14 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
             <label className="block text-xs font-medium text-stone-300 mb-1">
               Chave Pix da Barbearia (Para Sinal / Caixa)
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <select
                 value={business.pixKeyType ?? ''}
                 onChange={(e) =>
                   onUpdateBusiness({ pixKeyType: (e.target.value || undefined) as PixKeyType | undefined })
                 }
                 aria-label="Tipo da chave Pix"
-                className="shrink-0 bg-stone-950 border border-stone-800 rounded-xl px-2.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+                className="w-full sm:w-auto shrink-0 bg-stone-950 border border-stone-800 rounded-xl px-2.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
               >
                 <option value="">Tipo…</option>
                 {(Object.keys(PIX_KEY_TYPE_LABELS) as PixKeyType[]).map((t) => (
@@ -380,10 +380,10 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
             {services.map((srv) => (
               <div
                 key={srv.id}
-                className="grid grid-cols-12 gap-2 items-center bg-stone-950/90 border border-stone-800 rounded-xl p-2.5"
+                className="grid grid-cols-12 gap-2 items-end bg-stone-950/90 border border-stone-800 rounded-xl p-2.5"
               >
-                <div className="col-span-6">
-                  <label className="block text-[10px] text-stone-400">
+                <div className="col-span-12 sm:col-span-6">
+                  <label className="block text-[11px] text-stone-400">
                     Nome do Serviço
                   </label>
                   <input
@@ -392,11 +392,11 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                     onChange={(e) =>
                       onUpdateService(srv.id, { name: e.target.value })
                     }
-                    className="w-full bg-transparent text-xs font-semibold text-stone-100 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
+                    className="w-full inline-field bg-transparent text-xs font-semibold text-stone-100 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
                   />
                 </div>
-                <div className="col-span-2">
-                  <label className="block text-[10px] text-stone-400">
+                <div className="col-span-5 sm:col-span-2">
+                  <label className="block text-[11px] text-stone-400">
                     Minutos
                   </label>
                   <input
@@ -412,11 +412,11 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                         ),
                       })
                     }
-                    className="w-full bg-transparent text-xs font-mono text-stone-200 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
+                    className="w-full inline-field bg-transparent text-xs font-mono text-stone-200 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
                   />
                 </div>
-                <div className="col-span-3">
-                  <label className="block text-[10px] text-stone-400">
+                <div className="col-span-5 sm:col-span-3">
+                  <label className="block text-[11px] text-stone-400">
                     Valor (R$)
                   </label>
                   <input
@@ -430,10 +430,10 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                         price: Math.max(0, Number(e.target.value) || 0),
                       })
                     }
-                    className="w-full bg-transparent text-xs font-mono font-bold text-amber-700 disabled:opacity-50 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
+                    className="w-full inline-field bg-transparent text-xs font-mono font-bold text-amber-700 disabled:opacity-50 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
                   />
                 </div>
-                <div className="col-span-1 flex justify-end">
+                <div className="col-span-2 sm:col-span-1 flex justify-end self-end">
                   <button
                     type="button"
                     onClick={() => onDeleteService(srv.id)}
@@ -512,10 +512,10 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
             {staff.map((member) => (
               <div
                 key={member.id}
-                className="grid grid-cols-12 gap-2 items-center bg-stone-950/90 border border-stone-800 rounded-xl p-2.5"
+                className="grid grid-cols-12 gap-2 items-end bg-stone-950/90 border border-stone-800 rounded-xl p-2.5"
               >
                 <div className="col-span-12 sm:col-span-6">
-                  <label className="block text-[10px] text-stone-400">
+                  <label className="block text-[11px] text-stone-400">
                     Nome do Barbeiro
                   </label>
                   <input
@@ -524,11 +524,11 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                     onChange={(e) =>
                       onUpdateStaff(member.id, { name: e.target.value })
                     }
-                    className="w-full bg-transparent text-xs font-semibold text-stone-100 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
+                    className="w-full inline-field bg-transparent text-xs font-semibold text-stone-100 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
                   />
                 </div>
                 <div className="col-span-5 sm:col-span-3">
-                  <label className="block text-[10px] text-stone-400">
+                  <label className="block text-[11px] text-stone-400">
                     Cadeira
                   </label>
                   <input
@@ -537,11 +537,11 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                     onChange={(e) =>
                       onUpdateStaff(member.id, { chairLabel: e.target.value })
                     }
-                    className="w-full bg-transparent text-xs text-stone-300 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
+                    className="w-full inline-field bg-transparent text-xs text-stone-300 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
                   />
                 </div>
                 <div className="col-span-5 sm:col-span-2">
-                  <label className="block text-[10px] text-stone-400">
+                  <label className="block text-[11px] text-stone-400">
                     Comissão %
                   </label>
                   <input
@@ -557,10 +557,10 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
                         ),
                       })
                     }
-                    className="w-full bg-transparent text-xs font-mono font-bold text-emerald-700 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
+                    className="w-full inline-field bg-transparent text-xs font-mono font-bold text-emerald-700 focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
                   />
                 </div>
-                <div className="col-span-2 sm:col-span-1 flex justify-end">
+                <div className="col-span-2 sm:col-span-1 flex justify-end self-end">
                   <button
                     type="button"
                     onClick={() => onDeleteStaff(member.id)}

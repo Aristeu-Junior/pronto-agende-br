@@ -12,9 +12,11 @@ interface Props {
   isAdmin: boolean;
   onExport: () => void;
   onAccountDeleted: () => void;
+  /** Abre o tutorial guiado de novo. */
+  onStartTour?: () => void;
 }
 
-export const AccountModule: React.FC<Props> = ({ email, isAdmin, onExport, onAccountDeleted }) => {
+export const AccountModule: React.FC<Props> = ({ email, isAdmin, onExport, onAccountDeleted, onStartTour }) => {
   // ---- senha ----
   const [pw1, setPw1] = useState('');
   const [pw2, setPw2] = useState('');
@@ -116,6 +118,22 @@ export const AccountModule: React.FC<Props> = ({ email, isAdmin, onExport, onAcc
         <h1 className="text-xl font-bold text-stone-100">Minha conta</h1>
         <p className="text-xs text-stone-400">{email}{isAdmin ? ' · administrador' : ''}</p>
       </div>
+
+      {onStartTour && (
+        <div className={`${card} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
+          <div>
+            <h2 className="text-sm font-bold text-stone-100">Tutorial</h2>
+            <p className="mt-0.5 text-xs text-stone-400">Veja de novo o passo a passo de cada página do sistema.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onStartTour}
+            className="rounded-xl border border-stone-800 px-4 py-2.5 text-xs font-semibold text-stone-100 hover:border-amber-500 cursor-pointer"
+          >
+            Rever o tutorial
+          </button>
+        </div>
+      )}
 
       <form onSubmit={changePassword} className={card}>
         <h2 className="text-sm font-bold text-stone-100">Trocar senha</h2>

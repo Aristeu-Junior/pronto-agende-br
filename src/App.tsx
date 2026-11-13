@@ -704,13 +704,13 @@ function Dashboard({
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col pb-20 md:pb-8">
       <header className="sticky top-0 z-40 bg-stone-950/90 backdrop-blur-md border-b border-stone-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-stone-950 shadow-lg shadow-amber-500/20 shrink-0">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="hidden min-[360px]:flex w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-stone-950 shadow-lg shadow-amber-500/20 shrink-0">
               <Scissors className="w-5 h-5" weight="bold" />
             </div>
             <div className="min-w-0">
-              <span className="font-bold tracking-tight text-base text-stone-100">ProntoAgende</span>
+              <span className="block truncate font-bold tracking-tight text-base text-stone-100">ProntoAgende</span>
               {editingHeaderName ? (
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <input
@@ -756,7 +756,7 @@ function Dashboard({
                   {item.icon}
                   <span>{item.label}</span>
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${active ? 'bg-stone-950/20 text-stone-950 font-bold' : 'bg-amber-500/20 text-amber-800'}`}>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[11px] font-mono ${active ? 'bg-stone-950/20 text-stone-950 font-bold' : 'bg-amber-500/20 text-amber-800'}`}>
                       {item.badge}
                     </span>
                   )}
@@ -765,7 +765,7 @@ function Dashboard({
             })}
           </nav>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <span data-tour="theme" className="inline-flex">
               <ThemeToggle />
             </span>
@@ -775,7 +775,7 @@ function Dashboard({
               onClick={startTour}
               title="Ver o tutorial de novo"
               aria-label="Ver o tutorial de novo"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-300 hover:border-amber-500/50 text-xs font-medium cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-300 hover:border-amber-500/50 text-xs font-medium cursor-pointer"
             >
               <Question className="w-4 h-4" weight="bold" />
               <span className="hidden sm:inline">Tutorial</span>
@@ -789,7 +789,7 @@ function Dashboard({
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Contas</span>
                 {pendingAccounts > 0 && (
-                  <span className="rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-stone-950">{pendingAccounts}</span>
+                  <span className="rounded-full bg-amber-500 px-1.5 text-[11px] font-bold text-stone-950">{pendingAccounts}</span>
                 )}
               </button>
             )}
@@ -913,7 +913,7 @@ function Dashboard({
         )}
 
         {activeTab === 'ACCOUNT' && (
-          <AccountModule email={profile.email} isAdmin={profile.is_admin} onExport={exportMyData} onAccountDeleted={() => window.location.reload()} />
+          <AccountModule email={profile.email} isAdmin={profile.is_admin} onStartTour={startTour} onExport={exportMyData} onAccountDeleted={() => window.location.reload()} />
         )}
 
         {activeTab === 'ADMIN' && profile.is_admin && (
@@ -934,14 +934,14 @@ function Dashboard({
               key={item.id}
               data-tour={`nav-${item.id}`}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
+              className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${
                 active ? 'text-amber-700 bg-amber-500/10 font-semibold' : 'text-stone-400 hover:text-stone-200'
               }`}
             >
               <div className="relative">
                 {item.icon}
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-2.5 px-1 rounded-full bg-amber-500 text-stone-950 text-[9px] font-mono font-bold">
+                  <span className="absolute -top-1.5 -right-2.5 px-1 rounded-full bg-amber-500 text-stone-950 text-[10px] font-mono font-bold">
                     {item.badge}
                   </span>
                 )}

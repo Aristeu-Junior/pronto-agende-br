@@ -127,7 +127,12 @@
   --status-crimson-soft: #3A1A0E;
 }
 
-:root.dark dialog.operational-dialog::backdrop {
+:root.dark dialog.operational-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+dialog.operational-dialog::backdrop {
   background-color: rgba(0, 0, 0, 0.7);
 }
 
@@ -193,8 +198,9 @@ dialog.operational-dialog {
   border-radius: 14px;
   background-color: var(--bg-surface);
   color: var(--ink-primary);
-  max-width: min(560px, calc(100vw - 2rem));
+  max-width: min(560px, calc(100vw - 1.5rem));
   width: 100%;
+  max-height: calc(100dvh - 1.5rem);
   box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.32);
 }
 
@@ -323,6 +329,28 @@ dialog.operational-dialog::backdrop {
   a.block {
     min-height: 40px;
   }
+}
+
+/* Campos de edição direta (Ajustes): no celular viram campos de verdade, com borda e área de toque. */
+@media (max-width: 639px) {
+  .inline-field {
+    border: 1px solid var(--color-stone-800) !important;
+    border-radius: 0.625rem;
+    background-color: var(--color-stone-950) !important;
+    padding: 0.5rem 0.625rem !important;
+    min-height: 42px;
+  }
+}
+
+/* Botões só de ícone ganham área de toque mínima no celular. */
+@media (max-width: 1023px) {
+  button:not([data-compact]):has(> svg:only-child) {
+    min-width: 40px;
+  }
+}
+
+header.sticky {
+  padding-top: env(safe-area-inset-top);
 }
 
 /* Barra inferior respeita a área segura (iPhone com barra de gestos). */

@@ -43,7 +43,7 @@ export default function ThemeToggle({ floating = false }: { floating?: boolean }
       title={label}
       aria-label={label}
       className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-stone-800 bg-stone-900/80 text-stone-300 hover:border-amber-500/50 cursor-pointer ${
-        floating ? 'fixed right-3 top-3 z-50' : ''
+        floating ? 'fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-50' : ''
       }`}
     >
       {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" weight="bold" /> : <Moon className="h-[18px] w-[18px]" weight="bold" />}

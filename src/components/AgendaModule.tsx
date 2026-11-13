@@ -674,7 +674,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 type="button"
                 aria-label="Dia anterior"
                 onClick={() => setSelectedDate(addDaysISO(selectedDate, -1))}
-                className="min-h-[36px] rounded-lg border border-stone-800 px-3 text-sm font-semibold text-stone-100"
+                className="min-h-[40px] min-w-[40px] rounded-lg border border-stone-800 px-3 text-sm font-semibold text-stone-100"
               >
                 ‹
               </button>
@@ -686,7 +686,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 type="button"
                 aria-label="Próximo dia"
                 onClick={() => setSelectedDate(addDaysISO(selectedDate, 1))}
-                className="min-h-[36px] rounded-lg border border-stone-800 px-3 text-sm font-semibold text-stone-100"
+                className="min-h-[40px] min-w-[40px] rounded-lg border border-stone-800 px-3 text-sm font-semibold text-stone-100"
               >
                 ›
               </button>

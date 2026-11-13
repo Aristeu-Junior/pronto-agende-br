@@ -163,14 +163,15 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar cliente por nome, WhatsApp ou CPF..."
+            placeholder="Buscar cliente…"
             className="w-full bg-stone-950 border border-stone-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
           />
-          <HelpTip
-            label="Clientes"
-            className="absolute right-3 top-1/2 -translate-y-1/2"
-            text="Sua lista de clientes. Busque por nome, WhatsApp ou CPF, toque em um cliente para editar a ficha (visitas, faltas, observações) ou chamar no WhatsApp."
-          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2">
+            <HelpTip
+              label="Clientes"
+              text="Sua lista de clientes. Busque por nome, WhatsApp ou CPF, toque em um cliente para editar a ficha (visitas, faltas, observações) ou chamar no WhatsApp."
+            />
+          </span>
         </div>
 
         <button
@@ -185,7 +186,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
 
       {/* Empty State if 0 clients */}
       {clients.length === 0 ? (
-        <div className="bg-stone-900/60 border border-stone-800/80 rounded-2xl p-8 text-center space-y-4">
+        <div data-tour="clients-list" className="bg-stone-900/60 border border-stone-800/80 rounded-2xl p-8 text-center space-y-4">
           <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-700">
             <Users className="w-6 h-6" />
           </div>
@@ -216,7 +217,42 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
                 Clique em qualquer cliente para editar os dados ao lado ({filteredClients.length})
               </span>
             </div>
-            <div className="overflow-x-auto">
+            <ul className="divide-y divide-stone-800/60 sm:hidden">
+              {filteredClients.map((client) => {
+                const isSelected = selectedClient?.id === client.id;
+                return (
+                  <li key={client.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedClientId(client.id);
+                        window.setTimeout(() => {
+                          document.getElementById('client-ficha')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 60);
+                      }}
+                      aria-pressed={isSelected}
+                      className={`flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left cursor-pointer ${
+                        isSelected ? 'bg-amber-950' : ''
+                      }`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-stone-100">{client.fullName}</span>
+                        <span className="mt-0.5 block truncate font-mono text-xs text-stone-300">
+                          {client.phoneWhatsapp || 'Sem telefone'}
+                        </span>
+                        <span className="mt-0.5 block text-[11px] text-stone-400">
+                          {client.visitsCount} visita(s) · {client.noShowCount} falta(s)
+                        </span>
+                      </span>
+                      <span className="shrink-0 font-mono text-sm font-semibold text-stone-100">
+                        {formatCurrencyBRL(client.totalSpent)}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden overflow-x-auto sm:block">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-stone-800 text-[11px] uppercase tracking-wider text-stone-400 bg-stone-950/60">
@@ -275,12 +311,12 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
           </div>
 
           {/* Client Editable Detail Panel (Right 5 cols) */}
-          <div className="lg:col-span-5 bg-stone-900/80 border border-stone-800 rounded-2xl p-5 space-y-4">
+          <div id="client-ficha" className="lg:col-span-5 scroll-mt-20 bg-stone-900/80 border border-stone-800 rounded-2xl p-5 space-y-4">
             {selectedClient ? (
               <form onSubmit={handleSaveSelectedClient} className="space-y-4">
                 <div className="flex items-start justify-between gap-2 border-b border-stone-800 pb-3">
                   <div>
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-amber-700">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-amber-700">
                       Ficha Editável do Cliente
                     </span>
                     <h3 className="text-lg font-bold text-stone-100">
