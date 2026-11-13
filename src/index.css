@@ -330,6 +330,21 @@ nav[aria-label="Navegação Mobile"] {
   padding-bottom: calc(0.375rem + env(safe-area-inset-bottom));
 }
 
+@keyframes tour-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.tour-fade {
+  animation: tour-fade 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

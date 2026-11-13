@@ -566,7 +566,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         </div>
 
         {/* Filtros */}
-        <div className="mt-4 pt-3 border-t border-stone-800 grid grid-cols-1 gap-2.5 md:grid-cols-12">
+        <div data-tour="agenda-filters" className="mt-4 pt-3 border-t border-stone-800 grid grid-cols-1 gap-2.5 md:grid-cols-12">
           <div className="md:col-span-6 flex items-center gap-1.5 overflow-x-auto pb-1">
             <button
               type="button"
@@ -646,7 +646,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
 
       {/* Calendário vivo + resumo do dia */}
       <div className="grid grid-cols-1 gap-4 border-b border-stone-800 bg-stone-950 px-4 py-4 sm:px-6 lg:grid-cols-12">
-        <div className="lg:col-span-4">
+        <div data-tour="agenda-calendar" className="lg:col-span-4">
           <button
             type="button"
             onClick={() => setCalendarOpen((v) => !v)}
@@ -668,7 +668,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         </div>
 
         <div className="lg:col-span-8">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div data-tour="agenda-day" className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
@@ -773,7 +773,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
 
       {/* Lista + Painel de Edição Direta */}
       <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-stone-800 bg-stone-950">
-        <div className="lg:col-span-7">
+        <div data-tour="agenda-list" className="lg:col-span-7">
           {filteredAppointments.length === 0 ? (
             <div className="px-6 py-14 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-stone-800 bg-tint-50 text-stone-300">

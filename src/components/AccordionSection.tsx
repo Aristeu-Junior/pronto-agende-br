@@ -20,12 +20,16 @@ interface AccordionSectionProps {
   summary?: string;
   /** Explicação curta mostrada na bolinha de ajuda. */
   help?: string;
+  /** Nome do alvo do tutorial guiado (data-tour). */
+  tour?: string;
+  /** Mostra o aviso "As alterações são salvas automaticamente" ao abrir. */
+  showSavedNote?: boolean;
   icon?: React.ReactNode;
   children: React.ReactNode;
 }
 
 /** Bloco recolhível: título e resumo sempre visíveis, conteúdo só ao abrir. Lembra o que ficou aberto. */
-export const AccordionSection: React.FC<AccordionSectionProps> = ({ id, title, summary, help, icon, children }) => {
+export const AccordionSection: React.FC<AccordionSectionProps> = ({ id, title, summary, help, tour, showSavedNote = true, icon, children }) => {
   const [open, setOpen] = useState(() => readOpen().includes(id));
 
   const toggle = () => {
@@ -40,7 +44,7 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({ id, title, s
   };
 
   return (
-    <section className="relative rounded-2xl border border-stone-800 bg-stone-900">
+    <section data-tour={tour} className="relative rounded-2xl border border-stone-800 bg-stone-900">
       {help && (
         <span className="absolute right-12 top-[30px] z-10 -translate-y-1/2">
           <HelpTip label={title} text={help} />
@@ -68,7 +72,7 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({ id, title, s
       {open && (
         <div id={`acc-${id}`} className="space-y-4 border-t border-stone-800 p-4 sm:p-5">
           {children}
-          <p className="text-[11px] text-stone-500">As alterações são salvas automaticamente.</p>
+          {showSavedNote && <p className="text-[11px] text-stone-500">As alterações são salvas automaticamente.</p>}
         </div>
       )}
     </section>

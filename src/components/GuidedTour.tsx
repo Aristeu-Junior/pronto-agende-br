@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface TourStep {
+  /** Nome da página explicada, mostrado acima do título (ex.: "Agenda"). */
+  section?: string;
   /** Valor do atributo data-tour do elemento destacado. Sem alvo = passo centralizado. */
   target?: string;
   title: string;
@@ -36,7 +38,8 @@ function findTarget(name: string): HTMLElement | null {
   );
 }
 
-const PANEL = 'fixed bg-black/55 backdrop-blur-[3px] transition-all duration-300 ease-out';
+const EASE = 'ease-[cubic-bezier(0.22,1,0.36,1)]';
+const PANEL = `fixed bg-black/55 backdrop-blur-[3px] transition-[top,left,width,height] duration-[700ms] ${EASE}`;
 
 /** Tutorial guiado: escurece e desfoca a tela e deixa só o alvo do passo em destaque. */
 export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, onClose }) => {
@@ -170,27 +173,46 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, onClose }) => {
   }, [next, back, onClose]);
 
   const popWidth = Math.min(360, viewport.w - MARGIN * 2);
+  const hole: Rect = rect ?? { top: viewport.h / 2, left: viewport.w / 2, width: 0, height: 0 };
+  const holeBottom = hole.top + hole.height;
+  const holeRight = hole.left + hole.width;
+  const [popReady, setPopReady] = useState(false);
+  useEffect(() => {
+    if (popPos) {
+      const id = requestAnimationFrame(() => setPopReady(true));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [popPos]);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = overlayRef.current;
+    if (!el) return;
+    const stop = (e: Event) => e.preventDefault();
+    el.addEventListener('wheel', stop, { passive: false });
+    el.addEventListener('touchmove', stop, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', stop);
+      el.removeEventListener('touchmove', stop);
+    };
+  }, []);
 
   return (
-    <div className="fixed inset-0 z-[100]" role="presentation">
-      {rect ? (
-        <>
-          <div className={PANEL} style={{ top: 0, left: 0, right: 0, height: Math.max(0, rect.top) }} />
-          <div className={PANEL} style={{ top: rect.top + rect.height, left: 0, right: 0, bottom: 0 }} />
-          <div className={PANEL} style={{ top: rect.top, left: 0, width: Math.max(0, rect.left), height: rect.height }} />
-          <div
-            className={PANEL}
-            style={{ top: rect.top, left: rect.left + rect.width, right: 0, height: rect.height }}
-          />
-          {/* Contorno do alvo; também impede cliques nele durante o tutorial */}
-          <div
-            className="fixed rounded-md border-2 border-amber-500 shadow-[0_0_0_4px_rgba(250,65,0,0.25)] transition-all duration-300 ease-out"
-            style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height }}
-          />
-        </>
-      ) : (
-        <div className="fixed inset-0 bg-black/55 backdrop-blur-[3px]" />
-      )}
+    <div ref={overlayRef} className="fixed inset-0 z-[100]" role="presentation">
+      <div className={PANEL} style={{ top: 0, left: 0, width: viewport.w, height: Math.max(0, hole.top) }} />
+      <div
+        className={PANEL}
+        style={{ top: holeBottom, left: 0, width: viewport.w, height: Math.max(0, viewport.h - holeBottom) }}
+      />
+      <div className={PANEL} style={{ top: hole.top, left: 0, width: Math.max(0, hole.left), height: hole.height }} />
+      <div
+        className={PANEL}
+        style={{ top: hole.top, left: holeRight, width: Math.max(0, viewport.w - holeRight), height: hole.height }}
+      />
+      {/* Contorno do alvo; some nos passos sem alvo */}
+      <div
+        className={`fixed rounded-md border-2 border-amber-500 shadow-[0_0_0_4px_rgba(250,65,0,0.25)] transition-[top,left,width,height,opacity] duration-[700ms] ${EASE}`}
+        style={{ top: hole.top, left: hole.left, width: hole.width, height: hole.height, opacity: rect ? 1 : 0 }}
+      />
 
       <div
         ref={popRef}
@@ -206,25 +228,27 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, onClose }) => {
           maxHeight: viewport.h - MARGIN * 2,
           overflowY: 'auto',
         }}
-        className="rounded-2xl border border-stone-700 bg-stone-900 p-4 shadow-2xl"
+        className={`rounded-2xl border border-stone-700 bg-stone-900 p-4 shadow-2xl ${
+          popReady ? `transition-[top,left] duration-[700ms] ${EASE}` : ''
+        }`}
       >
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">
-          Passo {index + 1} de {steps.length}
-        </p>
-        <h2 id="tour-title" className="mt-1 text-base font-bold text-stone-100">
-          {step.title}
-        </h2>
-        <p id="tour-body" className="mt-1.5 text-sm leading-relaxed text-stone-300">
-          {step.body}
-        </p>
+        <div key={index} className="tour-fade">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">
+            {step.section ? `${step.section} · ` : ''}Passo {index + 1} de {steps.length}
+          </p>
+          <h2 id="tour-title" className="mt-1 text-base font-bold text-stone-100">
+            {step.title}
+          </h2>
+          <p id="tour-body" className="mt-1.5 text-sm leading-relaxed text-stone-300">
+            {step.body}
+          </p>
+        </div>
 
-        <div className="mt-3 flex items-center gap-1.5" aria-hidden="true">
-          {steps.map((_, i) => (
-            <span
-              key={i}
-              className={`h-1.5 rounded-full transition-all ${i === index ? 'w-5 bg-amber-500' : 'w-1.5 bg-stone-700'}`}
-            />
-          ))}
+        <div className="mt-3 h-1 overflow-hidden rounded-full bg-stone-800" aria-hidden="true">
+          <div
+            className={`h-full rounded-full bg-amber-500 transition-[width] duration-[700ms] ${EASE}`}
+            style={{ width: `${((index + 1) / steps.length) * 100}%` }}
+          />
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-2">

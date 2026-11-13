@@ -193,7 +193,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
   return (
     <div className="space-y-6">
       {/* KPIs do Dia */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div data-tour="manager-summary" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-stone-900/70 border border-stone-800/80 rounded-2xl p-3 sm:p-4 space-y-1">
           <div className="flex items-center justify-between text-xs text-stone-400">
             <span>Faturamento no Caixa</span>
@@ -249,6 +249,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
 
       <AccordionSection
         id="barbearia"
+        tour="manager-barbearia"
         title="Dados da barbearia"
         help="Nome, WhatsApp e chave Pix da barbearia. O WhatsApp é usado nos lembretes e o Pix, no sinal da reserva."
         summary={`${business.name}${business.phone ? ' · WhatsApp ok' : ' · falta WhatsApp'}${business.pixKey ? ' · Pix ok' : ' · falta Pix'}`}
@@ -369,6 +370,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
 
       <AccordionSection
         id="servicos"
+        tour="manager-servicos"
         title="Serviços e preços"
         help="O que você vende e quanto custa. Esses serviços aparecem na reserva do cliente e no Caixa."
         summary={`${services.length} ${services.length === 1 ? 'serviço' : 'serviços'}`}
@@ -500,6 +502,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
 
       <AccordionSection
         id="equipe"
+        tour="manager-equipe"
         title="Barbeiros e comissão"
         help="Sua equipe e a porcentagem de comissão de cada pessoa. O Caixa usa isso para calcular o repasse."
         summary={`${staff.length} ${staff.length === 1 ? 'profissional' : 'profissionais'}`}
@@ -624,6 +627,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
 
       <AccordionSection
         id="escala"
+        tour="manager-escala"
         title="Escala de trabalho"
         help="Os dias e horários em que cada barbeiro atende, as pausas e as folgas. Daqui saem os horários livres da reserva."
         summary={weekSummary(staff.find((m) => m.role === 'PROFESSIONAL'))}
@@ -640,6 +644,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
 
       <AccordionSection
         id="extratos"
+        tour="manager-extratos"
         title="Extratos e comprovantes"
         help="Guarde aqui comprovantes e extratos para conferir entradas e saídas."
         summary={`${bankStatements.length} ${bankStatements.length === 1 ? 'lançamento' : 'lançamentos'}`}
@@ -771,6 +776,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
 
       <AccordionSection
         id="regras"
+        tour="manager-regras"
         title="Sinal Pix e limpeza de dados"
         help="Defina a porcentagem de sinal cobrada na reserva e o prazo de cancelamento. Também limpa os dados quando você quiser recomeçar."
         summary={`Sinal ${business.noShowDepositPercent}% · cancelamento até ${business.cancelNoticeHours}h antes`}

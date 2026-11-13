@@ -53,7 +53,7 @@ export const ShareLinkModule: React.FC<{
           Envie este link no WhatsApp ou ponha na bio do Instagram. O cliente escolhe serviço, dia e horário livre, e a
           reserva cai direto na sua Agenda.
         </p>
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div data-tour="share-link" className="flex flex-col gap-2 sm:flex-row">
           <input
             readOnly
             value={url}
@@ -89,7 +89,7 @@ export const ShareLinkModule: React.FC<{
         </div>
       </div>
 
-      <div className="rounded-2xl border border-stone-800 bg-stone-900 p-5">
+      <div data-tour="share-checklist" className="rounded-2xl border border-stone-800 bg-stone-900 p-5">
         <h2 className="mb-3 text-sm font-bold text-stone-100">Antes de divulgar</h2>
         <ul className="space-y-2">
           {checks.map((c) => (

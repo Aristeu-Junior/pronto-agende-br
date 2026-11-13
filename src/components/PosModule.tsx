@@ -1,16 +1,14 @@
 import { HelpTip } from './HelpTip';
 import React, { useMemo, useState } from 'react';
 import {
+  CaretDown,
   CheckCircle as CheckCircle2,
   CreditCard,
   CurrencyDollar as DollarSign,
   FileText,
   Paperclip,
   QrCode,
-  Receipt,
-  Scissors,
   Trash as Trash2,
-  Wallet,
 } from '@phosphor-icons/react';
 import {
   Appointment,
@@ -231,430 +229,348 @@ export const PosModule: React.FC<PosModuleProps> = ({
     );
   }, [transactions]);
 
+  const [showDetails, setShowDetails] = useState(false);
   const todayISO = localISODate();
   const openAppointments = appointments.filter(
     (a) =>
       a.date === todayISO && a.status !== 'COMPLETED' && a.status !== 'CANCELLED'
   );
 
+  const stepBadge = 'flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-stone-800 text-xs font-bold text-stone-300';
+  const field =
+    'w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500';
+
   return (
-    <div className="space-y-6">
-      {/* Resumo Rápido do Caixa do Dia */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-stone-900/80 border border-stone-800 rounded-2xl p-4">
-          <span className="text-[11px] uppercase tracking-wider text-stone-400">
-            Total Recebido Hoje
-          </span>
-          <div className="text-xl font-bold font-mono text-emerald-700 mt-1">
-            {formatCurrencyBRL(dailySummary.totalGross)}
-          </div>
-          <div className="text-[11px] text-stone-400 mt-0.5">
-            {transactions.length} atendimento(s) pagos
-          </div>
-        </div>
-
-        <div className="bg-stone-900/80 border border-stone-800 rounded-2xl p-4">
-          <span className="text-[11px] uppercase tracking-wider text-stone-400">
-            Recebido em Pix
-          </span>
-          <div className="text-xl font-bold font-mono text-amber-700 mt-1">
-            {formatCurrencyBRL(dailySummary.pixTotal)}
-          </div>
-          <div className="text-[11px] text-stone-400 mt-0.5">
-            Cartão: {formatCurrencyBRL(dailySummary.cardTotal)} | Dinheiro:{' '}
-            {formatCurrencyBRL(dailySummary.cashTotal)}
-          </div>
-        </div>
-
-        <div className="bg-stone-900/80 border border-stone-800 rounded-2xl p-4">
-          <span className="text-[11px] uppercase tracking-wider text-stone-400">
-            Comissão dos Barbeiros
-          </span>
-          <div className="text-xl font-bold font-mono text-stone-100 mt-1">
-            {formatCurrencyBRL(dailySummary.totalBarber)}
-          </div>
-          <div className="text-[11px] text-stone-400 mt-0.5">
-            Parte líquida da equipe
-          </div>
-        </div>
-
-        <div className="bg-stone-900/80 border border-stone-800 rounded-2xl p-4">
-          <span className="text-[11px] uppercase tracking-wider text-stone-400">
-            Lucro Líquido da Barbearia
-          </span>
-          <div className="text-xl font-bold font-mono text-stone-100 mt-1">
-            {formatCurrencyBRL(dailySummary.totalSalon)}
-          </div>
-          <div className="text-[11px] text-stone-400 mt-0.5">
-            Livre no caixa após comissão
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left 7 Cols: Registrar Pagamento Simples em 3 Passos */}
-        <form
-          onSubmit={handleFinalizeCheckout}
-          className="lg:col-span-7 bg-stone-900/60 border border-stone-800/80 rounded-2xl p-5 space-y-5"
-        >
-          <div className="flex items-center justify-between border-b border-stone-800 pb-3">
-            <div className="flex items-center gap-2.5">
-              <Wallet className="w-5 h-5 text-amber-700" />
-              <div>
-                <h2 className="flex items-center gap-2 text-base font-bold text-stone-100">
-                  Lançar Recebimento no Caixa (Em 3 Passos Simples)
-                  <HelpTip
-                    label="Caixa"
-                    text="Registre aqui cada atendimento pago: quem atendeu, o serviço, o valor e como o cliente pagou. Os quadros do topo somam o total do dia, o Pix, o cartão, o dinheiro e a comissão dos barbeiros."
-                  />
-                </h2>
-                <p className="text-xs text-stone-400">
-                  Escolha quem cortou, confira ou edite o valor do corte e confirme como o cliente pagou.
-                </p>
-              </div>
+    <div className="mx-auto max-w-3xl space-y-4">
+      {/* Resumo do dia: um número só; o resto abre sob demanda */}
+      <section data-tour="caixa-summary" className="rounded-2xl border border-stone-800 bg-stone-900 p-5">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <span className="text-xs text-stone-400">Recebido hoje</span>
+            <div className="mt-0.5 font-mono text-3xl font-bold text-stone-100">
+              {formatCurrencyBRL(dailySummary.totalGross)}
             </div>
+            <div className="mt-0.5 text-xs text-stone-400">{transactions.length} atendimento(s) pagos</div>
           </div>
-
-          {/* Atalho: Puxar da Agenda de Hoje */}
-          {openAppointments.length > 0 && (
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-2">
-              <span className="block text-[11px] font-semibold uppercase tracking-wider text-amber-800">
-                Puxar cliente agendado hoje com 1 clique:
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {openAppointments.map((apt) => (
-                  <button
-                    key={apt.id}
-                    type="button"
-                    onClick={() => handleLoadAppointment(apt)}
-                    className="px-3 py-1.5 rounded-lg bg-stone-950/90 hover:bg-amber-500 hover:text-stone-950 text-stone-200 border border-amber-500/30 text-xs font-semibold transition-all cursor-pointer"
-                  >
-                    {apt.startTime} - {apt.clientName}
-                  </button>
-                ))}
-              </div>
+          <button
+            type="button"
+            onClick={() => setShowDetails((v) => !v)}
+            aria-expanded={showDetails}
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-stone-300 hover:text-stone-100 cursor-pointer"
+          >
+            {showDetails ? 'Esconder detalhes' : 'Ver detalhes'}
+            <CaretDown className={`h-3.5 w-3.5 transition-transform ${showDetails ? 'rotate-180' : ''}`} aria-hidden="true" />
+          </button>
+        </div>
+        {showDetails && (
+          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-stone-800 pt-4 text-xs sm:grid-cols-3">
+            <div>
+              <dt className="text-stone-400">Pix</dt>
+              <dd className="mt-0.5 font-mono text-sm font-semibold text-stone-100">{formatCurrencyBRL(dailySummary.pixTotal)}</dd>
             </div>
-          )}
-
-          {/* PASSO 1: Cliente e Barbeiro */}
-          <div className="space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-amber-700">
-              Passo 1: Quem foi atendido e por qual barbeiro?
+            <div>
+              <dt className="text-stone-400">Cartão</dt>
+              <dd className="mt-0.5 font-mono text-sm font-semibold text-stone-100">{formatCurrencyBRL(dailySummary.cardTotal)}</dd>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-stone-300 mb-1">
-                  Nome do Cliente (Digite ou escolha)
-                </label>
-                <input
-                  type="text"
-                  list="pos-clients-list"
-                  value={clientNameInput}
-                  onChange={(e) => setClientNameInput(e.target.value)}
-                  placeholder="Ex: João Silva ou Cliente Balcão"
-                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
-                />
-                <datalist id="pos-clients-list">
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.fullName} />
-                  ))}
-                </datalist>
-              </div>
+            <div>
+              <dt className="text-stone-400">Dinheiro</dt>
+              <dd className="mt-0.5 font-mono text-sm font-semibold text-stone-100">{formatCurrencyBRL(dailySummary.cashTotal)}</dd>
+            </div>
+            <div>
+              <dt className="text-stone-400">Comissão dos barbeiros</dt>
+              <dd className="mt-0.5 font-mono text-sm font-semibold text-stone-100">{formatCurrencyBRL(dailySummary.totalBarber)}</dd>
+            </div>
+            <div>
+              <dt className="text-stone-400">Fica na barbearia</dt>
+              <dd className="mt-0.5 font-mono text-sm font-semibold text-stone-100">{formatCurrencyBRL(dailySummary.totalSalon)}</dd>
+            </div>
+          </dl>
+        )}
+      </section>
 
-              <div>
-                <label className="block text-xs font-medium text-stone-300 mb-1">
-                  Barbeiro que realizou o serviço
-                </label>
-                <select
-                  value={selectedStaffId}
-                  onChange={(e) => setSelectedStaffId(e.target.value)}
-                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+      {/* Novo recebimento */}
+      <form onSubmit={handleFinalizeCheckout} className="space-y-5 rounded-2xl border border-stone-800 bg-stone-900 p-5">
+        <div>
+          <h2 className="flex items-center gap-2 text-base font-bold text-stone-100">
+            Novo recebimento
+            <HelpTip
+              label="Caixa"
+              text="Registre aqui cada atendimento pago: quem atendeu, o serviço, o valor e como o cliente pagou. O quadro do topo soma o dia, e os detalhes mostram Pix, cartão, dinheiro e a comissão dos barbeiros."
+            />
+          </h2>
+          <p className="mt-0.5 text-xs text-stone-400">Preencha em 3 passos e confirme.</p>
+        </div>
+
+        {openAppointments.length > 0 && (
+          <div data-tour="caixa-agenda" className="space-y-2 rounded-xl border border-stone-800 bg-tint-50 p-3">
+            <span className="block text-xs text-stone-300">Agendados hoje. Toque para preencher:</span>
+            <div className="flex flex-wrap gap-2">
+              {openAppointments.map((apt) => (
+                <button
+                  key={apt.id}
+                  type="button"
+                  onClick={() => handleLoadAppointment(apt)}
+                  className="rounded-lg border border-stone-800 bg-stone-950 px-3 py-1.5 text-xs font-semibold text-stone-100 hover:border-amber-500 cursor-pointer"
                 >
-                  {staff.map((st) => (
-                    <option key={st.id} value={st.id}>
-                      {st.name} (Comissão {st.defaultServiceCommissionPct}%)
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  {apt.startTime} · {apt.clientName}
+                </button>
+              ))}
             </div>
           </div>
+        )}
 
-          {/* PASSO 2: Serviço e Valor Cobrado (Editável) */}
-          <div className="space-y-3 pt-2 border-t border-stone-800/80">
-            <div className="text-xs font-bold uppercase tracking-wider text-amber-700">
-              Passo 2: Qual serviço foi feito e qual o valor cobrado?
+        {/* Passo 1 */}
+        <div data-tour="caixa-step1" className="space-y-3">
+          <div className="flex items-center gap-2.5">
+            <span className={stepBadge}>1</span>
+            <span className="text-sm font-semibold text-stone-100">Quem foi atendido</span>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-stone-300">Cliente</label>
+              <input
+                type="text"
+                list="pos-clients-list"
+                value={clientNameInput}
+                onChange={(e) => setClientNameInput(e.target.value)}
+                placeholder="Digite ou escolha"
+                className={field}
+              />
+              <datalist id="pos-clients-list">
+                {clients.map((c) => (
+                  <option key={c.id} value={c.fullName} />
+                ))}
+              </datalist>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {services.map((srv) => {
-                const isSelected = selectedServiceIds.includes(srv.id);
-                return (
-                  <button
-                    key={srv.id}
-                    type="button"
-                    onClick={() => toggleService(srv.id)}
-                    className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-amber-500/15 border-amber-500/50 text-stone-100'
-                        : 'bg-stone-950/60 border-stone-800/80 text-stone-400 hover:text-stone-200'
-                    }`}
-                  >
-                    <div className="pr-2">
-                      <div className="text-xs font-semibold flex items-center gap-1.5">
-                        <Scissors className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                        <span>{srv.name}</span>
-                      </div>
-                    </div>
-                    <span className="font-mono text-xs font-bold text-amber-700 shrink-0">
-                      {formatCurrencyBRL(srv.price)}
-                    </span>
-                  </button>
-                );
-              })}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-stone-300">Barbeiro</label>
+              <select value={selectedStaffId} onChange={(e) => setSelectedStaffId(e.target.value)} className={field}>
+                {staff.map((st) => (
+                  <option key={st.id} value={st.id}>
+                    {st.name} (comissão {st.defaultServiceCommissionPct}%)
+                  </option>
+                ))}
+              </select>
             </div>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="block text-xs font-medium text-stone-300 mb-1">
-                  Valor Cobrado do Cliente (R$) - Editável na hora
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={
-                    customTotalInput !== ''
-                      ? customTotalInput
-                      : String(defaultServicesSum)
-                  }
-                  onChange={(e) => setCustomTotalInput(e.target.value)}
-                  className="w-full bg-stone-950 border border-amber-500/50 rounded-xl px-3.5 py-2.5 text-base font-mono font-bold text-amber-700 focus:outline-none focus:border-amber-500"
-                />
-              </div>
+        {/* Passo 2 */}
+        <div data-tour="caixa-step2" className="space-y-3 border-t border-stone-800 pt-5">
+          <div className="flex items-center gap-2.5">
+            <span className={stepBadge}>2</span>
+            <span className="text-sm font-semibold text-stone-100">Serviço e valor</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {services.map((srv) => {
+              const isSelected = selectedServiceIds.includes(srv.id);
+              return (
+                <button
+                  key={srv.id}
+                  type="button"
+                  onClick={() => toggleService(srv.id)}
+                  aria-pressed={isSelected}
+                  className={`flex items-center justify-between gap-2 rounded-xl border p-3 text-left cursor-pointer ${
+                    isSelected
+                      ? 'border-amber-500 bg-amber-950 text-stone-100'
+                      : 'border-stone-800 bg-stone-950 text-stone-300 hover:border-stone-700'
+                  }`}
+                >
+                  <span className="text-xs font-semibold">{srv.name}</span>
+                  <span className="shrink-0 font-mono text-xs font-semibold text-stone-100">{formatCurrencyBRL(srv.price)}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-stone-300">Valor cobrado (R$). Pode mudar na hora.</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={customTotalInput !== '' ? customTotalInput : String(defaultServicesSum)}
+              onChange={(e) => setCustomTotalInput(e.target.value)}
+              className={`${field} font-mono text-base font-semibold`}
+            />
+          </div>
 
+          <details className="group rounded-xl border border-stone-800 bg-stone-950">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-3 text-xs font-semibold text-stone-300">
+              <span>Desconto e comprovante (opcional)</span>
+              <CaretDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="space-y-3 border-t border-stone-800 p-3.5">
               <div>
-                <label className="block text-xs font-medium text-stone-300 mb-1">
-                  Desconto Concedido (R$)
-                </label>
+                <label className="mb-1 block text-xs font-medium text-stone-300">Desconto concedido (R$)</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
                   value={discountInput}
                   onChange={(e) => setDiscountInput(e.target.value)}
-                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-stone-100 focus:outline-none focus:border-amber-500"
+                  className={`${field} font-mono`}
                 />
               </div>
-            </div>
-          </div>
-
-          {/* PASSO 3: Forma de Pagamento e Comprovante */}
-          <div className="space-y-3 pt-2 border-t border-stone-800/80">
-            <div className="text-xs font-bold uppercase tracking-wider text-amber-700">
-              Passo 3: Como o cliente pagou?
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {(
-                ['PIX', 'DEBIT_CARD', 'CREDIT_CARD', 'CASH'] as PaymentMethod[]
-              ).map((method) => {
-                const active = paymentMethod === method;
-                return (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => setPaymentMethod(method)}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      active
-                        ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-700'
-                        : 'bg-stone-950 border-stone-800 text-stone-400 hover:text-stone-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      {method === 'PIX' && <QrCode className="w-4 h-4" />}
-                      {(method === 'DEBIT_CARD' ||
-                        method === 'CREDIT_CARD') && (
-                        <CreditCard className="w-4 h-4" />
-                      )}
-                      {method === 'CASH' && <DollarSign className="w-4 h-4" />}
-                      <span className="text-[10px] font-mono">
-                        {method === 'PIX' || method === 'CASH'
-                          ? '0% taxa'
-                          : method === 'DEBIT_CARD'
-                          ? '1,49%'
-                          : '3,99%'}
-                      </span>
-                    </div>
-                    <div className="text-xs font-bold">
-                      {PAYMENT_METHOD_LABELS[method]}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Anexar Comprovante Pix / Maquininha */}
-            <div className="p-3 rounded-xl bg-stone-950/90 border border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="text-xs text-stone-300">
-                <span className="font-semibold text-stone-200 block">
-                  Comprovante de Pix / Recibo (Opcional):
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-xs text-stone-400">
+                  {receiptFileName ? `Anexado: ${receiptFileName}` : 'Foto do comprovante do Pix ou da maquininha, se quiser guardar.'}
                 </span>
-                <span className="text-stone-400 text-[11px]">
-                  {receiptFileName
-                    ? `Arquivo anexado: ${receiptFileName}`
-                    : 'Anexe foto do comprovante ou extrato se desejar guardar no histórico'}
-                </span>
+                <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-stone-800 px-3 py-2 text-xs font-semibold text-stone-100 hover:border-stone-700">
+                  <Paperclip className="h-3.5 w-3.5" />
+                  {receiptFileName ? 'Trocar comprovante' : 'Anexar comprovante'}
+                  <input type="file" accept="image/*,.pdf" onChange={handleAttachReceipt} className="hidden" />
+                </label>
               </div>
-              <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-800 text-xs font-semibold cursor-pointer shrink-0">
-                <Paperclip className="w-3.5 h-3.5" />
-                {receiptFileName ? 'Trocar Comprovante' : 'Anexar Comprovante'}
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={handleAttachReceipt}
-                  className="hidden"
-                />
-              </label>
             </div>
+          </details>
+        </div>
+
+        {/* Passo 3 */}
+        <div data-tour="caixa-step3" className="space-y-3 border-t border-stone-800 pt-5">
+          <div className="flex items-center gap-2.5">
+            <span className={stepBadge}>3</span>
+            <span className="text-sm font-semibold text-stone-100">Como o cliente pagou</span>
           </div>
-
-          <button
-            type="submit"
-            disabled={splitBreakdown.totalAmount <= 0}
-            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-ink-dark font-bold text-sm shadow-lg shadow-emerald-500/10 transition-all cursor-pointer"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            Confirmar Recebimento de {formatCurrencyBRL(splitBreakdown.totalAmount)}
-          </button>
-
-          {justClosedSuccess && (
-            <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 text-xs font-semibold text-center">
-              Pagamento registrado no Caixa e somado ao faturamento do dia!
-            </div>
-          )}
-        </form>
-
-        {/* Right 5 Cols: Divisão Transparente + Extrato de Recebimentos do Dia */}
-        <div className="lg:col-span-5 space-y-5">
-          {/* Card Explicativo Simples da Divisão */}
-          <div className="bg-stone-900 border border-stone-800 rounded-2xl p-5 space-y-3">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-amber-700" />
-                <h3 className="text-sm font-bold text-stone-100">
-                  Para onde vai o dinheiro deste corte?
-                </h3>
-              </div>
-              <span className="font-mono text-base font-bold text-emerald-700">
-                {formatCurrencyBRL(splitBreakdown.totalAmount)}
-              </span>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between text-stone-300">
-                <span>Valor cobrado do cliente:</span>
-                <span className="font-mono font-semibold">
-                  {formatCurrencyBRL(splitBreakdown.totalAmount)}
-                </span>
-              </div>
-
-              {splitBreakdown.acquirerFeeAmount > 0 && (
-                <div className="flex justify-between text-rose-700">
-                  <span>
-                    Taxa da maquininha ({splitBreakdown.acquirerFeePct}%):
-                  </span>
-                  <span className="font-mono">
-                    - {formatCurrencyBRL(splitBreakdown.acquirerFeeAmount)}
-                  </span>
-                </div>
-              )}
-
-              <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2 mt-2">
-                <div className="flex justify-between items-center text-emerald-700 font-semibold">
-                  <span>
-                    Parte do Barbeiro ({selectedStaff?.name ?? 'Barbeiro'}):
-                  </span>
-                  <span className="font-mono text-sm">
-                    {formatCurrencyBRL(splitBreakdown.staffNetCommission)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-amber-700 font-semibold border-t border-stone-800 pt-2">
-                  <span>Parte que fica no Caixa da Barbearia:</span>
-                  <span className="font-mono text-sm">
-                    {formatCurrencyBRL(splitBreakdown.salonNetShare)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Lista de Recebimentos / Extrato do Dia */}
-          <div className="bg-stone-900/50 border border-stone-800/80 rounded-2xl p-4 space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-stone-300 flex items-center justify-between">
-              <span>Extrato de Cortes Recebidos Hoje ({transactions.length})</span>
-              <span className="font-mono text-emerald-700">
-                Total: {formatCurrencyBRL(dailySummary.totalGross)}
-              </span>
-            </h4>
-
-            {transactions.length === 0 ? (
-              <div className="p-6 text-center text-xs text-stone-400 border border-dashed border-stone-800 rounded-xl">
-                Nenhum recebimento lançado hoje ainda. Quando fechar um corte ao lado, ele aparecerá aqui.
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                {transactions.map((tx) => (
-                  <div
-                    key={tx.id}
-                    className="p-3 rounded-xl bg-stone-950/80 border border-stone-800/80 flex items-center justify-between gap-2 text-xs"
-                  >
-                    <div>
-                      <div className="font-semibold text-stone-200 flex items-center gap-1.5">
-                        <span>{tx.clientName}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-800 text-amber-800 font-mono">
-                          {PAYMENT_METHOD_LABELS[tx.paymentMethod]}
-                        </span>
-                      </div>
-                      <div className="text-stone-400 text-[11px] mt-0.5">
-                        {tx.closedAt} • Barbeiro: {tx.staffName} (
-                        {formatCurrencyBRL(tx.staffNetCommission)})
-                      </div>
-                      {tx.receiptAttachmentName && (
-                        <div className="inline-flex items-center gap-1 text-[10px] text-emerald-700 mt-1">
-                          <FileText className="w-3 h-3" />
-                          Comprovante: {tx.receiptAttachmentName}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="text-right font-mono">
-                        <div className="font-bold text-emerald-700 text-sm">
-                          {formatCurrencyBRL(tx.totalAmount)}
-                        </div>
-                        <div className="text-[10px] text-stone-400">
-                          Caixa: {formatCurrencyBRL(tx.salonNetShare)}
-                        </div>
-                      </div>
-                      {onDeleteTransaction && (
-                        <button
-                          type="button"
-                          onClick={() => onDeleteTransaction(tx.id)}
-                          title="Excluir lançamento"
-                          className="p-1.5 rounded-lg text-stone-500 hover:text-rose-700 hover:bg-stone-900 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {(['PIX', 'DEBIT_CARD', 'CREDIT_CARD', 'CASH'] as PaymentMethod[]).map((method) => {
+              const active = paymentMethod === method;
+              return (
+                <button
+                  key={method}
+                  type="button"
+                  onClick={() => setPaymentMethod(method)}
+                  aria-pressed={active}
+                  className={`rounded-xl border p-3 text-left cursor-pointer ${
+                    active ? 'border-amber-500 bg-amber-950 text-stone-100' : 'border-stone-800 bg-stone-950 text-stone-300 hover:border-stone-700'
+                  }`}
+                >
+                  <div className="mb-1 flex items-center justify-between">
+                    {method === 'PIX' && <QrCode className="h-4 w-4" />}
+                    {(method === 'DEBIT_CARD' || method === 'CREDIT_CARD') && <CreditCard className="h-4 w-4" />}
+                    {method === 'CASH' && <DollarSign className="h-4 w-4" />}
+                    <span className="font-mono text-[10px] text-stone-400">
+                      {method === 'PIX' || method === 'CASH' ? 'sem taxa' : method === 'DEBIT_CARD' ? '1,49%' : '3,99%'}
+                    </span>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div className="text-xs font-semibold">{PAYMENT_METHOD_LABELS[method]}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
-      </div>
+
+        {/* Divisão do valor: uma linha, detalhes sob demanda */}
+        <div data-tour="caixa-split" className="rounded-xl border border-stone-800 bg-tint-50">
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-3 text-xs">
+              <span className="text-stone-300">
+                Barbeiro recebe{' '}
+                <strong className="font-mono text-stone-100">{formatCurrencyBRL(splitBreakdown.staffNetCommission)}</strong> · Barbearia fica com{' '}
+                <strong className="font-mono text-stone-100">{formatCurrencyBRL(splitBreakdown.salonNetShare)}</strong>
+              </span>
+              <CaretDown className="h-3.5 w-3.5 shrink-0 text-stone-400 transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="space-y-1.5 border-t border-stone-800 px-3.5 py-3 text-xs text-stone-300">
+              <div className="flex justify-between">
+                <span>Valor cobrado</span>
+                <span className="font-mono">{formatCurrencyBRL(splitBreakdown.totalAmount)}</span>
+              </div>
+              {splitBreakdown.acquirerFeeAmount > 0 && (
+                <div className="flex justify-between">
+                  <span>Taxa da maquininha ({splitBreakdown.acquirerFeePct}%)</span>
+                  <span className="font-mono">- {formatCurrencyBRL(splitBreakdown.acquirerFeeAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span>Parte de {selectedStaff?.name ?? 'o barbeiro'}</span>
+                <span className="font-mono">{formatCurrencyBRL(splitBreakdown.staffNetCommission)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Parte da barbearia</span>
+                <span className="font-mono">{formatCurrencyBRL(splitBreakdown.salonNetShare)}</span>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <button
+          data-tour="caixa-confirm"
+          type="submit"
+          disabled={splitBreakdown.totalAmount <= 0}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3.5 text-sm font-bold text-ink-dark hover:bg-emerald-600 disabled:opacity-40 cursor-pointer"
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          Confirmar recebimento de {formatCurrencyBRL(splitBreakdown.totalAmount)}
+        </button>
+
+        {justClosedSuccess && (
+          <div role="status" className="rounded-xl border border-stone-800 bg-emerald-950 p-3 text-center text-xs font-semibold text-emerald-800">
+            Pagamento registrado e somado ao dia.
+          </div>
+        )}
+      </form>
+
+      {/* Extrato do dia, recolhido */}
+      <details data-tour="caixa-extrato" className="group rounded-2xl border border-stone-800 bg-stone-900">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4">
+          <span>
+            <span className="block text-sm font-bold text-stone-100">Recebimentos de hoje ({transactions.length})</span>
+            <span className="mt-0.5 block text-xs text-stone-400">Total {formatCurrencyBRL(dailySummary.totalGross)}</span>
+          </span>
+          <CaretDown className="h-4 w-4 shrink-0 text-stone-400 transition-transform group-open:rotate-180" aria-hidden="true" />
+        </summary>
+        <div className="border-t border-stone-800 p-4">
+          {transactions.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-stone-800 p-6 text-center text-xs text-stone-400">
+              Nenhum recebimento hoje ainda. Quando você confirmar um, ele aparece aqui.
+            </div>
+          ) : (
+            <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
+              {transactions.map((tx) => (
+                <li
+                  key={tx.id}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-stone-800 bg-stone-950 p-3 text-xs"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 font-semibold text-stone-100">
+                      <span className="truncate">{tx.clientName}</span>
+                      <span className="rounded bg-stone-800 px-1.5 py-0.5 font-mono text-[10px] text-stone-300">
+                        {PAYMENT_METHOD_LABELS[tx.paymentMethod]}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-stone-400">
+                      {tx.closedAt} · {tx.staffName} ({formatCurrencyBRL(tx.staffNetCommission)})
+                    </div>
+                    {tx.receiptAttachmentName && (
+                      <div className="mt-1 inline-flex items-center gap-1 text-[10px] text-stone-400">
+                        <FileText className="h-3 w-3" />
+                        {tx.receiptAttachmentName}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <div className="text-right font-mono">
+                      <div className="text-sm font-bold text-stone-100">{formatCurrencyBRL(tx.totalAmount)}</div>
+                      <div className="text-[10px] text-stone-400">Barbearia: {formatCurrencyBRL(tx.salonNetShare)}</div>
+                    </div>
+                    {onDeleteTransaction && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteTransaction(tx.id)}
+                        title="Excluir lançamento"
+                        aria-label="Excluir lançamento"
+                        className="rounded-lg p-1.5 text-stone-500 hover:text-amber-800 hover:bg-stone-900 cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </details>
     </div>
   );
 };
