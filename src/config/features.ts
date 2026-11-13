@@ -1,6 +1,6 @@
 /**
  * Suporte (chamados e pedido de cópia dos dados).
- * Só ligar depois de rodar supabase/migrations/006_support_tickets.sql no Supabase,
- * senão a aba dá erro. Desligado, a aba, o contador de chamados e os passos do tutorial somem.
+ * Ligado: a tabela support_tickets existe no Supabase (migração 006 rodada em 13/11/2026).
+ * Desligar (false) esconde a aba, o contador de chamados e os passos do tutorial.
  */
-export const SUPPORT_ENABLED = false;
+export const SUPPORT_ENABLED = true;
