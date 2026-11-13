@@ -132,7 +132,7 @@ const PreviewInner: React.FC<{ screen: string }> = ({ screen }) => {
           <ClientsModule clients={clients} businessName={business.name} onAddClient={() => {}} onUpdateClient={() => {}} onDeleteClient={() => {}} />
         )}
         {screen === 'reserva' && <ShareLinkModule business={business} staff={stf} services={svc} onGoToSettings={() => {}} />}
-        {screen === 'conta' && <AccountModule email="dono@exemplo.com" isAdmin={false} onExport={() => {}} onAccountDeleted={() => {}} />}
+        {screen === 'conta' && <AccountModule email="dono@exemplo.com" isAdmin={false} onAccountDeleted={() => {}} />}
         {screen === 'lembretes' && (
           <RemindersModule reminders={[]} appointments={appointments} business={business} staff={stf} services={svc} onDispatchAllPending={() => {}} onSimulateClientReply={() => {}} />
         )}

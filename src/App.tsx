@@ -633,27 +633,6 @@ function Dashboard({
     });
   };
 
-  const exportMyData = () => {
-    const payload = {
-      exportadoEm: new Date().toISOString(),
-      conta: profile.email,
-      barbearia: business,
-      equipe: staff,
-      servicos: services,
-      agendamentos: appointments,
-      clientes: clients,
-      vendasDoCaixa: transactions,
-      extratos: bankStatements,
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `prontoagende-meus-dados-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const tourKey = `pa-tour-v1:${userId}`;
   const [tourOpen, setTourOpen] = useState(false);
   const startTour = () => {
@@ -914,7 +893,7 @@ function Dashboard({
         )}
 
         {activeTab === 'ACCOUNT' && (
-          <AccountModule email={profile.email} isAdmin={profile.is_admin} onStartTour={startTour} onExport={exportMyData} onAccountDeleted={() => window.location.reload()} />
+          <AccountModule email={profile.email} isAdmin={profile.is_admin} onStartTour={startTour} onAccountDeleted={() => window.location.reload()} />
         )}
 
         {activeTab === 'ADMIN' && profile.is_admin && (

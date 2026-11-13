@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { DownloadSimple, ShieldCheck, Trash } from '@phosphor-icons/react';
+import { ShieldCheck, Trash } from '@phosphor-icons/react';
 import { friendlyError, supabase } from '../lib/supabase';
 import { LegalLinks } from './LegalPages';
 
@@ -10,13 +10,12 @@ const card = 'rounded-2xl border border-stone-800 bg-stone-900 p-5 space-y-3';
 interface Props {
   email: string;
   isAdmin: boolean;
-  onExport: () => void;
   onAccountDeleted: () => void;
   /** Abre o tutorial guiado de novo. */
   onStartTour?: () => void;
 }
 
-export const AccountModule: React.FC<Props> = ({ email, isAdmin, onExport, onAccountDeleted, onStartTour }) => {
+export const AccountModule: React.FC<Props> = ({ email, isAdmin, onAccountDeleted, onStartTour }) => {
   // ---- senha ----
   const [pw1, setPw1] = useState('');
   const [pw2, setPw2] = useState('');
@@ -184,16 +183,6 @@ export const AccountModule: React.FC<Props> = ({ email, isAdmin, onExport, onAcc
           </button>
         )}
         {mfaMsg && <p role="status" className="text-xs font-medium text-stone-300">{mfaMsg}</p>}
-      </div>
-
-      <div className={card}>
-        <h2 className="text-sm font-bold text-stone-100">Meus dados</h2>
-        <p className="text-xs text-stone-400">
-          Baixe uma cópia de tudo que está na sua conta: barbearia, serviços, agenda, clientes, caixa e extratos.
-        </p>
-        <button type="button" onClick={onExport} className="inline-flex items-center gap-2 rounded-xl border border-stone-800 px-4 py-2.5 text-xs font-semibold text-stone-200 hover:border-amber-500 cursor-pointer">
-          <DownloadSimple className="h-4 w-4" /> Baixar meus dados (JSON)
-        </button>
       </div>
 
       {!isAdmin && (
