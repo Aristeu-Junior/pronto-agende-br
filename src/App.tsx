@@ -31,6 +31,7 @@ import GuidedTour from './components/GuidedTour';
 import { SupportModule } from './components/SupportModule';
 import { AdminTicketsModule } from './components/AdminTicketsModule';
 import { fetchTickets } from './lib/cloud';
+import { SUPPORT_ENABLED } from './config/features';
 import { buildTourSteps } from './config/tourSteps';
 import { sanitizeUserText } from './utils/security';
 import { servicesSpan } from './utils/schedule';
@@ -661,7 +662,7 @@ function Dashboard({
   };
 
   useEffect(() => {
-    if (!profile.is_admin) return;
+    if (!SUPPORT_ENABLED || !profile.is_admin) return;
     let alive = true;
     const count = async () => {
       try {
@@ -721,7 +722,9 @@ function Dashboard({
     { id: 'CLIENTS', label: 'Clientes', shortLabel: 'Clientes', icon: <Users className="w-4 h-4" />, badge: clients.length },
     { id: 'PUBLIC_BOOKING', label: 'Link de Reserva', shortLabel: 'Reserva', icon: <ExternalLink className="w-4 h-4" /> },
     { id: 'MANAGER', label: 'Ajustes', shortLabel: 'Ajustes', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'SUPPORT', label: 'Suporte', shortLabel: 'Suporte', icon: <Headset className="w-4 h-4" /> },
+    ...(SUPPORT_ENABLED
+      ? [{ id: 'SUPPORT' as ActiveTab, label: 'Suporte', shortLabel: 'Suporte', icon: <Headset className="w-4 h-4" /> }]
+      : []),
   ];
 
   if (!loaded && !syncError)
@@ -943,13 +946,14 @@ function Dashboard({
           <AccountModule email={profile.email} isAdmin={profile.is_admin} onStartTour={startTour} onAccountDeleted={() => window.location.reload()} />
         )}
 
-        {activeTab === 'SUPPORT' && <SupportModule onDownloadData={exportMyData} />}
+        {SUPPORT_ENABLED && activeTab === 'SUPPORT' && <SupportModule onDownloadData={exportMyData} />}
 
         {activeTab === 'ADMIN' && profile.is_admin && (
           <>
             <button type="button" onClick={() => setActiveTab('AGENDA')} className="mb-3 text-xs font-medium text-amber-700 hover:text-amber-800 cursor-pointer">
               ← Voltar para a Agenda
             </button>
+            {SUPPORT_ENABLED && (
             <div role="group" aria-label="Área do administrador" className="mb-4 flex gap-2">
               <button type="button" aria-pressed={adminView === 'ACCOUNTS'} onClick={() => setAdminView('ACCOUNTS')} className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-full border px-4 text-xs font-semibold cursor-pointer ${adminView === 'ACCOUNTS' ? 'border-amber-500 bg-amber-950 text-stone-100' : 'border-stone-800 text-stone-300'}`}>
                 Contas{pendingAccounts > 0 ? ` (${pendingAccounts})` : ''}
@@ -958,7 +962,8 @@ function Dashboard({
                 Chamados{openTickets > 0 ? ` (${openTickets})` : ''}
               </button>
             </div>
-            {adminView === 'ACCOUNTS' ? (
+            )}
+            {!SUPPORT_ENABLED || adminView === 'ACCOUNTS' ? (
               <AdminUsersModule currentUserId={userId} onPendingCount={setPendingAccounts} />
             ) : (
               <AdminTicketsModule onOpenCount={setOpenTickets} />

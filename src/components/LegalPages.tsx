@@ -1,4 +1,5 @@
 import ThemeToggle from './ThemeToggle';
+import { SUPPORT_ENABLED } from '../config/features';
 import React from 'react';
 import { COMPANY } from '../config/legal';
 
@@ -132,7 +133,7 @@ const Privacy: React.FC = () => (
     <H>7. Seus direitos</H>
     <P>
       Você pode pedir confirmação de tratamento, acesso, correção, exclusão, portabilidade e informações sobre
-      compartilhamento. A barbearia pode excluir a conta e os dados em Conta e pedir uma cópia dos dados pelo contato abaixo. O cliente de uma barbearia deve fazer o
+      compartilhamento. A barbearia pode excluir a conta e os dados em Conta e {SUPPORT_ENABLED ? 'pedir uma cópia dos dados na aba Suporte' : 'pedir uma cópia dos dados pelo contato abaixo'}. O cliente de uma barbearia deve fazer o
       pedido à própria barbearia, que é a controladora.
     </P>
 

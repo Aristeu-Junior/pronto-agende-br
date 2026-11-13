@@ -1,4 +1,5 @@
 import type { TourStep } from '../components/GuidedTour';
+import { SUPPORT_ENABLED } from './features';
 
 export type TourTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'PUBLIC_BOOKING' | 'MANAGER' | 'SUPPORT';
 
@@ -9,7 +10,7 @@ export type TourTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'PUBLIC_BOOKING' | 'MANAGER
 export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
   const on = (tab: TourTab) => () => go(tab);
 
-  return [
+  const steps: TourStep[] = [
     {
       title: 'Bem-vindo ao ProntoAgende',
       body: 'Vamos passar por cada página do sistema, uma de cada vez, e ver para que serve cada parte. Use Próximo para avançar, Voltar para rever, ou Pular tutorial se preferir. Dá para refazer tudo em Minha conta.',
@@ -286,4 +287,6 @@ export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
       onEnter: on('AGENDA'),
     },
   ];
+
+  return SUPPORT_ENABLED ? steps : steps.filter((st) => st.section !== 'Suporte');
 }
