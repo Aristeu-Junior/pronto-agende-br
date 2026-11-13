@@ -75,7 +75,7 @@ export const ShareLinkModule: React.FC<{
             href={`https://wa.me/?text=${shareText}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 px-3.5 py-2 text-xs font-bold text-stone-100"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 px-3.5 py-2 text-xs font-bold text-ink-dark"
           >
             <WhatsappLogo className="h-4 w-4" /> Enviar pelo WhatsApp
           </a>

@@ -517,7 +517,7 @@ export const PosModule: React.FC<PosModuleProps> = ({
           <button
             type="submit"
             disabled={splitBreakdown.totalAmount <= 0}
-            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-stone-100 font-bold text-sm shadow-lg shadow-emerald-500/10 transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-ink-dark font-bold text-sm shadow-lg shadow-emerald-500/10 transition-all cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
             Confirmar Recebimento de {formatCurrencyBRL(splitBreakdown.totalAmount)}

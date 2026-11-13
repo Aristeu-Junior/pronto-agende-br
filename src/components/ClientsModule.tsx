@@ -284,7 +284,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
                   <button
                     type="button"
                     onClick={() => openWhatsAppClient(selectedClient)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-stone-100 font-bold text-xs transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-ink-dark font-bold text-xs transition-all cursor-pointer"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     Chamar no WhatsApp

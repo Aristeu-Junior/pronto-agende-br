@@ -233,7 +233,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSendWhatsAppForAppointment(apt)}
-                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-stone-100 font-bold text-xs shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-ink-dark font-bold text-xs shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
                         >
                           <MessageCircle className="w-4 h-4" />
                           Enviar Lembrete no WhatsApp
@@ -300,7 +300,7 @@ export const RemindersModule: React.FC<RemindersModuleProps> = ({
             </div>
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-stone-100 font-bold text-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-ink-dark font-bold text-xs transition-all cursor-pointer"
             >
               <MessageCircle className="w-4 h-4" />
               Abrir Conversa no WhatsApp Agora

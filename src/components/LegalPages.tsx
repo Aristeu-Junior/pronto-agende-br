@@ -1,3 +1,4 @@
+import ThemeToggle from './ThemeToggle';
 import React from 'react';
 import { COMPANY } from '../config/legal';
 
@@ -155,6 +156,7 @@ const Privacy: React.FC = () => (
 
 export const LegalPage: React.FC<{ kind: 'termos' | 'privacidade' }> = ({ kind }) => (
   <main className="mx-auto max-w-2xl px-4 py-10">
+    <ThemeToggle floating />
     <a href="#/" className="text-xs font-semibold text-amber-700 hover:text-amber-800">
       ← Voltar
     </a>

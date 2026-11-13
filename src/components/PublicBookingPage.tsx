@@ -1,3 +1,4 @@
+import ThemeToggle from './ThemeToggle';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CalendarCheck, Clock, MapPin, Scissors, WhatsappLogo } from '@phosphor-icons/react';
 import { friendlyError, supabase } from '../lib/supabase';
@@ -237,10 +238,11 @@ export const PublicBookingPage: React.FC<{ slug: string }> = ({ slug }) => {
   };
 
   if (state === 'loading')
-    return <main className="p-10 text-center text-sm text-stone-400">Carregando…</main>;
+    return <main className="p-10 text-center text-sm text-stone-400"><ThemeToggle floating />Carregando…</main>;
   if (state !== 'ready' || !shop)
     return (
       <main className="mx-auto max-w-md p-10 text-center">
+        <ThemeToggle floating />
         <h1 className="text-lg font-bold text-stone-100">
           {state === 'missing' ? 'Barbearia não encontrada' : 'Não foi possível carregar'}
         </h1>
@@ -256,8 +258,9 @@ export const PublicBookingPage: React.FC<{ slug: string }> = ({ slug }) => {
     const wa = whatsappLink();
     return (
       <main className="mx-auto max-w-lg space-y-4 px-4 py-10">
+        <ThemeToggle floating />
         <div className={`${card} space-y-3 text-center`}>
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-stone-100">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-ink-dark">
             <CalendarCheck className="h-7 w-7" />
           </div>
           <h1 className="text-xl font-bold text-stone-100">
@@ -305,7 +308,7 @@ export const PublicBookingPage: React.FC<{ slug: string }> = ({ slug }) => {
               href={wa}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3 text-sm font-bold text-stone-100"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3 text-sm font-bold text-ink-dark"
             >
               <WhatsappLogo className="h-4 w-4" /> Avisar a barbearia no WhatsApp
             </a>
@@ -330,6 +333,7 @@ export const PublicBookingPage: React.FC<{ slug: string }> = ({ slug }) => {
 
   return (
     <main className="mx-auto max-w-4xl space-y-5 px-4 py-8">
+      <ThemeToggle floating />
       <header className="space-y-1">
         <h1 className="text-2xl font-bold text-stone-100">{shop.name}</h1>
         {(shop.address || shop.cityState) && (
@@ -461,7 +465,7 @@ export const PublicBookingPage: React.FC<{ slug: string }> = ({ slug }) => {
           <button
             type="submit"
             disabled={!time || name.trim().length < 2 || phone.replace(/\D/g, '').length < 10 || submitting}
-            className="w-full rounded-xl bg-emerald-500 py-3.5 text-sm font-bold text-stone-100 hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+            className="w-full rounded-xl bg-emerald-500 py-3.5 text-sm font-bold text-ink-dark hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
           >
             {submitting ? 'Reservando…' : time ? `Confirmar agendamento (${formatCurrencyBRL(total)})` : 'Escolha um horário'}
           </button>

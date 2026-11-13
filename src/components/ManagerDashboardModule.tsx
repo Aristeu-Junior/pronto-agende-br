@@ -713,7 +713,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
               </label>
               <button
                 type="submit"
-                className="w-full py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-stone-100 font-bold text-xs cursor-pointer"
+                className="w-full py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-ink-dark font-bold text-xs cursor-pointer"
               >
                 Salvar Extrato
               </button>

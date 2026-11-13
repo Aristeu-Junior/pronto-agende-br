@@ -41,6 +41,10 @@
 
   --color-sky-400: #3D7A00;
 
+  --color-tint-100: #FFEDE6;
+  --color-tint-50: #FFF8F5;
+  --color-ink-dark: #1C1410;
+
   --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -73,6 +77,58 @@
   caret-color: var(--brand-orange);
   scrollbar-width: thin;
   scrollbar-color: var(--border-hairline) var(--bg-canvas);
+}
+
+/* Modo escuro: mesmos nomes de token, valores trocados. A escala "stone" segue invertida (950 = fundo, 100 = texto). */
+:root.dark {
+  color-scheme: dark;
+
+  --color-stone-950: #14100D;
+  --color-stone-900: #1D1814;
+  --color-stone-800: #3A2E27;
+  --color-stone-700: #4F4036;
+  --color-stone-500: #A88F80;
+  --color-stone-400: #BBA395;
+  --color-stone-300: #D4C0B4;
+  --color-stone-200: #EBDDD3;
+  --color-stone-100: #FFF3EC;
+
+  --color-amber-950: #3A1A0E;
+  --color-amber-800: #FF9466;
+  --color-amber-700: #FF8A5C;
+  --color-amber-600: #E63A00;
+  --color-amber-300: #FF7A47;
+
+  --color-emerald-950: #1F3300;
+  --color-emerald-800: #A6F54D;
+  --color-emerald-700: #81F002;
+
+  --color-rose-950: #3A1A0E;
+  --color-rose-700: #FF9466;
+  --color-rose-200: #5A2A18;
+
+  --color-sky-400: #A6F54D;
+
+  --color-tint-100: #2A1F18;
+  --color-tint-50: #221914;
+
+  --bg-canvas: #14100D;
+  --bg-surface: #1D1814;
+  --bg-subtle: #2A1F18;
+  --ink-primary: #FFF3EC;
+  --ink-secondary: #D4C0B4;
+  --ink-muted: #BBA395;
+  --border-hairline: #3A2E27;
+  --accent-emerald-hover: #E63A00;
+  --accent-emerald-soft: #3A1A0E;
+  --status-amber: #FF9466;
+  --status-amber-soft: #3A1A0E;
+  --status-crimson: #FF9466;
+  --status-crimson-soft: #3A1A0E;
+}
+
+:root.dark dialog.operational-dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.7);
 }
 
 *,
@@ -245,6 +301,33 @@ dialog.operational-dialog::backdrop {
     font-weight: 500;
     color: var(--ink-muted);
   }
+}
+
+/* Celular: 16px nos campos evita o zoom automático do iOS ao focar; alvos de toque de pelo menos 40px. */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  button:not([data-compact]),
+  select,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+    min-height: 40px;
+  }
+
+  a.inline-flex,
+  a.block {
+    min-height: 40px;
+  }
+}
+
+/* Barra inferior respeita a área segura (iPhone com barra de gestos). */
+nav[aria-label="Navegação Mobile"] {
+  padding-bottom: calc(0.375rem + env(safe-area-inset-bottom));
 }
 
 @media (prefers-reduced-motion: reduce) {

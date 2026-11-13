@@ -60,39 +60,39 @@ const STATUS_META: Record<
 > = {
   IN_SERVICE: {
     label: 'Em Atendimento',
-    bg: 'bg-[#81F002]',
-    text: 'text-[#1C1410]',
-    border: 'border-[#81F002]',
+    bg: 'bg-emerald-500',
+    text: 'text-stone-100',
+    border: 'border-emerald-500',
   },
   CONFIRMED: {
     label: 'Confirmado',
-    bg: 'bg-[#FFEDE6]',
-    text: 'text-[#1C1410]',
-    border: 'border-[#F4DDD2]',
+    bg: 'bg-tint-100',
+    text: 'text-stone-100',
+    border: 'border-stone-800',
   },
   PENDING: {
     label: 'Aguardando',
-    bg: 'bg-[#FFE9DF]',
-    text: 'text-[#B33000]',
-    border: 'border-[#B33000]/30',
+    bg: 'bg-amber-950',
+    text: 'text-amber-800',
+    border: 'border-amber-800/30',
   },
   COMPLETED: {
     label: 'Concluído',
-    bg: 'bg-[#EEFCD9]',
-    text: 'text-[#2E5E00]',
-    border: 'border-[#81F002]',
+    bg: 'bg-emerald-950',
+    text: 'text-emerald-800',
+    border: 'border-emerald-500',
   },
   NO_SHOW: {
     label: 'Faltou',
-    bg: 'bg-[#FFE9DF]',
-    text: 'text-[#B33000]',
-    border: 'border-[#B33000]/30',
+    bg: 'bg-amber-950',
+    text: 'text-amber-800',
+    border: 'border-amber-800/30',
   },
   CANCELLED: {
     label: 'Cancelado',
-    bg: 'bg-[#FFF8F5]',
-    text: 'text-[#7A5F52]',
-    border: 'border-[#F4DDD2]',
+    bg: 'bg-tint-50',
+    text: 'text-stone-400',
+    border: 'border-stone-800',
   },
 };
 
@@ -506,13 +506,13 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
   return (
     <section aria-label="Agenda do Dia e Encaixes">
       {/* Cabeçalho */}
-      <div className="border-b border-[#F4DDD2] bg-white px-4 py-4 sm:px-6">
+      <div className="border-b border-stone-800 bg-stone-950 px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-[#1C1410]">
+            <h1 className="text-xl font-semibold tracking-tight text-stone-100">
               Agenda do Dia
             </h1>
-            <p className="mt-0.5 text-xs text-[#5A463C]">
+            <p className="mt-0.5 text-xs text-stone-300">
               Clique em qualquer agendamento para editar horário, valor, sinal pago ou enviar WhatsApp.
             </p>
           </div>
@@ -522,7 +522,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               <button
                 type="button"
                 onClick={onOpenReminders}
-                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-[#F4DDD2] bg-white px-3.5 py-2 text-xs font-semibold text-[#1C1410]"
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-stone-800 bg-stone-950 px-3.5 py-2 text-xs font-semibold text-stone-100"
               >
                 <span>Lembretes WhatsApp</span>
               </button>
@@ -536,9 +536,9 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 setWalkInPrice(String(services[0]?.price || 45));
                 setWalkInOpen(true);
               }}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-[#F4DDD2] bg-[#FFEDE6] px-3.5 py-2 text-xs font-semibold text-[#1C1410]"
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-stone-800 bg-tint-100 px-3.5 py-2 text-xs font-semibold text-stone-100"
             >
-              <Lightning size={15} weight="fill" className="text-[#FA4100]" />
+              <Lightning size={15} weight="fill" className="text-amber-500" />
               <span>+ Encaixe Rápido</span>
             </button>
 
@@ -550,7 +550,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 setNewAptServiceIds(services[0] ? [services[0].id] : []);
                 setNewAptOpen(true);
               }}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-[#FA4100] px-4 py-2 text-xs font-semibold text-white hover:bg-[#D93800]"
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-600"
             >
               <Plus size={15} weight="bold" />
               <span>+ Novo Agendamento</span>
@@ -559,15 +559,15 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         </div>
 
         {/* Filtros */}
-        <div className="mt-4 pt-3 border-t border-[#F4DDD2] grid grid-cols-1 gap-2.5 md:grid-cols-12">
+        <div className="mt-4 pt-3 border-t border-stone-800 grid grid-cols-1 gap-2.5 md:grid-cols-12">
           <div className="md:col-span-6 flex items-center gap-1.5 overflow-x-auto pb-1">
             <button
               type="button"
               onClick={() => setSelectedStaffId('ALL')}
               className={`min-h-[36px] shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium border ${
                 selectedStaffId === 'ALL'
-                  ? 'border-[#FA4100] bg-[#FFE9DF] text-[#FA4100]'
-                  : 'border-[#F4DDD2] bg-white text-[#5A463C]'
+                  ? 'border-amber-500 bg-amber-950 text-amber-500'
+                  : 'border-stone-800 bg-stone-950 text-stone-300'
               }`}
             >
               Todos ({professionals.length})
@@ -584,12 +584,12 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                   onClick={() => setSelectedStaffId(prof.id)}
                   className={`min-h-[36px] shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium border flex items-center gap-1.5 ${
                     isSelected
-                      ? 'border-[#FA4100] bg-[#FFE9DF] text-[#FA4100]'
-                      : 'border-[#F4DDD2] bg-white text-[#5A463C]'
+                      ? 'border-amber-500 bg-amber-950 text-amber-500'
+                      : 'border-stone-800 bg-stone-950 text-stone-300'
                   }`}
                 >
                   <span>{prof.name.split(' ')[0]}</span>
-                  <span className="num-tabular rounded bg-[#FFF8F5] px-1.5 py-0.5 text-[11px] text-[#1C1410]">
+                  <span className="num-tabular rounded bg-tint-50 px-1.5 py-0.5 text-[11px] text-stone-100">
                     {count}
                   </span>
                 </button>
@@ -601,13 +601,13 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
             <div className="relative flex items-center">
               <FunnelSimple
                 size={15}
-                className="pointer-events-none absolute left-3 text-[#7A5F52]"
+                className="pointer-events-none absolute left-3 text-stone-400"
               />
               <select
                 aria-label="Filtrar por status"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="min-h-[36px] w-full rounded-lg border border-[#F4DDD2] bg-white pl-8 pr-3 text-xs font-medium text-[#1C1410]"
+                className="min-h-[36px] w-full rounded-lg border border-stone-800 bg-stone-950 pl-8 pr-3 text-xs font-medium text-stone-100"
               >
                 <option value="ALL">Todos os status</option>
                 <option value="IN_SERVICE">Em Atendimento</option>
@@ -623,14 +623,14 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
             <div className="relative flex items-center">
               <MagnifyingGlass
                 size={15}
-                className="pointer-events-none absolute left-3 text-[#7A5F52]"
+                className="pointer-events-none absolute left-3 text-stone-400"
               />
               <input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar cliente..."
-                className="min-h-[36px] w-full rounded-lg border border-[#F4DDD2] bg-white pl-8 pr-3 text-xs text-[#1C1410]"
+                className="min-h-[36px] w-full rounded-lg border border-stone-800 bg-stone-950 pl-8 pr-3 text-xs text-stone-100"
               />
             </div>
           </div>
@@ -638,13 +638,13 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
       </div>
 
       {/* Calendário vivo + resumo do dia */}
-      <div className="grid grid-cols-1 gap-4 border-b border-[#F4DDD2] bg-white px-4 py-4 sm:px-6 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 border-b border-stone-800 bg-stone-950 px-4 py-4 sm:px-6 lg:grid-cols-12">
         <div className="lg:col-span-4">
           <button
             type="button"
             onClick={() => setCalendarOpen((v) => !v)}
             aria-expanded={calendarOpen}
-            className="mb-2 min-h-[36px] w-full rounded-lg border border-[#F4DDD2] px-3 text-xs font-semibold text-[#1C1410] lg:hidden"
+            className="mb-2 min-h-[36px] w-full rounded-lg border border-stone-800 px-3 text-xs font-semibold text-stone-100 lg:hidden"
           >
             {calendarOpen ? 'Fechar calendário' : 'Abrir calendário'}
           </button>
@@ -667,11 +667,11 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 type="button"
                 aria-label="Dia anterior"
                 onClick={() => setSelectedDate(addDaysISO(selectedDate, -1))}
-                className="min-h-[36px] rounded-lg border border-[#F4DDD2] px-3 text-sm font-semibold text-[#1C1410]"
+                className="min-h-[36px] rounded-lg border border-stone-800 px-3 text-sm font-semibold text-stone-100"
               >
                 ‹
               </button>
-              <h2 className="min-w-[10rem] text-center text-sm font-semibold text-[#1C1410]">
+              <h2 className="min-w-[10rem] text-center text-sm font-semibold text-stone-100">
                 {formatDateLong(selectedDate)}
                 {selectedDate === localISODate() ? ' · hoje' : ''}
               </h2>
@@ -679,7 +679,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 type="button"
                 aria-label="Próximo dia"
                 onClick={() => setSelectedDate(addDaysISO(selectedDate, 1))}
-                className="min-h-[36px] rounded-lg border border-[#F4DDD2] px-3 text-sm font-semibold text-[#1C1410]"
+                className="min-h-[36px] rounded-lg border border-stone-800 px-3 text-sm font-semibold text-stone-100"
               >
                 ›
               </button>
@@ -687,7 +687,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedDate(localISODate())}
-                  className="min-h-[36px] rounded-lg px-2 text-xs font-semibold text-[#D93800]"
+                  className="min-h-[36px] rounded-lg px-2 text-xs font-semibold text-amber-600"
                 >
                   Ir para hoje
                 </button>
@@ -697,7 +697,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
 
           <div className="mt-3 space-y-3">
             {dayStaff.length === 0 && (
-              <p className="text-xs text-[#5A463C]">Cadastre um barbeiro em Ajustes para montar a escala.</p>
+              <p className="text-xs text-stone-300">Cadastre um barbeiro em Ajustes para montar a escala.</p>
             )}
             {dayStaff.map((member) => {
               const state = getDayState(member, selectedDate);
@@ -706,11 +706,11 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               const free = state === 'OPEN' ? daySlots(member) : [];
               const isPast = selectedDate < localISODate();
               return (
-                <div key={member.id} className="rounded-xl border border-[#F4DDD2] p-3">
+                <div key={member.id} className="rounded-xl border border-stone-800 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <span className="text-xs font-semibold text-[#1C1410]">{member.name}</span>
-                      <span className="ml-2 text-[11px] text-[#7A5F52]">
+                      <span className="text-xs font-semibold text-stone-100">{member.name}</span>
+                      <span className="ml-2 text-[11px] text-stone-400">
                         {state === 'OPEN'
                           ? `Atende ${day.start}–${day.end}${day.breakStart && day.breakEnd ? ` · pausa ${day.breakStart}–${day.breakEnd}` : ''} · de ${sch.slotIntervalMinutes} em ${sch.slotIntervalMinutes} min`
                           : state === 'BLOCKED'
@@ -722,7 +722,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                       <button
                         type="button"
                         onClick={() => toggleDayOff(member)}
-                        className="min-h-[32px] rounded-lg border border-[#F4DDD2] px-2.5 text-[11px] font-semibold text-[#5A463C] hover:border-[#FA4100]"
+                        className="min-h-[32px] rounded-lg border border-stone-800 px-2.5 text-[11px] font-semibold text-stone-300 hover:border-amber-500"
                       >
                         {state === 'BLOCKED' ? 'Remover folga' : 'Marcar folga neste dia'}
                       </button>
@@ -730,7 +730,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                   </div>
                   {state === 'OPEN' && !isPast && (
                     <div className="mt-2">
-                      <p className="mb-1.5 text-[11px] text-[#7A5F52]">
+                      <p className="mb-1.5 text-[11px] text-stone-400">
                         {free.length > 0
                           ? `${free.length} ${free.length === 1 ? 'horário livre' : 'horários livres'} (toque para agendar):`
                           : 'Dia lotado: sem horários livres.'}
@@ -742,13 +742,13 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                               key={t}
                               type="button"
                               onClick={() => openNewAptWithSlot(member.id, t)}
-                              className="num-tabular min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs font-semibold text-[#1C1410] hover:border-[#FA4100]"
+                              className="num-tabular min-h-[36px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs font-semibold text-stone-100 hover:border-amber-500"
                             >
                               {t}
                             </button>
                           ))}
                           {free.length > 14 && (
-                            <span className="self-center text-[11px] text-[#7A5F52]">+{free.length - 14}</span>
+                            <span className="self-center text-[11px] text-stone-400">+{free.length - 14}</span>
                           )}
                         </div>
                       )}
@@ -757,7 +757,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 </div>
               );
             })}
-            <p className="text-[11px] text-[#7A5F52]">
+            <p className="text-[11px] text-stone-400">
               {dayStaff.length === 1 ? weekSummary(dayStaff[0]) : 'Escala de cada barbeiro: Ajustes › Escala de Trabalho.'}
             </p>
           </div>
@@ -765,38 +765,38 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
       </div>
 
       {/* Lista + Painel de Edição Direta */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#F4DDD2] bg-white">
+      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-stone-800 bg-stone-950">
         <div className="lg:col-span-7">
           {filteredAppointments.length === 0 ? (
             <div className="px-6 py-14 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#F4DDD2] bg-[#FFF8F5] text-[#5A463C]">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-stone-800 bg-tint-50 text-stone-300">
                 <CalendarCheck size={24} />
               </div>
-              <h2 className="mt-3 text-sm font-semibold text-[#1C1410]">
+              <h2 className="mt-3 text-sm font-semibold text-stone-100">
                 Nenhum agendamento neste dia
               </h2>
-              <p className="mx-auto mt-1 max-w-md text-xs text-[#5A463C]">
+              <p className="mx-auto mt-1 max-w-md text-xs text-stone-300">
                 Escolha um horário livre acima, crie um agendamento ou lance um encaixe rápido de balcão.
               </p>
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                 <button
                   type="button"
                   onClick={() => setWalkInOpen(true)}
-                  className="rounded-lg border border-[#F4DDD2] bg-white px-4 py-2 text-xs font-semibold text-[#1C1410]"
+                  className="rounded-lg border border-stone-800 bg-stone-950 px-4 py-2 text-xs font-semibold text-stone-100"
                 >
                   + Encaixe Rápido
                 </button>
                 <button
                   type="button"
                   onClick={() => setNewAptOpen(true)}
-                  className="rounded-lg bg-[#FA4100] px-4 py-2 text-xs font-semibold text-white"
+                  className="rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-white"
                 >
                   + Novo Agendamento
                 </button>
               </div>
             </div>
           ) : (
-            <div className="divide-y divide-[#F4DDD2]">
+            <div className="divide-y divide-stone-800">
               {filteredAppointments.map((apt) => {
                 const prof = getStaffById(apt.staffId);
                 const aptServices = getServicesForApt(apt.serviceIds);
@@ -809,23 +809,23 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                     key={apt.id}
                     onClick={() => setSelectedAptId(apt.id)}
                     className={`cursor-pointer px-4 py-3.5 sm:px-6 transition-colors ${
-                      isSelected ? 'bg-[#FFE9DF]/45' : 'hover:bg-[#FFF8F5]/60'
+                      isSelected ? 'bg-amber-950/45' : 'hover:bg-tint-50/60'
                     }`}
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-start gap-3">
-                        <div className="min-w-[70px] rounded-lg border border-[#F4DDD2] bg-[#FFF8F5] px-2.5 py-1.5 text-center">
-                          <time className="num-tabular block text-sm font-semibold text-[#1C1410]">
+                        <div className="min-w-[70px] rounded-lg border border-stone-800 bg-tint-50 px-2.5 py-1.5 text-center">
+                          <time className="num-tabular block text-sm font-semibold text-stone-100">
                             {apt.startTime}
                           </time>
-                          <span className="num-tabular block text-[11px] text-[#7A5F52]">
+                          <span className="num-tabular block text-[11px] text-stone-400">
                             {apt.endTime}
                           </span>
                         </div>
 
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-semibold text-[#1C1410]">
+                            <span className="text-sm font-semibold text-stone-100">
                               {apt.clientName}
                             </span>
                             <span
@@ -834,17 +834,17 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                               {statusInfo.label}
                             </span>
                             {apt.depositPixPaid > 0 && (
-                              <span className="num-tabular rounded bg-[#FFE9DF] px-2 py-0.5 text-[11px] font-semibold text-[#FA4100]">
+                              <span className="num-tabular rounded bg-amber-950 px-2 py-0.5 text-[11px] font-semibold text-amber-500">
                                 Sinal pago: {formatBRL(apt.depositPixPaid)}
                               </span>
                             )}
                           </div>
 
-                          <p className="mt-0.5 text-xs text-[#5A463C]">
+                          <p className="mt-0.5 text-xs text-stone-300">
                             {aptServices.map((s) => s.name).join(' + ') || 'Serviço personalizado'}
                           </p>
 
-                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#7A5F52]">
+                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-400">
                             <span>{prof?.name}</span>
                             {apt.clientPhone && (
                               <>
@@ -856,8 +856,8 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 border-[#F4DDD2]">
-                        <span className="num-tabular text-sm font-semibold text-[#1C1410]">
+                      <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 border-stone-800">
+                        <span className="num-tabular text-sm font-semibold text-stone-100">
                           {formatBRL(total)}
                         </span>
 
@@ -870,7 +870,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                               type="button"
                               onClick={() => handleSendRealWhatsApp(apt)}
                               title="Enviar confirmação no WhatsApp"
-                              className="inline-flex items-center gap-1 rounded-lg border border-[#F4DDD2] bg-white px-2.5 py-1 text-xs font-medium text-[#FA4100]"
+                              className="inline-flex items-center gap-1 rounded-lg border border-stone-800 bg-stone-950 px-2.5 py-1 text-xs font-medium text-amber-500"
                             >
                               <WhatsappLogo size={14} weight="bold" />
                               <span>WhatsApp</span>
@@ -880,7 +880,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                             <button
                               type="button"
                               onClick={() => onOpenInPos(apt)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-[#FA4100] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#D93800]"
+                              className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-600"
                             >
                               <CurrencyDollar size={13} weight="bold" />
                               <span>Receber</span>
@@ -897,13 +897,13 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         </div>
 
         {/* Coluna Direita (5 cols): Editor Completo do Agendamento Selecionado */}
-        <aside className="lg:col-span-5 bg-[#FFF8F5]/50 p-4 sm:p-5">
+        <aside className="lg:col-span-5 bg-tint-50/50 p-4 sm:p-5">
           {activeAppointment ? (
             <form onSubmit={handleSaveInlineEdits} className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[#F4DDD2] pb-3">
+              <div className="flex items-center justify-between border-b border-stone-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <PencilSimple size={16} weight="bold" className="text-[#FA4100]" />
-                  <h2 className="text-sm font-semibold text-[#1C1410]">
+                  <PencilSimple size={16} weight="bold" className="text-amber-500" />
+                  <h2 className="text-sm font-semibold text-stone-100">
                     Editar Agendamento
                   </h2>
                 </div>
@@ -917,7 +917,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                       e.target.value as AppointmentStatus
                     )
                   }
-                  className="rounded-lg border border-[#F4DDD2] bg-white px-2.5 py-1 text-xs font-semibold text-[#1C1410]"
+                  className="rounded-lg border border-stone-800 bg-stone-950 px-2.5 py-1 text-xs font-semibold text-stone-100"
                 >
                   <option value="PENDING">Aguardando</option>
                   <option value="CONFIRMED">Confirmado</option>
@@ -929,7 +929,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               </div>
 
               {activeAppointment.depositRequested ? (
-                <div className="flex flex-col gap-2 rounded-lg border border-[#FA4100]/40 bg-[#FFE9DF] p-3 text-xs text-[#1C1410] sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-2 rounded-lg border border-amber-500/40 bg-amber-950 p-3 text-xs text-stone-100 sm:flex-row sm:items-center sm:justify-between">
                   <span>
                     <strong>Sinal pedido: {formatBRL(activeAppointment.depositRequested)}.</strong>{' '}
                     Confira o Pix no seu banco antes de confirmar.
@@ -948,7 +948,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                         status: 'CONFIRMED',
                       })
                     }
-                    className="min-h-[36px] shrink-0 rounded-lg bg-[#81F002] px-3 py-1.5 font-bold text-[#1C1410]"
+                    className="min-h-[36px] shrink-0 rounded-lg bg-emerald-500 px-3 py-1.5 font-bold text-ink-dark"
                   >
                     Confirmar sinal recebido
                   </button>
@@ -956,13 +956,13 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               ) : null}
 
               {editError && (
-                <p role="alert" className="text-xs font-medium text-[#B33000]">
+                <p role="alert" className="text-xs font-medium text-amber-800">
                   {editError}
                 </p>
               )}
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-[#1C1410]">
+                <span className="text-xs font-medium text-stone-100">
                   Reagendar: horários livres em {formatDateBR(editDate)}
                 </span>
                 <SlotPicker
@@ -977,7 +977,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               </div>
 
               {savedSuccess && (
-                <div className="rounded-lg border border-[#FA4100]/40 bg-[#FFE9DF] px-3 py-2 text-xs font-semibold text-[#FA4100] flex items-center gap-1.5">
+                <div className="rounded-lg border border-amber-500/40 bg-amber-950 px-3 py-2 text-xs font-semibold text-amber-500 flex items-center gap-1.5">
                   <CheckCircle size={15} weight="fill" />
                   <span>Alterações salvas na agenda!</span>
                 </div>
@@ -985,19 +985,19 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-[#1C1410]">
+                  <label className="text-xs font-medium text-stone-100">
                     Nome do Cliente
                   </label>
                   <input
                     type="text"
                     value={editClientName}
                     onChange={(e) => setEditClientName(e.target.value)}
-                    className="min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                    className="min-h-[36px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-[#1C1410]">
+                  <label className="text-xs font-medium text-stone-100">
                     WhatsApp do Cliente
                   </label>
                   <input
@@ -1006,14 +1006,14 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                     value={editClientPhone}
                     onChange={(e) => setEditClientPhone(formatPhoneBR(e.target.value))}
                     placeholder="(11) 99999-0000"
-                    className="num-tabular min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                    className="num-tabular min-h-[36px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-[#1C1410]">
+                  <label className="text-xs font-medium text-stone-100">
                     Data
                   </label>
                   <input
@@ -1023,12 +1023,12 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                       setEditDate(e.target.value);
                       setEditError('');
                     }}
-                    className="num-tabular min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                    className="num-tabular min-h-[36px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-[#1C1410]">
+                  <label className="text-xs font-medium text-stone-100">
                     Horário
                   </label>
                   <input
@@ -1038,18 +1038,18 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                       setEditStartTime(e.target.value);
                       setEditError('');
                     }}
-                    className="num-tabular min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                    className="num-tabular min-h-[36px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-[#1C1410]">
+                  <label className="text-xs font-medium text-stone-100">
                     Barbeiro / Profissional
                   </label>
                   <select
                     value={editStaffId}
                     onChange={(e) => setEditStaffId(e.target.value)}
-                    className="min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                    className="min-h-[36px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
                   >
                     {professionals.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -1062,10 +1062,10 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
 
               {/* Serviços do agendamento */}
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-[#1C1410]">
+                <span className="text-xs font-medium text-stone-100">
                   Serviços
                 </span>
-                <div className="divide-y divide-[#F4DDD2] rounded-lg border border-[#F4DDD2] bg-white">
+                <div className="divide-y divide-stone-800 rounded-lg border border-stone-800 bg-stone-950">
                   {services.map((srv) => {
                     const checked = editServiceIds.includes(srv.id);
                     return (
@@ -1078,11 +1078,11 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                             type="checkbox"
                             checked={checked}
                             onChange={() => toggleEditService(srv.id)}
-                            className="h-4 w-4 accent-[#FA4100]"
+                            className="h-4 w-4 accent-amber-500"
                           />
-                          <span className="font-medium text-[#1C1410]">{srv.name}</span>
+                          <span className="font-medium text-stone-100">{srv.name}</span>
                         </span>
-                        <span className="num-tabular text-[#5A463C]">
+                        <span className="num-tabular text-stone-300">
                           {formatBRL(srv.price)}
                         </span>
                       </label>
@@ -1094,7 +1094,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               {/* Preço Cobrado e Sinal Pago */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-[#1C1410]">
+                  <label className="text-xs font-medium text-stone-100">
                     Valor Total do Corte (R$)
                   </label>
                   <input
@@ -1103,12 +1103,12 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                     step={1}
                     value={editCustomPrice}
                     onChange={(e) => setEditCustomPrice(e.target.value)}
-                    className="num-tabular min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs font-semibold text-[#1C1410]"
+                    className="num-tabular min-h-[36px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs font-semibold text-stone-100"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-[#1C1410]">
+                  <label className="text-xs font-medium text-stone-100">
                     Sinal / Adiantamento Pago (R$)
                   </label>
                   <input
@@ -1117,19 +1117,19 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                     step={1}
                     value={editDepositPaid}
                     onChange={(e) => setEditDepositPaid(e.target.value)}
-                    className="num-tabular min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#FA4100] font-semibold"
+                    className="num-tabular min-h-[36px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-amber-500 font-semibold"
                   />
                 </div>
               </div>
 
               {/* Comprovante de Sinal / Observações */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-[#1C1410]">
+                <label className="text-xs font-medium text-stone-100">
                   Anexar Comprovante Pix / Sinal (Opcional)
                 </label>
-                <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-[#F4DDD2] bg-white px-3 py-2 text-xs text-[#5A463C]">
+                <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-stone-800 bg-stone-950 px-3 py-2 text-xs text-stone-300">
                   <span className="inline-flex items-center gap-1.5 truncate">
-                    <Paperclip size={14} weight="bold" className="text-[#FA4100]" />
+                    <Paperclip size={14} weight="bold" className="text-amber-500" />
                     <span className="truncate">
                       {editProofName || 'Selecionar imagem ou PDF do comprovante...'}
                     </span>
@@ -1147,7 +1147,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-[#1C1410]">
+                <label className="text-xs font-medium text-stone-100">
                   Observações do Cliente
                 </label>
                 <textarea
@@ -1155,7 +1155,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   placeholder="Ex.: Degradê baixo, confirmar 1h antes..."
-                  className="rounded-lg border border-[#F4DDD2] bg-white p-2.5 text-xs text-[#1C1410]"
+                  className="rounded-lg border border-stone-800 bg-stone-950 p-2.5 text-xs text-stone-100"
                 />
               </div>
 
@@ -1163,7 +1163,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="submit"
-                    className="min-h-[38px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#FA4100] px-3 py-2 text-xs font-semibold text-white hover:bg-[#D93800]"
+                    className="min-h-[38px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600"
                   >
                     <CheckCircle size={15} weight="bold" />
                     <span>Salvar Alterações</span>
@@ -1172,7 +1172,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                   <button
                     type="button"
                     onClick={() => onOpenInPos(activeAppointment)}
-                    className="min-h-[38px] inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#FA4100] bg-[#FFE9DF] px-3 py-2 text-xs font-semibold text-[#FA4100]"
+                    className="min-h-[38px] inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-500 bg-amber-950 px-3 py-2 text-xs font-semibold text-amber-500"
                   >
                     <CurrencyDollar size={15} weight="bold" />
                     <span>Receber no Caixa</span>
@@ -1183,16 +1183,16 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                   <button
                     type="button"
                     onClick={() => handleSendRealWhatsApp(activeAppointment)}
-                    className="min-h-[36px] inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#F4DDD2] bg-white px-3 py-1.5 text-xs font-medium text-[#1C1410]"
+                    className="min-h-[36px] inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-800 bg-stone-950 px-3 py-1.5 text-xs font-medium text-stone-100"
                   >
-                    <WhatsappLogo size={15} weight="bold" className="text-[#FA4100]" />
+                    <WhatsappLogo size={15} weight="bold" className="text-amber-500" />
                     <span>Mandar WhatsApp</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => onDeleteAppointment(activeAppointment.id)}
-                    className="min-h-[36px] inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#B33000]/30 bg-[#FFE9DF]/60 px-3 py-1.5 text-xs font-medium text-[#B33000]"
+                    className="min-h-[36px] inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-800/30 bg-amber-950/60 px-3 py-1.5 text-xs font-medium text-amber-800"
                   >
                     <Trash size={14} />
                     <span>Excluir Horário</span>
@@ -1201,7 +1201,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               </div>
             </form>
           ) : (
-            <div className="py-10 text-center text-xs text-[#7A5F52]">
+            <div className="py-10 text-center text-xs text-stone-400">
               Clique em um horário na lista (ou crie um novo) para editar todos os dados aqui.
             </div>
           )}
@@ -1218,7 +1218,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         <form onSubmit={handleWalkInSubmit} className="space-y-4" noValidate>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label htmlFor="walkin-name" className="text-xs font-semibold text-[#1C1410]">
+              <label htmlFor="walkin-name" className="text-xs font-semibold text-stone-100">
                 Nome do Cliente
               </label>
               <input
@@ -1227,12 +1227,12 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 value={walkInName}
                 onChange={(e) => setWalkInName(e.target.value)}
                 placeholder="Ex.: Lucas"
-                className="min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="walkin-phone" className="text-xs font-semibold text-[#1C1410]">
+              <label htmlFor="walkin-phone" className="text-xs font-semibold text-stone-100">
                 WhatsApp (Opcional)
               </label>
               <input
@@ -1242,14 +1242,14 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 value={walkInPhone}
                 onChange={(e) => setWalkInPhone(formatPhoneBR(e.target.value))}
                 placeholder="(11) 99999-0000"
-                className="num-tabular min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                className="num-tabular min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label htmlFor="walkin-service" className="text-xs font-semibold text-[#1C1410]">
+              <label htmlFor="walkin-service" className="text-xs font-semibold text-stone-100">
                 Serviço
               </label>
               <select
@@ -1260,7 +1260,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                   const found = services.find((s) => s.id === e.target.value);
                   if (found) setWalkInPrice(String(found.price));
                 }}
-                className="min-h-[38px] w-full rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                className="min-h-[38px] w-full rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
               >
                 {services.map((srv) => (
                   <option key={srv.id} value={srv.id}>
@@ -1271,7 +1271,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="walkin-price" className="text-xs font-semibold text-[#1C1410]">
+              <label htmlFor="walkin-price" className="text-xs font-semibold text-stone-100">
                 Valor Cobrado (R$)
               </label>
               <input
@@ -1281,28 +1281,28 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 step={1}
                 value={walkInPrice}
                 onChange={(e) => setWalkInPrice(e.target.value)}
-                className="num-tabular min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs font-semibold text-[#1C1410]"
+                className="num-tabular min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs font-semibold text-stone-100"
               />
             </div>
           </div>
 
           {walkInError && (
-            <p role="alert" className="text-xs font-medium text-[#B33000]">
+            <p role="alert" className="text-xs font-medium text-amber-800">
               {walkInError}
             </p>
           )}
 
-          <div className="flex items-center justify-end gap-2 border-t border-[#F4DDD2] pt-3">
+          <div className="flex items-center justify-end gap-2 border-t border-stone-800 pt-3">
             <button
               type="button"
               onClick={() => setWalkInOpen(false)}
-              className="min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-4 py-1.5 text-xs font-medium text-[#5A463C]"
+              className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-4 py-1.5 text-xs font-medium text-stone-300"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg bg-[#FA4100] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#D93800]"
+              className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
             >
               <Scissors size={15} weight="bold" />
               <span>Adicionar na Agenda</span>
@@ -1321,7 +1321,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         <form onSubmit={handleNewAppointmentSubmit} className="space-y-4" noValidate>
           {clients.length > 0 && (
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-[#1C1410]">
+              <label className="text-xs font-semibold text-stone-100">
                 Preencher com Cliente Cadastrado (Opcional)
               </label>
               <select
@@ -1333,7 +1333,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                     setNewAptClientPhone(found.phoneWhatsapp);
                   }
                 }}
-                className="min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
               >
                 <option value="">Digitar manualmente abaixo...</option>
                 {clients.map((c) => (
@@ -1347,7 +1347,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-[#1C1410]">
+              <label className="text-xs font-semibold text-stone-100">
                 Nome do Cliente *
               </label>
               <input
@@ -1355,12 +1355,12 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 value={newAptClientName}
                 onChange={(e) => setNewAptClientName(e.target.value)}
                 placeholder="Ex.: Matheus"
-                className="min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-[#1C1410]">
+              <label className="text-xs font-semibold text-stone-100">
                 WhatsApp
               </label>
               <input
@@ -1369,20 +1369,20 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 value={newAptClientPhone}
                 onChange={(e) => setNewAptClientPhone(formatPhoneBR(e.target.value))}
                 placeholder="(11) 99999-0000"
-                className="num-tabular min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                className="num-tabular min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-[#1C1410]">
+              <label className="text-xs font-semibold text-stone-100">
                 Profissional
               </label>
               <select
                 value={newAptStaffId}
                 onChange={(e) => setNewAptStaffId(e.target.value)}
-                className="min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
               >
                 {professionals.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -1393,7 +1393,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-[#1C1410]">
+              <label className="text-xs font-semibold text-stone-100">
                 Data
               </label>
               <input
@@ -1405,12 +1405,12 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                   setNewAptTime('');
                   if (newAptError) setNewAptError('');
                 }}
-                className="num-tabular min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                className="num-tabular min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-[#1C1410]">
+              <label className="text-xs font-semibold text-stone-100">
                 Sinal Pix Pago (R$)
               </label>
               <input
@@ -1419,13 +1419,13 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 step={1}
                 value={newAptDeposit}
                 onChange={(e) => setNewAptDeposit(e.target.value)}
-                className="num-tabular min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                className="num-tabular min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-[#1C1410]">
+            <span className="text-xs font-semibold text-stone-100">
               Horários livres em {formatDateBR(newAptDate)}
             </span>
             <SlotPicker
@@ -1437,7 +1437,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               }}
               emptyMessage="Sem horários livres para esse profissional e serviço nessa data (dia de folga, fora da escala ou lotado)."
             />
-            <label className="mt-1 flex items-center gap-2 text-xs text-[#5A463C]">
+            <label className="mt-1 flex items-center gap-2 text-xs text-stone-300">
               Outro horário
               <input
                 type="time"
@@ -1446,17 +1446,17 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                   setNewAptTime(e.target.value);
                   if (newAptError) setNewAptError('');
                 }}
-                className="num-tabular min-h-[36px] rounded-lg border border-[#F4DDD2] bg-white px-3 text-xs text-[#1C1410]"
+                className="num-tabular min-h-[36px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
               />
               <span className="text-[11px]">(fora da grade; o sistema avisa se houver conflito)</span>
             </label>
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-[#1C1410]">
+            <span className="text-xs font-semibold text-stone-100">
               Serviços
             </span>
-            <div className="divide-y divide-[#F4DDD2] rounded-lg border border-[#F4DDD2] bg-[#FFF8F5]/50">
+            <div className="divide-y divide-stone-800 rounded-lg border border-stone-800 bg-tint-50/50">
               {services.map((srv) => {
                 const checked = newAptServiceIds.includes(srv.id);
                 return (
@@ -1472,11 +1472,11 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                           toggleNewAptService(srv.id);
                           if (newAptError) setNewAptError('');
                         }}
-                        className="h-4 w-4 accent-[#FA4100]"
+                        className="h-4 w-4 accent-amber-500"
                       />
-                      <span className="font-medium text-[#1C1410]">{srv.name}</span>
+                      <span className="font-medium text-stone-100">{srv.name}</span>
                     </span>
-                    <span className="num-tabular font-semibold text-[#1C1410]">
+                    <span className="num-tabular font-semibold text-stone-100">
                       {formatBRL(srv.price)}
                     </span>
                   </label>
@@ -1486,22 +1486,22 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
           </div>
 
           {newAptError && (
-            <p role="alert" className="text-xs font-medium text-[#B33000]">
+            <p role="alert" className="text-xs font-medium text-amber-800">
               {newAptError}
             </p>
           )}
 
-          <div className="flex items-center justify-end gap-2 border-t border-[#F4DDD2] pt-3">
+          <div className="flex items-center justify-end gap-2 border-t border-stone-800 pt-3">
             <button
               type="button"
               onClick={() => setNewAptOpen(false)}
-              className="min-h-[38px] rounded-lg border border-[#F4DDD2] bg-white px-4 py-1.5 text-xs font-medium text-[#5A463C]"
+              className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-4 py-1.5 text-xs font-medium text-stone-300"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg bg-[#FA4100] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#D93800]"
+              className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
             >
               <CheckCircle size={15} weight="bold" />
               <span>Salvar Agendamento</span>

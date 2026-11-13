@@ -71,18 +71,18 @@ export const LightDismissDialog: React.FC<LightDismissDialogProps> = ({
       aria-labelledby={titleId}
       className="operational-dialog"
     >
-      <div className="border-b border-[#F4DDD2] bg-[#FFEDE6]/60 px-5 py-4 flex items-start justify-between gap-4">
+      <div className="border-b border-stone-800 bg-tint-100/60 px-5 py-4 flex items-start justify-between gap-4">
         <div>
-          <h2 id={titleId} className="text-lg font-semibold tracking-tight text-[#1C1410]">
+          <h2 id={titleId} className="text-lg font-semibold tracking-tight text-stone-100">
             {title}
           </h2>
-          {subtitle && <p className="mt-0.5 text-sm text-[#5A463C]">{subtitle}</p>}
+          {subtitle && <p className="mt-0.5 text-sm text-stone-300">{subtitle}</p>}
         </div>
         <button
           type="button"
           onClick={() => dialogRef.current?.close()}
           aria-label="Fechar janela"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#F4DDD2] bg-white text-[#5A463C] hover:bg-[#FFEDE6] hover:text-[#1C1410]"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-stone-800 bg-stone-950 text-stone-300 hover:bg-tint-100 hover:text-stone-100"
         >
           <X size={18} weight="bold" />
         </button>

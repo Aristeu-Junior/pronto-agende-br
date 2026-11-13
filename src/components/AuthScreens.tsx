@@ -1,3 +1,4 @@
+import ThemeToggle from './ThemeToggle';
 import React, { useState } from 'react';
 import { Scissors, SignOut } from '@phosphor-icons/react';
 import { friendlyError, supabase } from '../lib/supabase';
@@ -14,6 +15,7 @@ const Shell: React.FC<{ title: string; subtitle?: string; children: React.ReactN
   children,
 }) => (
   <main className="flex min-h-screen items-center justify-center bg-stone-950 px-4 py-10">
+    <ThemeToggle floating />
     <div className="w-full max-w-md rounded-3xl border border-stone-800 bg-stone-900 p-7 shadow-xl">
       <div className="mb-5 flex items-center gap-3 border-b border-stone-800 pb-5">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500 text-stone-950">

@@ -24,6 +24,7 @@ import {
   StaffMember,
   UserPermissions,
 } from './types';
+import ThemeToggle from './components/ThemeToggle';
 import { sanitizeUserText } from './utils/security';
 import { servicesSpan } from './utils/schedule';
 import { friendlyError, supabase } from './lib/supabase';
@@ -730,6 +731,7 @@ function Dashboard({
           </nav>
 
           <div className="flex items-center gap-2 shrink-0">
+            <ThemeToggle />
             {profile.is_admin && (
               <button
                 type="button"
