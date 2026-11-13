@@ -552,17 +552,17 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="grid grid-cols-2 gap-2 pt-2 sm:flex sm:justify-end">
                 <button
                   type="button"
                   onClick={() => setShowNewModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold"
+                  className="min-h-[44px] px-4 py-2.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold sm:min-h-0"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold cursor-pointer"
+                  className="min-h-[44px] px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold cursor-pointer sm:min-h-0"
                 >
                   Salvar Cliente
                 </button>

@@ -3,6 +3,7 @@ import {
   CalendarCheck,
   CheckCircle,
   CurrencyDollar,
+  CaretDown,
   FunnelSimple,
   Lightning,
   MagnifyingGlass,
@@ -121,6 +122,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(localISODate());
   const [calendarOpen, setCalendarOpen] = useState<boolean>(false);
+  const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
   const [pendingSlot, setPendingSlot] = useState<string>('');
   const [newAptDate, setNewAptDate] = useState<string>(localISODate());
   const [editDate, setEditDate] = useState<string>(localISODate());
@@ -522,15 +524,16 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             {onOpenReminders && (
               <button
                 type="button"
                 data-tour="agenda-reminders"
                 onClick={onOpenReminders}
-                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-stone-800 bg-stone-950 px-3.5 py-2 text-xs font-semibold text-stone-100"
+                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-stone-800 bg-stone-950 px-3.5 py-2 text-xs font-semibold text-stone-100 sm:min-h-[40px]"
               >
-                <span>Lembretes WhatsApp</span>
+                <WhatsappLogo size={15} weight="bold" className="text-emerald-700" />
+                <span>Lembretes</span>
               </button>
             )}
             <button
@@ -542,10 +545,10 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 setWalkInPrice(String(services[0]?.price || 45));
                 setWalkInOpen(true);
               }}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-stone-800 bg-tint-100 px-3.5 py-2 text-xs font-semibold text-stone-100"
+              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-stone-800 bg-tint-100 px-3.5 py-2 text-xs font-semibold text-stone-100 sm:min-h-[40px]"
             >
               <Lightning size={15} weight="fill" className="text-amber-500" />
-              <span>+ Encaixe Rápido</span>
+              <span>Encaixe rápido</span>
             </button>
 
             <button
@@ -557,16 +560,34 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
                 setNewAptServiceIds(services[0] ? [services[0].id] : []);
                 setNewAptOpen(true);
               }}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-600"
+              className="order-first col-span-2 inline-flex min-h-[48px] items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 sm:order-none sm:col-span-1 sm:min-h-[40px] sm:text-xs"
             >
               <Plus size={15} weight="bold" />
-              <span>+ Novo Agendamento</span>
+              <span>Novo agendamento</span>
             </button>
           </div>
         </div>
 
         {/* Filtros */}
-        <div data-tour="agenda-filters" className="mt-4 pt-3 border-t border-stone-800 grid grid-cols-1 gap-2.5 md:grid-cols-12">
+        <div data-tour="agenda-filters" className="mt-4 border-t border-stone-800 pt-3">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          aria-expanded={filtersOpen}
+          className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border border-stone-800 bg-stone-950 px-3.5 text-xs font-semibold text-stone-100 md:hidden"
+        >
+          <span className="inline-flex items-center gap-2">
+            <FunnelSimple size={16} />
+            Filtros
+            {(selectedStaffId !== 'ALL' ? 1 : 0) + (selectedStatus !== 'ALL' ? 1 : 0) + (searchQuery.trim() ? 1 : 0) > 0 && (
+              <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
+                {(selectedStaffId !== 'ALL' ? 1 : 0) + (selectedStatus !== 'ALL' ? 1 : 0) + (searchQuery.trim() ? 1 : 0)}
+              </span>
+            )}
+          </span>
+          <CaretDown size={14} className={`transition-transform ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+        </button>
+        <div className={`${filtersOpen ? 'grid' : 'hidden'} mt-2.5 grid-cols-1 gap-2.5 md:mt-0 md:grid md:grid-cols-12`}>
           <div className="md:col-span-6 flex items-center gap-1.5 overflow-x-auto pb-1">
             <button
               type="button"
@@ -641,6 +662,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
               />
             </div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -1299,17 +1321,17 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
             </p>
           )}
 
-          <div className="flex items-center justify-end gap-2 border-t border-stone-800 pt-3">
+          <div className="grid grid-cols-2 gap-2 border-t border-stone-800 pt-3 sm:flex sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={() => setWalkInOpen(false)}
-              className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-4 py-1.5 text-xs font-medium text-stone-300"
+              className="min-h-[44px] rounded-lg border border-stone-800 bg-stone-950 px-4 py-1.5 text-xs font-medium text-stone-300 sm:min-h-[38px]"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+              className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 sm:min-h-[38px]"
             >
               <Scissors size={15} weight="bold" />
               <span>Adicionar na Agenda</span>
@@ -1498,17 +1520,17 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
             </p>
           )}
 
-          <div className="flex items-center justify-end gap-2 border-t border-stone-800 pt-3">
+          <div className="grid grid-cols-2 gap-2 border-t border-stone-800 pt-3 sm:flex sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={() => setNewAptOpen(false)}
-              className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-4 py-1.5 text-xs font-medium text-stone-300"
+              className="min-h-[44px] rounded-lg border border-stone-800 bg-stone-950 px-4 py-1.5 text-xs font-medium text-stone-300 sm:min-h-[38px]"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+              className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 sm:min-h-[38px]"
             >
               <CheckCircle size={15} weight="bold" />
               <span>Salvar Agendamento</span>

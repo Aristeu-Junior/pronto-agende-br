@@ -828,6 +828,7 @@ function Dashboard({
           </div>
         )}
 
+        <div key={activeTab} className="tab-enter">
         {activeTab === 'AGENDA' && (
           <AgendaModule
             appointments={appointments}
@@ -924,6 +925,7 @@ function Dashboard({
             <AdminUsersModule currentUserId={userId} onPendingCount={setPendingAccounts} />
           </>
         )}
+        </div>
       </main>
 
       <nav aria-label="Navegação Mobile" className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-stone-950/95 backdrop-blur-lg border-t border-stone-800 px-1 py-1.5 flex items-center justify-around">

@@ -92,8 +92,11 @@ export const GuidedTour: React.FC<GuidedTourProps> = ({ steps, onClose }) => {
       requestAnimationFrame(() => requestAnimationFrame(measure));
     };
     requestAnimationFrame(settle);
+    // A aba nova entra animada (320 ms): mede de novo quando ela assentar.
+    const late = window.setTimeout(measure, 420);
     return () => {
       cancelled = true;
+      window.clearTimeout(late);
     };
   }, [index, measure]);
 
