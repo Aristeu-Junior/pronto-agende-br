@@ -26,6 +26,7 @@ import { formatBRL, formatPhoneBR, isValidPhoneBR } from '../utils/validators';
 import { LightDismissDialog } from './LightDismissDialog';
 import { MonthCalendar } from './MonthCalendar';
 import { SlotPicker } from './SlotPicker';
+import { HelpTip } from './HelpTip';
 import {
   addDaysISO,
   formatDateBR,
@@ -509,8 +510,12 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
       <div className="border-b border-stone-800 bg-stone-950 px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-stone-100">
+            <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-stone-100">
               Agenda do Dia
+              <HelpTip
+                label="Agenda do Dia"
+                text="Seus horários do dia. Escolha a data no calendário, veja quem vem e toque em um agendamento para editar ou chamar no WhatsApp. Use Encaixe Rápido para quem chega sem hora marcada."
+              />
             </h1>
             <p className="mt-0.5 text-xs text-stone-300">
               Clique em qualquer agendamento para editar horário, valor, sinal pago ou enviar WhatsApp.
@@ -521,6 +526,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
             {onOpenReminders && (
               <button
                 type="button"
+                data-tour="agenda-reminders"
                 onClick={onOpenReminders}
                 className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-stone-800 bg-stone-950 px-3.5 py-2 text-xs font-semibold text-stone-100"
               >
@@ -544,6 +550,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
 
             <button
               type="button"
+              data-tour="agenda-new"
               onClick={() => {
                 setNewAptError('');
                 setNewAptStaffId(professionals[0]?.id || '');

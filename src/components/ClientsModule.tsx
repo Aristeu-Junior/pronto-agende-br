@@ -1,3 +1,4 @@
+import { HelpTip } from './HelpTip';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Warning as AlertTriangle,
@@ -163,7 +164,12 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar cliente por nome, WhatsApp ou CPF..."
-            className="w-full bg-stone-950 border border-stone-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+            className="w-full bg-stone-950 border border-stone-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+          />
+          <HelpTip
+            label="Clientes"
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+            text="Sua lista de clientes. Busque por nome, WhatsApp ou CPF, toque em um cliente para editar a ficha (visitas, faltas, observações) ou chamar no WhatsApp."
           />
         </div>
 

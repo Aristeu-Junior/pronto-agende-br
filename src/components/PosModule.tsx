@@ -1,3 +1,4 @@
+import { HelpTip } from './HelpTip';
 import React, { useMemo, useState } from 'react';
 import {
   CheckCircle as CheckCircle2,
@@ -300,8 +301,12 @@ export const PosModule: React.FC<PosModuleProps> = ({
             <div className="flex items-center gap-2.5">
               <Wallet className="w-5 h-5 text-amber-700" />
               <div>
-                <h2 className="text-base font-bold text-stone-100">
+                <h2 className="flex items-center gap-2 text-base font-bold text-stone-100">
                   Lançar Recebimento no Caixa (Em 3 Passos Simples)
+                  <HelpTip
+                    label="Caixa"
+                    text="Registre aqui cada atendimento pago: quem atendeu, o serviço, o valor e como o cliente pagou. Os quadros do topo somam o total do dia, o Pix, o cartão, o dinheiro e a comissão dos barbeiros."
+                  />
                 </h2>
                 <p className="text-xs text-stone-400">
                   Escolha quem cortou, confira ou edite o valor do corte e confirme como o cliente pagou.

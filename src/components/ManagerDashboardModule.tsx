@@ -250,6 +250,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
       <AccordionSection
         id="barbearia"
         title="Dados da barbearia"
+        help="Nome, WhatsApp e chave Pix da barbearia. O WhatsApp é usado nos lembretes e o Pix, no sinal da reserva."
         summary={`${business.name}${business.phone ? ' · WhatsApp ok' : ' · falta WhatsApp'}${business.pixKey ? ' · Pix ok' : ' · falta Pix'}`}
         icon={<Building2 className="h-5 w-5" />}
       >
@@ -369,6 +370,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
       <AccordionSection
         id="servicos"
         title="Serviços e preços"
+        help="O que você vende e quanto custa. Esses serviços aparecem na reserva do cliente e no Caixa."
         summary={`${services.length} ${services.length === 1 ? 'serviço' : 'serviços'}`}
         icon={<Scissors className="h-5 w-5" />}
       >
@@ -499,6 +501,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
       <AccordionSection
         id="equipe"
         title="Barbeiros e comissão"
+        help="Sua equipe e a porcentagem de comissão de cada pessoa. O Caixa usa isso para calcular o repasse."
         summary={`${staff.length} ${staff.length === 1 ? 'profissional' : 'profissionais'}`}
         icon={<Users className="h-5 w-5" />}
       >
@@ -622,6 +625,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
       <AccordionSection
         id="escala"
         title="Escala de trabalho"
+        help="Os dias e horários em que cada barbeiro atende, as pausas e as folgas. Daqui saem os horários livres da reserva."
         summary={weekSummary(staff.find((m) => m.role === 'PROFESSIONAL'))}
         icon={<CalendarBlank className="h-5 w-5" />}
       >
@@ -637,6 +641,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
       <AccordionSection
         id="extratos"
         title="Extratos e comprovantes"
+        help="Guarde aqui comprovantes e extratos para conferir entradas e saídas."
         summary={`${bankStatements.length} ${bankStatements.length === 1 ? 'lançamento' : 'lançamentos'}`}
         icon={<FileText className="h-5 w-5" />}
       >
@@ -767,6 +772,7 @@ export const ManagerDashboardModule: React.FC<ManagerDashboardModuleProps> = ({
       <AccordionSection
         id="regras"
         title="Sinal Pix e limpeza de dados"
+        help="Defina a porcentagem de sinal cobrada na reserva e o prazo de cancelamento. Também limpa os dados quando você quiser recomeçar."
         summary={`Sinal ${business.noShowDepositPercent}% · cancelamento até ${business.cancelNoticeHours}h antes`}
         icon={<Sliders className="h-5 w-5" />}
       >

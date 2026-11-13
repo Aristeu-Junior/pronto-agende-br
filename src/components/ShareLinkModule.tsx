@@ -1,3 +1,4 @@
+import { HelpTip } from './HelpTip';
 import React, { useState } from 'react';
 import { CheckCircle, Copy, ArrowSquareOut, WarningCircle, WhatsappLogo } from '@phosphor-icons/react';
 import { BusinessConfig, ServiceItem, StaffMember } from '../types';
@@ -41,7 +42,13 @@ export const ShareLinkModule: React.FC<{
   return (
     <section className="mx-auto max-w-3xl space-y-5">
       <div className="rounded-2xl border border-stone-800 bg-stone-900 p-5 space-y-3">
-        <h1 className="text-lg font-bold text-stone-100">Link de agendamento dos seus clientes</h1>
+        <h1 className="flex items-center gap-2 text-lg font-bold text-stone-100">
+          Link de agendamento dos seus clientes
+          <HelpTip
+            label="Link de reserva"
+            text="Este é o endereço da sua página de reservas. Copie e mande no WhatsApp ou ponha na bio do Instagram: o cliente escolhe o horário livre e a reserva aparece na sua Agenda."
+          />
+        </h1>
         <p className="text-xs text-stone-400">
           Envie este link no WhatsApp ou ponha na bio do Instagram. O cliente escolhe serviço, dia e horário livre, e a
           reserva cai direto na sua Agenda.

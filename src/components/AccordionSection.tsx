@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CaretDown } from '@phosphor-icons/react';
+import { HelpTip } from './HelpTip';
 
 const STORAGE_KEY = 'pronto_agende_br_ajustes_open';
 
@@ -17,12 +18,14 @@ interface AccordionSectionProps {
   id: string;
   title: string;
   summary?: string;
+  /** Explicação curta mostrada na bolinha de ajuda. */
+  help?: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
 }
 
 /** Bloco recolhível: título e resumo sempre visíveis, conteúdo só ao abrir. Lembra o que ficou aberto. */
-export const AccordionSection: React.FC<AccordionSectionProps> = ({ id, title, summary, icon, children }) => {
+export const AccordionSection: React.FC<AccordionSectionProps> = ({ id, title, summary, help, icon, children }) => {
   const [open, setOpen] = useState(() => readOpen().includes(id));
 
   const toggle = () => {
@@ -37,7 +40,12 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({ id, title, s
   };
 
   return (
-    <section className="rounded-2xl border border-stone-800 bg-stone-900">
+    <section className="relative rounded-2xl border border-stone-800 bg-stone-900">
+      {help && (
+        <span className="absolute right-12 top-[30px] z-10 -translate-y-1/2">
+          <HelpTip label={title} text={help} />
+        </span>
+      )}
       <h2>
         <button
           type="button"
@@ -47,7 +55,7 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({ id, title, s
           className="flex min-h-[60px] w-full items-center gap-3 px-4 py-3 text-left cursor-pointer sm:px-5"
         >
           {icon && <span className="shrink-0 text-amber-700">{icon}</span>}
-          <span className="min-w-0 flex-1">
+          <span className={`min-w-0 flex-1 ${help ? 'pr-8' : ''}`}>
             <span className="block text-sm font-bold text-stone-100">{title}</span>
             {summary && <span className="mt-0.5 block truncate text-xs text-stone-400">{summary}</span>}
           </span>

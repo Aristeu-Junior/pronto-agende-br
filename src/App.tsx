@@ -6,6 +6,7 @@ import {
   ArrowSquareOut as ExternalLink,
   SquaresFour as LayoutDashboard,
   PencilSimple as Pencil,
+  Question,
   Scissors,
   ShieldCheck,
   SignOut,
@@ -25,6 +26,8 @@ import {
   UserPermissions,
 } from './types';
 import ThemeToggle from './components/ThemeToggle';
+import GuidedTour from './components/GuidedTour';
+import { buildTourSteps } from './config/tourSteps';
 import { sanitizeUserText } from './utils/security';
 import { servicesSpan } from './utils/schedule';
 import { friendlyError, supabase } from './lib/supabase';
@@ -651,6 +654,36 @@ function Dashboard({
     URL.revokeObjectURL(url);
   };
 
+  const tourKey = `pa-tour-v1:${userId}`;
+  const [tourOpen, setTourOpen] = useState(false);
+  const startTour = () => {
+    setActiveTab('AGENDA');
+    setTourOpen(true);
+  };
+  const closeTour = (completed: boolean) => {
+    setTourOpen(false);
+    setActiveTab('AGENDA');
+    try {
+      localStorage.setItem(tourKey, completed ? 'done' : 'skipped');
+    } catch {
+      /* sem armazenamento: o tutorial pode reaparecer no próximo acesso */
+    }
+  };
+  useEffect(() => {
+    if (!loaded) return;
+    let seen = false;
+    try {
+      seen = localStorage.getItem(tourKey) !== null;
+    } catch {
+      seen = true;
+    }
+    if (seen) return;
+    const t = window.setTimeout(() => setTourOpen(true), 700);
+    return () => window.clearTimeout(t);
+  }, [loaded, tourKey]);
+
+  const tourSteps = buildTourSteps(setActiveTab);
+
   const navItems: Array<{ id: ActiveTab; label: string; shortLabel: string; icon: React.ReactNode; badge?: number }> = [
     {
       id: 'AGENDA',
@@ -696,6 +729,7 @@ function Dashboard({
               ) : (
                 <button
                   type="button"
+                  data-tour="business-name"
                   onClick={() => setEditingHeaderName(true)}
                   title="Clique para editar o nome da sua barbearia"
                   className="block text-xs text-stone-400 hover:text-amber-800 flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-xs cursor-pointer"
@@ -713,6 +747,7 @@ function Dashboard({
               return (
                 <button
                   key={item.id}
+                  data-tour={`nav-${item.id}`}
                   onClick={() => setActiveTab(item.id)}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                     active ? 'bg-amber-500 text-stone-950 font-semibold shadow-sm' : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
@@ -731,7 +766,20 @@ function Dashboard({
           </nav>
 
           <div className="flex items-center gap-2 shrink-0">
-            <ThemeToggle />
+            <span data-tour="theme" className="inline-flex">
+              <ThemeToggle />
+            </span>
+            <button
+              type="button"
+              data-tour="help"
+              onClick={startTour}
+              title="Ver o tutorial de novo"
+              aria-label="Ver o tutorial de novo"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-300 hover:border-amber-500/50 text-xs font-medium cursor-pointer"
+            >
+              <Question className="w-4 h-4" weight="bold" />
+              <span className="hidden sm:inline">Tutorial</span>
+            </button>
             {profile.is_admin && (
               <button
                 type="button"
@@ -747,6 +795,7 @@ function Dashboard({
             )}
             <button
               type="button"
+              data-tour="account"
               onClick={() => setActiveTab('ACCOUNT')}
               title="Minha conta"
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-300 hover:border-amber-500/50 text-xs font-medium cursor-pointer"
@@ -766,6 +815,8 @@ function Dashboard({
           </div>
         </div>
       </header>
+
+      {tourOpen && <GuidedTour steps={tourSteps} onClose={closeTour} />}
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-6">
         {syncError && (
@@ -881,6 +932,7 @@ function Dashboard({
           return (
             <button
               key={item.id}
+              data-tour={`nav-${item.id}`}
               onClick={() => setActiveTab(item.id)}
               className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
                 active ? 'text-amber-700 bg-amber-500/10 font-semibold' : 'text-stone-400 hover:text-stone-200'
