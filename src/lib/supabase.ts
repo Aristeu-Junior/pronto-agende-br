@@ -40,6 +40,8 @@ export function friendlyError(message: string | undefined | null): string {
     ['password should be at least', 'A senha precisa ter pelo menos 8 caracteres.'],
     ['rate limit', 'Muitas tentativas. Aguarde alguns minutos.'],
     ['nao_autorizado', 'Você não tem permissão para isso.'],
+    ['limite_de_chamados', 'Você enviou muitos chamados seguidos. Tente de novo em uma hora.'],
+    ['support_tickets', 'O Suporte ainda não está ativado neste sistema. Avise o administrador.'],
     ['23p01', 'Já existe um agendamento nesse horário para esse profissional.'],
     ['failed to fetch', 'Sem conexão com o servidor. Verifique a internet.'],
     ['networkerror', 'Sem conexão com o servidor. Verifique a internet.'],

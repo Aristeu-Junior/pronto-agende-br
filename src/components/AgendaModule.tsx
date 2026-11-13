@@ -28,6 +28,7 @@ import { LightDismissDialog } from './LightDismissDialog';
 import { MonthCalendar } from './MonthCalendar';
 import { SlotPicker } from './SlotPicker';
 import { HelpTip } from './HelpTip';
+import { BTN_GHOST, BTN_PRIMARY, FIELD, LABEL, SECTION, chip } from './formStyles';
 import {
   addDaysISO,
   formatDateBR,
@@ -123,6 +124,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
   const [selectedDate, setSelectedDate] = useState<string>(localISODate());
   const [calendarOpen, setCalendarOpen] = useState<boolean>(false);
   const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
+  const [showAllSlots, setShowAllSlots] = useState<boolean>(false);
   const [pendingSlot, setPendingSlot] = useState<string>('');
   const [newAptDate, setNewAptDate] = useState<string>(localISODate());
   const [editDate, setEditDate] = useState<string>(localISODate());
@@ -1237,83 +1239,86 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
         </aside>
       </div>
 
-      {/* Modal 1: Encaixe Rápido */}
+      {/* Encaixe rápido: só o essencial; WhatsApp e valor ficam em "Mais opções" */}
       <LightDismissDialog
         open={walkInOpen}
         onClose={() => setWalkInOpen(false)}
-        title="Encaixe Rápido de Balcão"
-        subtitle="Para clientes que chegaram agora sem hora marcada."
+        title="Encaixe rápido"
+        subtitle="Cliente que chegou agora, sem hora marcada."
       >
         <form onSubmit={handleWalkInSubmit} className="space-y-4" noValidate>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="walkin-name" className="text-xs font-semibold text-stone-100">
-                Nome do Cliente
-              </label>
-              <input
-                id="walkin-name"
-                type="text"
-                value={walkInName}
-                onChange={(e) => setWalkInName(e.target.value)}
-                placeholder="Ex.: Lucas"
-                className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="walkin-phone" className="text-xs font-semibold text-stone-100">
-                WhatsApp (Opcional)
-              </label>
-              <input
-                id="walkin-phone"
-                type="tel"
-                inputMode="numeric"
-                value={walkInPhone}
-                onChange={(e) => setWalkInPhone(formatPhoneBR(e.target.value))}
-                placeholder="(11) 99999-0000"
-                className="num-tabular min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
-              />
-            </div>
+          <div>
+            <label htmlFor="walkin-name" className={LABEL}>
+              Nome do cliente
+            </label>
+            <input
+              id="walkin-name"
+              type="text"
+              value={walkInName}
+              onChange={(e) => setWalkInName(e.target.value)}
+              placeholder="Ex.: Lucas"
+              className={FIELD}
+            />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="walkin-service" className="text-xs font-semibold text-stone-100">
-                Serviço
-              </label>
-              <select
-                id="walkin-service"
-                value={walkInServiceId}
-                onChange={(e) => {
-                  setWalkInServiceId(e.target.value);
-                  const found = services.find((s) => s.id === e.target.value);
-                  if (found) setWalkInPrice(String(found.price));
-                }}
-                className="min-h-[38px] w-full rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
-              >
-                {services.map((srv) => (
-                  <option key={srv.id} value={srv.id}>
-                    {srv.name} — {formatBRL(srv.price)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="walkin-price" className="text-xs font-semibold text-stone-100">
-                Valor Cobrado (R$)
-              </label>
-              <input
-                id="walkin-price"
-                type="number"
-                min={0}
-                step={1}
-                value={walkInPrice}
-                onChange={(e) => setWalkInPrice(e.target.value)}
-                className="num-tabular min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs font-semibold text-stone-100"
-              />
-            </div>
+          <div>
+            <label htmlFor="walkin-service" className={LABEL}>
+              Serviço
+            </label>
+            <select
+              id="walkin-service"
+              value={walkInServiceId}
+              onChange={(e) => {
+                setWalkInServiceId(e.target.value);
+                const found = services.find((s) => s.id === e.target.value);
+                if (found) setWalkInPrice(String(found.price));
+              }}
+              className={FIELD}
+            >
+              {services.map((srv) => (
+                <option key={srv.id} value={srv.id}>
+                  {srv.name} — {formatBRL(srv.price)}
+                </option>
+              ))}
+            </select>
           </div>
+
+          <details className="group rounded-xl border border-stone-800">
+            <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-2 px-3.5 text-xs font-semibold text-stone-300">
+              <span>Mais opções (WhatsApp e valor)</span>
+              <CaretDown size={14} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="space-y-3 border-t border-stone-800 p-3.5">
+              <div>
+                <label htmlFor="walkin-phone" className={LABEL}>
+                  WhatsApp (opcional)
+                </label>
+                <input
+                  id="walkin-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  value={walkInPhone}
+                  onChange={(e) => setWalkInPhone(formatPhoneBR(e.target.value))}
+                  placeholder="(11) 99999-0000"
+                  className={`${FIELD} num-tabular`}
+                />
+              </div>
+              <div>
+                <label htmlFor="walkin-price" className={LABEL}>
+                  Valor cobrado (R$)
+                </label>
+                <input
+                  id="walkin-price"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={walkInPrice}
+                  onChange={(e) => setWalkInPrice(e.target.value)}
+                  className={`${FIELD} num-tabular`}
+                />
+              </div>
+            </div>
+          </details>
 
           {walkInError && (
             <p role="alert" className="text-xs font-medium text-amber-800">
@@ -1321,198 +1326,195 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-2 border-t border-stone-800 pt-3 sm:flex sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={() => setWalkInOpen(false)}
-              className="min-h-[44px] rounded-lg border border-stone-800 bg-stone-950 px-4 py-1.5 text-xs font-medium text-stone-300 sm:min-h-[38px]"
-            >
+          <div className="dialog-actions">
+            <button type="button" onClick={() => setWalkInOpen(false)} className={BTN_GHOST}>
               Cancelar
             </button>
-            <button
-              type="submit"
-              className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 sm:min-h-[38px]"
-            >
-              <Scissors size={15} weight="bold" />
-              <span>Adicionar na Agenda</span>
+            <button type="submit" className={BTN_PRIMARY}>
+              <Scissors size={16} weight="bold" />
+              Adicionar
             </button>
           </div>
         </form>
       </LightDismissDialog>
 
-      {/* Modal 2: Novo Agendamento */}
+      {/* Novo agendamento: Cliente, Serviço, Quando. Sinal e "outro horário" ficam em "Mais opções" */}
       <LightDismissDialog
         open={newAptOpen}
         onClose={() => setNewAptOpen(false)}
-        title="Novo Agendamento"
-        subtitle="Preencha os dados do cliente ou selecione um cliente já cadastrado."
+        title="Novo agendamento"
+        subtitle="Três passos: cliente, serviço e horário."
       >
-        <form onSubmit={handleNewAppointmentSubmit} className="space-y-4" noValidate>
-          {clients.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-stone-100">
-                Preencher com Cliente Cadastrado (Opcional)
-              </label>
-              <select
-                defaultValue=""
-                onChange={(e) => {
-                  const found = clients.find((c) => c.id === e.target.value);
-                  if (found) {
-                    setNewAptClientName(found.fullName);
-                    setNewAptClientPhone(found.phoneWhatsapp);
-                  }
-                }}
-                className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
-              >
-                <option value="">Digitar manualmente abaixo...</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.fullName} — {c.phoneWhatsapp}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-stone-100">
-                Nome do Cliente *
+        <form onSubmit={handleNewAppointmentSubmit} className="space-y-6" noValidate>
+          <section className="space-y-3">
+            <p className={SECTION}>1 · Cliente</p>
+            <div>
+              <label htmlFor="apt-name" className={LABEL}>
+                Nome *
               </label>
               <input
+                id="apt-name"
                 type="text"
+                list="apt-clients"
+                autoComplete="off"
                 value={newAptClientName}
-                onChange={(e) => setNewAptClientName(e.target.value)}
-                placeholder="Ex.: Matheus"
-                className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setNewAptClientName(v);
+                  const found = clients.find((c) => c.fullName.toLowerCase() === v.trim().toLowerCase());
+                  if (found && !newAptClientPhone) setNewAptClientPhone(found.phoneWhatsapp);
+                }}
+                placeholder="Digite ou escolha um cliente"
+                className={FIELD}
               />
+              <datalist id="apt-clients">
+                {clients.map((c) => (
+                  <option key={c.id} value={c.fullName} />
+                ))}
+              </datalist>
             </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-stone-100">
+            <div>
+              <label htmlFor="apt-phone" className={LABEL}>
                 WhatsApp
               </label>
               <input
+                id="apt-phone"
                 type="tel"
                 inputMode="numeric"
                 value={newAptClientPhone}
                 onChange={(e) => setNewAptClientPhone(formatPhoneBR(e.target.value))}
                 placeholder="(11) 99999-0000"
-                className="num-tabular min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
+                className={`${FIELD} num-tabular`}
               />
             </div>
-          </div>
+          </section>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-stone-100">
-                Profissional
-              </label>
-              <select
-                value={newAptStaffId}
-                onChange={(e) => setNewAptStaffId(e.target.value)}
-                className="min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
-              >
-                {professionals.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-stone-100">
-                Data
-              </label>
-              <input
-                type="date"
-                value={newAptDate}
-                min={localISODate()}
-                onChange={(e) => {
-                  setNewAptDate(e.target.value);
-                  setNewAptTime('');
-                  if (newAptError) setNewAptError('');
-                }}
-                className="num-tabular min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-stone-100">
-                Sinal Pix Pago (R$)
-              </label>
-              <input
-                type="number"
-                min={0}
-                step={1}
-                value={newAptDeposit}
-                onChange={(e) => setNewAptDeposit(e.target.value)}
-                className="num-tabular min-h-[38px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-stone-100">
-              Horários livres em {formatDateBR(newAptDate)}
-            </span>
-            <SlotPicker
-              slots={newAptSlots}
-              value={newAptTime}
-              onChange={(t) => {
-                setNewAptTime(t);
-                if (newAptError) setNewAptError('');
-              }}
-              emptyMessage="Sem horários livres para esse profissional e serviço nessa data (dia de folga, fora da escala ou lotado)."
-            />
-            <label className="mt-1 flex items-center gap-2 text-xs text-stone-300">
-              Outro horário
-              <input
-                type="time"
-                value={newAptTime}
-                onChange={(e) => {
-                  setNewAptTime(e.target.value);
-                  if (newAptError) setNewAptError('');
-                }}
-                className="num-tabular min-h-[36px] rounded-lg border border-stone-800 bg-stone-950 px-3 text-xs text-stone-100"
-              />
-              <span className="text-[11px]">(fora da grade; o sistema avisa se houver conflito)</span>
-            </label>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-stone-100">
-              Serviços
-            </span>
-            <div className="divide-y divide-stone-800 rounded-lg border border-stone-800 bg-tint-50/50">
+          <section className="space-y-3">
+            <p className={SECTION}>2 · Serviço</p>
+            <div role="group" aria-label="Serviços" className="flex flex-wrap gap-2">
               {services.map((srv) => {
                 const checked = newAptServiceIds.includes(srv.id);
                 return (
-                  <label
+                  <button
                     key={srv.id}
-                    className="flex cursor-pointer items-center justify-between px-3 py-2 text-xs"
+                    type="button"
+                    aria-pressed={checked}
+                    onClick={() => {
+                      toggleNewAptService(srv.id);
+                      if (newAptError) setNewAptError('');
+                    }}
+                    className={chip(checked)}
                   >
-                    <span className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => {
-                          toggleNewAptService(srv.id);
-                          if (newAptError) setNewAptError('');
-                        }}
-                        className="h-4 w-4 accent-amber-500"
-                      />
-                      <span className="font-medium text-stone-100">{srv.name}</span>
-                    </span>
-                    <span className="num-tabular font-semibold text-stone-100">
-                      {formatBRL(srv.price)}
-                    </span>
-                  </label>
+                    {checked && <CheckCircle size={14} weight="fill" className="text-amber-500" />}
+                    {srv.name} · {formatBRL(srv.price)}
+                  </button>
                 );
               })}
             </div>
-          </div>
+            {newAptServiceIds.length > 1 && (
+              <p className="text-xs text-stone-400">
+                Total: <strong className="num-tabular text-stone-100">{formatBRL(services.filter((s) => newAptServiceIds.includes(s.id)).reduce((a, s) => a + s.price, 0))}</strong>
+              </p>
+            )}
+          </section>
+
+          <section className="space-y-3">
+            <p className={SECTION}>3 · Quando</p>
+            <div className={`grid grid-cols-1 gap-3 ${professionals.length > 1 ? 'sm:grid-cols-2' : ''}`}>
+              {professionals.length > 1 && (
+                <div>
+                  <label htmlFor="apt-staff" className={LABEL}>
+                    Barbeiro
+                  </label>
+                  <select id="apt-staff" value={newAptStaffId} onChange={(e) => setNewAptStaffId(e.target.value)} className={FIELD}>
+                    {professionals.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label htmlFor="apt-date" className={LABEL}>
+                  Dia
+                </label>
+                <input
+                  id="apt-date"
+                  type="date"
+                  value={newAptDate}
+                  min={localISODate()}
+                  onChange={(e) => {
+                    setNewAptDate(e.target.value);
+                    setNewAptTime('');
+                    setShowAllSlots(false);
+                    if (newAptError) setNewAptError('');
+                  }}
+                  className={`${FIELD} num-tabular`}
+                />
+              </div>
+            </div>
+            <div>
+              <span className={LABEL}>Horários livres em {formatDateBR(newAptDate)}</span>
+              <SlotPicker
+                slots={showAllSlots ? newAptSlots : newAptSlots.filter((t, i) => i < 8 || t === newAptTime)}
+                value={newAptTime}
+                onChange={(t) => {
+                  setNewAptTime(t);
+                  if (newAptError) setNewAptError('');
+                }}
+                emptyMessage="Sem horários livres nesse dia (folga, fora da escala ou lotado). Tente outro dia."
+              />
+              {newAptSlots.length > 8 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllSlots((v) => !v)}
+                  className="mt-2 min-h-[40px] text-xs font-semibold text-amber-700 hover:text-amber-800 cursor-pointer"
+                >
+                  {showAllSlots ? 'Ver menos horários' : `Ver todos os horários (${newAptSlots.length})`}
+                </button>
+              )}
+            </div>
+          </section>
+
+          <details className="group rounded-xl border border-stone-800">
+            <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-2 px-3.5 text-xs font-semibold text-stone-300">
+              <span>Mais opções (sinal Pix e outro horário)</span>
+              <CaretDown size={14} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="space-y-3 border-t border-stone-800 p-3.5">
+              <div>
+                <label htmlFor="apt-deposit" className={LABEL}>
+                  Sinal Pix já pago (R$)
+                </label>
+                <input
+                  id="apt-deposit"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={newAptDeposit}
+                  onChange={(e) => setNewAptDeposit(e.target.value)}
+                  className={`${FIELD} num-tabular`}
+                />
+              </div>
+              <div>
+                <label htmlFor="apt-time" className={LABEL}>
+                  Outro horário (fora da grade)
+                </label>
+                <input
+                  id="apt-time"
+                  type="time"
+                  value={newAptTime}
+                  onChange={(e) => {
+                    setNewAptTime(e.target.value);
+                    if (newAptError) setNewAptError('');
+                  }}
+                  className={`${FIELD} num-tabular`}
+                />
+                <p className="mt-1 text-[11px] text-stone-400">O sistema avisa se houver conflito.</p>
+              </div>
+            </div>
+          </details>
 
           {newAptError && (
             <p role="alert" className="text-xs font-medium text-amber-800">
@@ -1520,20 +1522,13 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-2 border-t border-stone-800 pt-3 sm:flex sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={() => setNewAptOpen(false)}
-              className="min-h-[44px] rounded-lg border border-stone-800 bg-stone-950 px-4 py-1.5 text-xs font-medium text-stone-300 sm:min-h-[38px]"
-            >
+          <div className="dialog-actions">
+            <button type="button" onClick={() => setNewAptOpen(false)} className={BTN_GHOST}>
               Cancelar
             </button>
-            <button
-              type="submit"
-              className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 sm:min-h-[38px]"
-            >
-              <CheckCircle size={15} weight="bold" />
-              <span>Salvar Agendamento</span>
+            <button type="submit" className={BTN_PRIMARY}>
+              <CheckCircle size={16} weight="bold" />
+              Agendar
             </button>
           </div>
         </form>

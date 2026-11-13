@@ -343,3 +343,54 @@ export async function deleteAllDocs(businessId: string) {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const isUuid = (s: string) => UUID_RE.test(s);
+
+/* ---------- Suporte (chamados) ---------- */
+
+export type TicketKind = 'SUGGESTION' | 'PROBLEM' | 'QUESTION' | 'DATA_COPY';
+export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE';
+
+export interface Ticket {
+  id: string;
+  user_id: string;
+  email: string;
+  kind: TicketKind;
+  message: string;
+  status: TicketStatus;
+  admin_note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const TICKET_KIND_LABEL: Record<TicketKind, string> = {
+  SUGGESTION: 'Sugestão',
+  PROBLEM: 'Problema',
+  QUESTION: 'Dúvida',
+  DATA_COPY: 'Cópia dos dados',
+};
+
+export const TICKET_STATUS_LABEL: Record<TicketStatus, string> = {
+  OPEN: 'Aberto',
+  IN_PROGRESS: 'Em andamento',
+  DONE: 'Resolvido',
+};
+
+export async function createTicket(kind: TicketKind, message: string): Promise<void> {
+  // user_id, e-mail e situação vêm do servidor (gatilho); aqui só o tipo e o texto.
+  const { error } = await supabase.from('support_tickets').insert({ kind, message: message.trim() });
+  if (error) throw error;
+}
+
+export async function fetchTickets(): Promise<Ticket[]> {
+  const { data, error } = await supabase
+    .from('support_tickets')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (error) throw error;
+  return (data ?? []) as Ticket[];
+}
+
+export async function updateTicket(id: string, status: TicketStatus, note: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_update_ticket', { p_id: id, p_status: status, p_note: note });
+  if (error) throw error;
+}

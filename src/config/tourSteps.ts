@@ -1,6 +1,6 @@
 import type { TourStep } from '../components/GuidedTour';
 
-export type TourTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'PUBLIC_BOOKING' | 'MANAGER';
+export type TourTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'PUBLIC_BOOKING' | 'MANAGER' | 'SUPPORT';
 
 /**
  * Passos do tutorial de novo usuário. `go` troca a aba do app.
@@ -233,6 +233,36 @@ export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
       title: 'Sinal Pix e regras',
       body: 'Defina a porcentagem de sinal cobrada na reserva e o prazo de cancelamento.',
       onEnter: on('MANAGER'),
+    },
+
+    // ---------- Suporte ----------
+    {
+      section: 'Suporte',
+      target: 'nav-SUPPORT',
+      title: 'Sexta página: Suporte',
+      body: 'Aqui você fala com a equipe do ProntoAgende.',
+      onEnter: on('SUPPORT'),
+    },
+    {
+      section: 'Suporte',
+      target: 'support-form',
+      title: 'Fale com a gente',
+      body: 'Escolha Sugestão, Problema ou Dúvida, escreva e envie. Os administradores recebem na hora e respondem aqui mesmo.',
+      onEnter: on('SUPPORT'),
+    },
+    {
+      section: 'Suporte',
+      target: 'support-data',
+      title: 'Cópia dos seus dados',
+      body: 'Peça uma cópia de tudo que está na sua conta. O arquivo baixa na hora e o pedido fica registrado.',
+      onEnter: on('SUPPORT'),
+    },
+    {
+      section: 'Suporte',
+      target: 'support-list',
+      title: 'Meus chamados',
+      body: 'Abra para ver tudo que você já enviou, a situação de cada chamado e a resposta da equipe.',
+      onEnter: on('SUPPORT'),
     },
 
     // ---------- Topo ----------

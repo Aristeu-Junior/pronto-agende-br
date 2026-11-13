@@ -6,6 +6,7 @@ import {
   ArrowSquareOut as ExternalLink,
   SquaresFour as LayoutDashboard,
   PencilSimple as Pencil,
+  Headset,
   Question,
   Scissors,
   ShieldCheck,
@@ -27,6 +28,9 @@ import {
 } from './types';
 import ThemeToggle from './components/ThemeToggle';
 import GuidedTour from './components/GuidedTour';
+import { SupportModule } from './components/SupportModule';
+import { AdminTicketsModule } from './components/AdminTicketsModule';
+import { fetchTickets } from './lib/cloud';
 import { buildTourSteps } from './config/tourSteps';
 import { sanitizeUserText } from './utils/security';
 import { servicesSpan } from './utils/schedule';
@@ -63,7 +67,7 @@ import { AuthScreen, MfaChallengeScreen, OnboardingScreen, ResetPasswordScreen, 
 import { AccountModule } from './components/AccountModule';
 import { LegalPage } from './components/LegalPages';
 
-type ActiveTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'REMINDERS' | 'PUBLIC_BOOKING' | 'MANAGER' | 'ADMIN' | 'ACCOUNT';
+type ActiveTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'REMINDERS' | 'PUBLIC_BOOKING' | 'MANAGER' | 'SUPPORT' | 'ADMIN' | 'ACCOUNT';
 
 const ALL_PERMISSIONS: UserPermissions = {
   canAccessAgenda: true,
@@ -252,6 +256,8 @@ function Dashboard({
   const [pendingCheckoutAppointmentId, setPendingCheckoutAppointmentId] = useState<string | null>(null);
   const [editingHeaderName, setEditingHeaderName] = useState(false);
   const [pendingAccounts, setPendingAccounts] = useState(0);
+  const [openTickets, setOpenTickets] = useState(0);
+  const [adminView, setAdminView] = useState<'ACCOUNTS' | 'TICKETS'>('ACCOUNTS');
   const [syncError, setSyncError] = useState('');
 
   const [business, setBusiness] = useState<BusinessConfig>(initialBusiness);
@@ -633,6 +639,46 @@ function Dashboard({
     });
   };
 
+  const exportMyData = () => {
+    const payload = {
+      exportadoEm: new Date().toISOString(),
+      conta: profile.email,
+      barbearia: business,
+      equipe: staff,
+      servicos: services,
+      agendamentos: appointments,
+      clientes: clients,
+      vendasDoCaixa: transactions,
+      extratos: bankStatements,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `prontoagende-meus-dados-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  useEffect(() => {
+    if (!profile.is_admin) return;
+    let alive = true;
+    const count = async () => {
+      try {
+        const list = await fetchTickets();
+        if (alive) setOpenTickets(list.filter((t) => t.status === 'OPEN').length);
+      } catch {
+        /* tabela ainda não criada ou sem rede: sem contador */
+      }
+    };
+    void count();
+    const id = window.setInterval(count, 60000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [profile.is_admin]);
+
   const tourKey = `pa-tour-v1:${userId}`;
   const [tourOpen, setTourOpen] = useState(false);
   const startTour = () => {
@@ -675,17 +721,18 @@ function Dashboard({
     { id: 'CLIENTS', label: 'Clientes', shortLabel: 'Clientes', icon: <Users className="w-4 h-4" />, badge: clients.length },
     { id: 'PUBLIC_BOOKING', label: 'Link de Reserva', shortLabel: 'Reserva', icon: <ExternalLink className="w-4 h-4" /> },
     { id: 'MANAGER', label: 'Ajustes', shortLabel: 'Ajustes', icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: 'SUPPORT', label: 'Suporte', shortLabel: 'Suporte', icon: <Headset className="w-4 h-4" /> },
   ];
 
   if (!loaded && !syncError)
     return <main className="p-10 text-center text-sm text-stone-400">Carregando sua barbearia…</main>;
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col pb-20 md:pb-8">
+    <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col pb-24 xl:pb-8">
       <header className="sticky top-0 z-40 bg-stone-950/90 backdrop-blur-md border-b border-stone-800/80">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="hidden min-[360px]:flex w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-stone-950 shadow-lg shadow-amber-500/20 shrink-0">
+            <div className="hidden min-[400px]:flex w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-stone-950 shadow-lg shadow-amber-500/20 shrink-0">
               <Scissors className="w-5 h-5" weight="bold" />
             </div>
             <div className="min-w-0">
@@ -711,7 +758,7 @@ function Dashboard({
                   data-tour="business-name"
                   onClick={() => setEditingHeaderName(true)}
                   title="Clique para editar o nome da sua barbearia"
-                  className="block text-xs text-stone-400 hover:text-amber-800 flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-xs cursor-pointer"
+                  className="block text-xs text-stone-400 hover:text-amber-800 flex items-center gap-1.5 min-w-0 max-w-full sm:max-w-xs cursor-pointer"
                 >
                   <span className="truncate">{business.name}</span>
                   <Pencil className="w-3 h-3 text-amber-700 shrink-0" />
@@ -720,7 +767,7 @@ function Dashboard({
             </div>
           </div>
 
-          <nav aria-label="Navegação Principal" className="hidden lg:flex items-center gap-1 bg-stone-900/90 p-1 rounded-xl border border-stone-800">
+          <nav aria-label="Navegação Principal" className="hidden xl:flex items-center gap-1 bg-stone-900/90 p-1 rounded-xl border border-stone-800">
             {navItems.map((item) => {
               const active = activeTab === item.id;
               return (
@@ -767,8 +814,8 @@ function Dashboard({
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Contas</span>
-                {pendingAccounts > 0 && (
-                  <span className="rounded-full bg-amber-500 px-1.5 text-[11px] font-bold text-stone-950">{pendingAccounts}</span>
+                {pendingAccounts + openTickets > 0 && (
+                  <span className="rounded-full bg-amber-500 px-1.5 text-[11px] font-bold text-stone-950">{pendingAccounts + openTickets}</span>
                 )}
               </button>
             )}
@@ -896,18 +943,32 @@ function Dashboard({
           <AccountModule email={profile.email} isAdmin={profile.is_admin} onStartTour={startTour} onAccountDeleted={() => window.location.reload()} />
         )}
 
+        {activeTab === 'SUPPORT' && <SupportModule onDownloadData={exportMyData} />}
+
         {activeTab === 'ADMIN' && profile.is_admin && (
           <>
             <button type="button" onClick={() => setActiveTab('AGENDA')} className="mb-3 text-xs font-medium text-amber-700 hover:text-amber-800 cursor-pointer">
               ← Voltar para a Agenda
             </button>
-            <AdminUsersModule currentUserId={userId} onPendingCount={setPendingAccounts} />
+            <div role="group" aria-label="Área do administrador" className="mb-4 flex gap-2">
+              <button type="button" aria-pressed={adminView === 'ACCOUNTS'} onClick={() => setAdminView('ACCOUNTS')} className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-full border px-4 text-xs font-semibold cursor-pointer ${adminView === 'ACCOUNTS' ? 'border-amber-500 bg-amber-950 text-stone-100' : 'border-stone-800 text-stone-300'}`}>
+                Contas{pendingAccounts > 0 ? ` (${pendingAccounts})` : ''}
+              </button>
+              <button type="button" aria-pressed={adminView === 'TICKETS'} onClick={() => setAdminView('TICKETS')} className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-full border px-4 text-xs font-semibold cursor-pointer ${adminView === 'TICKETS' ? 'border-amber-500 bg-amber-950 text-stone-100' : 'border-stone-800 text-stone-300'}`}>
+                Chamados{openTickets > 0 ? ` (${openTickets})` : ''}
+              </button>
+            </div>
+            {adminView === 'ACCOUNTS' ? (
+              <AdminUsersModule currentUserId={userId} onPendingCount={setPendingAccounts} />
+            ) : (
+              <AdminTicketsModule onOpenCount={setOpenTickets} />
+            )}
           </>
         )}
         </div>
       </main>
 
-      <nav aria-label="Navegação Mobile" className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-stone-950/95 backdrop-blur-lg border-t border-stone-800 px-1 py-1.5 flex items-center justify-around">
+      <nav aria-label="Navegação Mobile" className="xl:hidden fixed bottom-0 inset-x-0 z-40 bg-stone-950/95 backdrop-blur-lg border-t border-stone-800 px-1 py-1.5 flex items-stretch justify-around">
         {navItems.map((item) => {
           const active = activeTab === item.id;
           return (
@@ -915,7 +976,7 @@ function Dashboard({
               key={item.id}
               data-tour={`nav-${item.id}`}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${
+              className={`flex min-w-0 flex-1 flex-col items-center justify-center py-1.5 px-0.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${
                 active ? 'text-amber-700 bg-amber-500/10 font-semibold' : 'text-stone-400 hover:text-stone-200'
               }`}
             >

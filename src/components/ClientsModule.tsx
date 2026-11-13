@@ -1,6 +1,9 @@
 import { HelpTip } from './HelpTip';
+import { LightDismissDialog } from './LightDismissDialog';
+import { BTN_GHOST, BTN_PRIMARY, FIELD, LABEL } from './formStyles';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  CaretDown,
   Warning as AlertTriangle,
   Check,
   WhatsappLogo as MessageCircle,
@@ -477,100 +480,80 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({
         </div>
       )}
 
-      {/* Modal Novo Cliente */}
-      {showNewModal && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-stone-900 border border-stone-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-3">
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-amber-700" />
-                <h3 className="text-base font-bold text-stone-100">
-                  Novo Cliente da Barbearia
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowNewModal(false)}
-                className="text-xs text-stone-400 hover:text-stone-200"
-              >
-                Fechar
-              </button>
-            </div>
+      {/* Novo cliente: só nome e WhatsApp; o resto fica em "Mais detalhes" */}
+      <LightDismissDialog
+        open={showNewModal}
+        onClose={() => setShowNewModal(false)}
+        title="Novo cliente"
+        subtitle="Só nome e WhatsApp. O resto é opcional."
+      >
+        <form onSubmit={handleCreateClient} className="space-y-4">
+          <div>
+            <label className={LABEL}>Nome *</label>
+            <input
+              type="text"
+              required
+              autoFocus
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Ex.: Lucas Oliveira"
+              className={FIELD}
+            />
+          </div>
 
-            <form onSubmit={handleCreateClient} className="space-y-4">
+          <div>
+            <label className={LABEL}>WhatsApp (com DDD) *</label>
+            <input
+              type="tel"
+              required
+              inputMode="numeric"
+              value={newPhone}
+              onChange={(e) => setNewPhone(e.target.value)}
+              placeholder="(11) 99999-0000"
+              className={FIELD}
+            />
+          </div>
+
+          <details className="group rounded-xl border border-stone-800">
+            <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-2 px-3.5 text-xs font-semibold text-stone-300">
+              <span>Mais detalhes (CPF e observações)</span>
+              <CaretDown size={14} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="space-y-3 border-t border-stone-800 p-3.5">
               <div>
-                <label className="block text-xs font-medium text-stone-300 mb-1">
-                  Nome Completo *
-                </label>
+                <label className={LABEL}>CPF (opcional)</label>
                 <input
                   type="text"
-                  required
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Ex: Lucas Oliveira"
-                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+                  inputMode="numeric"
+                  value={newCpf}
+                  onChange={(e) => setNewCpf(e.target.value)}
+                  placeholder="000.000.000-00"
+                  className={FIELD}
                 />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-stone-300 mb-1">
-                    WhatsApp (com DDD) *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={newPhone}
-                    onChange={(e) => setNewPhone(e.target.value)}
-                    placeholder="(11) 99999-0000"
-                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-stone-300 mb-1">
-                    CPF (Opcional)
-                  </label>
-                  <input
-                    type="text"
-                    value={newCpf}
-                    onChange={(e) => setNewCpf(e.target.value)}
-                    placeholder="000.000.000-00"
-                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
               <div>
-                <label className="block text-xs font-medium text-stone-300 mb-1">
-                  Observações de Corte / Preferência
-                </label>
+                <label className={LABEL}>Preferências de corte</label>
                 <textarea
                   rows={2}
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
-                  placeholder="Ex: Degradê na zero, barba alinhada na navalha"
-                  className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+                  placeholder="Ex.: degradê na zero, barba na navalha"
+                  className={`${FIELD} py-3`}
                 />
               </div>
+            </div>
+          </details>
 
-              <div className="grid grid-cols-2 gap-2 pt-2 sm:flex sm:justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowNewModal(false)}
-                  className="min-h-[44px] px-4 py-2.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold sm:min-h-0"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="min-h-[44px] px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold cursor-pointer sm:min-h-0"
-                >
-                  Salvar Cliente
-                </button>
-              </div>
-            </form>
+          <div className="dialog-actions">
+            <button type="button" onClick={() => setShowNewModal(false)} className={BTN_GHOST}>
+              Cancelar
+            </button>
+            <button type="submit" className={BTN_PRIMARY}>
+              Salvar
+            </button>
           </div>
-        </div>
-      )}
+        </form>
+      </LightDismissDialog>
     </div>
   );
 };

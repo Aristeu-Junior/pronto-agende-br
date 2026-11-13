@@ -4,6 +4,7 @@
  *   http://127.0.0.1:5173/#/preview/ajustes   (agenda, caixa, clientes, reserva, lembretes)
  */
 import GuidedTour from '../components/GuidedTour';
+import { SupportModule } from '../components/SupportModule';
 import ThemeToggle from '../components/ThemeToggle';
 import { buildTourSteps, TourTab } from '../config/tourSteps';
 import React, { useState } from 'react';
@@ -132,6 +133,7 @@ const PreviewInner: React.FC<{ screen: string }> = ({ screen }) => {
           <ClientsModule clients={clients} businessName={business.name} onAddClient={() => {}} onUpdateClient={() => {}} onDeleteClient={() => {}} />
         )}
         {screen === 'reserva' && <ShareLinkModule business={business} staff={stf} services={svc} onGoToSettings={() => {}} />}
+        {screen === 'suporte' && <SupportModule onDownloadData={() => {}} />}
         {screen === 'conta' && <AccountModule email="dono@exemplo.com" isAdmin={false} onAccountDeleted={() => {}} />}
         {screen === 'lembretes' && (
           <RemindersModule reminders={[]} appointments={appointments} business={business} staff={stf} services={svc} onDispatchAllPending={() => {}} onSimulateClientReply={() => {}} />

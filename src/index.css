@@ -349,6 +349,10 @@ dialog.operational-dialog::backdrop {
   }
 }
 
+[tabindex="-1"]:focus-visible {
+  outline: none;
+}
+
 header.sticky {
   padding-top: env(safe-area-inset-top);
 }
@@ -371,6 +375,29 @@ nav[aria-label="Navegação Mobile"] {
 
 .tour-fade {
   animation: tour-fade 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Rodapé das janelas: Cancelar e a ação principal sempre visíveis, mesmo com a lista rolando. */
+.dialog-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin: 1.5rem -1rem -1rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border-hairline);
+  background-color: var(--bg-surface);
+}
+
+@media (min-width: 640px) {
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin: 1.5rem -1.25rem -1.25rem;
+    padding: 0.875rem 1.25rem;
+  }
 }
 
 @keyframes tab-enter {
