@@ -6,7 +6,7 @@
 import GuidedTour from '../components/GuidedTour';
 import { SupportModule } from '../components/SupportModule';
 import ThemeToggle from '../components/ThemeToggle';
-import { buildTourSteps, TourTab } from '../config/tourSteps';
+import { buildIntroSteps, TourTab } from '../config/tourSteps';
 import React, { useState } from 'react';
 import { Appointment, BusinessConfig, Client, ServiceItem, StaffMember } from '../types';
 import { INITIAL_BUSINESS_CONFIG } from '../data/seedData';
@@ -185,7 +185,7 @@ const TourPreview: React.FC = () => {
           </button>
         ))}
       </nav>
-      {open && <GuidedTour steps={buildTourSteps(setTab)} onClose={() => setOpen(false)} />}
+      {open && <GuidedTour steps={buildIntroSteps(setTab)} onClose={() => setOpen(false)} />}
     </div>
   );
 };

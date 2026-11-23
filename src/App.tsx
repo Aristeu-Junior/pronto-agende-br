@@ -32,7 +32,7 @@ import { SupportModule } from './components/SupportModule';
 import { AdminTicketsModule } from './components/AdminTicketsModule';
 import { fetchTickets } from './lib/cloud';
 import { SUPPORT_ENABLED } from './config/features';
-import { buildTourSteps } from './config/tourSteps';
+import { buildIntroSteps, buildPageSteps } from './config/tourSteps';
 import { sanitizeUserText } from './utils/security';
 import { servicesSpan } from './utils/schedule';
 import { friendlyError, supabase } from './lib/supabase';
@@ -681,13 +681,21 @@ function Dashboard({
   }, [profile.is_admin]);
 
   const tourKey = `pa-tour-v1:${userId}`;
-  const [tourOpen, setTourOpen] = useState(false);
-  const startTour = () => {
+  // 'intro' = apresentação das abas (obrigatória na 1ª entrada); 'page' = explica a aba aberta.
+  const [tourMode, setTourMode] = useState<'intro' | 'page' | null>(null);
+  const tourOpen = tourMode !== null;
+  const startIntroTour = () => {
     setActiveTab('AGENDA');
-    setTourOpen(true);
+    setTourMode('intro');
+  };
+  const startPageTour = () => {
+    if (buildPageSteps(activeTab, setActiveTab).length === 0) startIntroTour();
+    else setTourMode('page');
   };
   const closeTour = (completed: boolean) => {
-    setTourOpen(false);
+    const wasIntro = tourMode === 'intro';
+    setTourMode(null);
+    if (!wasIntro) return;
     setActiveTab('AGENDA');
     try {
       localStorage.setItem(tourKey, completed ? 'done' : 'skipped');
@@ -704,11 +712,11 @@ function Dashboard({
       seen = true;
     }
     if (seen) return;
-    const t = window.setTimeout(() => setTourOpen(true), 700);
+    const t = window.setTimeout(() => setTourMode('intro'), 700);
     return () => window.clearTimeout(t);
   }, [loaded, tourKey]);
 
-  const tourSteps = buildTourSteps(setActiveTab);
+  const tourSteps = tourMode === 'page' ? buildPageSteps(activeTab, setActiveTab) : buildIntroSteps(setActiveTab);
 
   const navItems: Array<{ id: ActiveTab; label: string; shortLabel: string; icon: React.ReactNode; badge?: number }> = [
     {
@@ -801,10 +809,10 @@ function Dashboard({
             <button
               type="button"
               data-tour="help"
-              onClick={startTour}
-              title="Ver o tutorial de novo"
-              aria-label="Ver o tutorial de novo"
-              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-300 hover:border-amber-500/50 text-xs font-medium cursor-pointer"
+              onClick={startPageTour}
+              title="Explicar esta aba"
+              aria-label="Explicar esta aba"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/80 text-stone-300 hover:border-amber-500/50 text-xs font-medium cursor-pointer"
             >
               <Question className="w-4 h-4" weight="bold" />
               <span className="hidden sm:inline">Tutorial</span>
@@ -943,7 +951,7 @@ function Dashboard({
         )}
 
         {activeTab === 'ACCOUNT' && (
-          <AccountModule email={profile.email} isAdmin={profile.is_admin} onStartTour={startTour} onAccountDeleted={() => window.location.reload()} />
+          <AccountModule email={profile.email} isAdmin={profile.is_admin} onStartTour={startIntroTour} onAccountDeleted={() => window.location.reload()} />
         )}
 
         {SUPPORT_ENABLED && activeTab === 'SUPPORT' && <SupportModule onDownloadData={exportMyData} />}

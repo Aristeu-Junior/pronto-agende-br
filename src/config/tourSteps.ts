@@ -3,32 +3,98 @@ import { SUPPORT_ENABLED } from './features';
 
 export type TourTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'PUBLIC_BOOKING' | 'MANAGER' | 'SUPPORT';
 
-/**
- * Passos do tutorial de novo usuário. `go` troca a aba do app.
- * Ordem: apresentação, depois cada página por inteiro (uma de cada vez), depois conta e tema.
- */
-export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
-  const on = (tab: TourTab) => () => go(tab);
+const SECTION_BY_TAB: Partial<Record<TourTab, string>> = {
+  AGENDA: 'Agenda',
+  POS: 'Caixa',
+  CLIENTS: 'Clientes',
+  PUBLIC_BOOKING: 'Link de Reserva',
+  MANAGER: 'Ajustes',
+  SUPPORT: 'Suporte',
+};
 
+/**
+ * Tutorial inicial (obrigatório na primeira entrada): só apresenta cada aba
+ * e o botão Tutorial, que explica a aba aberta campo por campo.
+ */
+export function buildIntroSteps(go: (tab: TourTab) => void): TourStep[] {
+  const on = (tab: TourTab) => () => go(tab);
   const steps: TourStep[] = [
     {
       title: 'Bem-vindo ao ProntoAgende',
-      body: 'Vamos passar por cada página do sistema, uma de cada vez, e ver para que serve cada parte. Use Próximo para avançar, Voltar para rever, ou Pular tutorial se preferir. Dá para refazer tudo em Minha conta.',
+      body: 'Em poucos passos você conhece cada aba do sistema. Use Próximo para avançar, Voltar para rever, ou Pular tutorial se preferir.',
       onEnter: on('AGENDA'),
     },
     {
-      target: 'business-name',
-      title: 'Nome da sua barbearia',
-      body: 'Este é o nome que seus clientes veem na página de reservas. Clique nele para editar quando quiser.',
+      section: 'Abas',
+      target: 'nav-AGENDA',
+      title: 'Agenda',
+      body: 'Onde você passa o dia: horários marcados, horários livres, calendário e novos agendamentos.',
       onEnter: on('AGENDA'),
     },
+    {
+      section: 'Abas',
+      target: 'nav-POS',
+      title: 'Caixa',
+      body: 'Registre cada atendimento pago e veja quanto entrou no dia, com Pix, cartão, dinheiro e comissão dos barbeiros.',
+      onEnter: on('POS'),
+    },
+    {
+      section: 'Abas',
+      target: 'nav-CLIENTS',
+      title: 'Clientes',
+      body: 'Sua lista de clientes, com visitas, faltas, preferências e atalho para o WhatsApp.',
+      onEnter: on('CLIENTS'),
+    },
+    {
+      section: 'Abas',
+      target: 'nav-PUBLIC_BOOKING',
+      title: 'Link de Reserva',
+      body: 'O link que o cliente usa para marcar horário sozinho. Copie e mande no WhatsApp ou ponha no Instagram.',
+      onEnter: on('PUBLIC_BOOKING'),
+    },
+    {
+      section: 'Abas',
+      target: 'nav-MANAGER',
+      title: 'Ajustes',
+      body: 'Configure a barbearia: dados, serviços e preços, barbeiros, comissão, escala de trabalho e sinal Pix.',
+      onEnter: on('MANAGER'),
+    },
+    {
+      section: 'Abas',
+      target: 'nav-SUPPORT',
+      title: 'Suporte',
+      body: 'Fale com a equipe do ProntoAgende: sugestões, problemas, dúvidas e cópia dos seus dados.',
+      onEnter: on('SUPPORT'),
+    },
+    {
+      section: 'Dica final',
+      target: 'help',
+      title: 'Botão Tutorial',
+      body: 'Em qualquer aba, toque em Tutorial no topo e o sistema explica aquela aba inteira, campo por campo. No celular aparece só o ícone de interrogação.',
+      onEnter: on('AGENDA'),
+    },
+  ];
+  return SUPPORT_ENABLED ? steps : steps.filter((st) => st.target !== 'nav-SUPPORT');
+}
+
+/** Tutorial detalhado da aba aberta (sem obrigatoriedade). Vazio se a aba não tem tutorial. */
+export function buildPageSteps(tab: string, go: (tab: TourTab) => void): TourStep[] {
+  const section = SECTION_BY_TAB[tab as TourTab];
+  if (!section) return [];
+  return allPageSteps(go).filter((st) => st.section === section);
+}
+
+function allPageSteps(go: (tab: TourTab) => void): TourStep[] {
+  const on = (tab: TourTab) => () => go(tab);
+
+  const steps: TourStep[] = [
 
     // ---------- Agenda ----------
     {
       section: 'Agenda',
       target: 'nav-AGENDA',
-      title: 'Primeira página: a Agenda',
-      body: 'É aqui que você passa o dia. Mostra os horários marcados, os livres e quem está para chegar. Vamos ver as partes principais dela.',
+      title: 'Agenda',
+      body: 'É aqui que você passa o dia. Mostra os horários marcados, os livres e quem está para chegar. Veja as partes principais dela nos próximos passos.',
       onEnter: on('AGENDA'),
     },
     {
@@ -78,7 +144,7 @@ export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
     {
       section: 'Caixa',
       target: 'nav-POS',
-      title: 'Segunda página: o Caixa',
+      title: 'Caixa',
       body: 'Aqui você registra cada atendimento pago e acompanha quanto entrou no dia.',
       onEnter: on('POS'),
     },
@@ -136,7 +202,7 @@ export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
     {
       section: 'Clientes',
       target: 'nav-CLIENTS',
-      title: 'Terceira página: Clientes',
+      title: 'Clientes',
       body: 'Sua lista de clientes, com o histórico de cada um.',
       onEnter: on('CLIENTS'),
     },
@@ -166,7 +232,7 @@ export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
     {
       section: 'Link de Reserva',
       target: 'nav-PUBLIC_BOOKING',
-      title: 'Quarta página: Link de Reserva',
+      title: 'Link de Reserva',
       body: 'É a página que seu cliente usa para marcar horário sozinho, sem precisar de login.',
       onEnter: on('PUBLIC_BOOKING'),
     },
@@ -189,7 +255,7 @@ export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
     {
       section: 'Ajustes',
       target: 'nav-MANAGER',
-      title: 'Quinta página: Ajustes',
+      title: 'Ajustes',
       body: 'Aqui você configura a barbearia. Cada bloco abre e fecha, e tudo é salvo sozinho.',
       onEnter: on('MANAGER'),
     },
@@ -240,7 +306,7 @@ export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
     {
       section: 'Suporte',
       target: 'nav-SUPPORT',
-      title: 'Sexta página: Suporte',
+      title: 'Suporte',
       body: 'Aqui você fala com a equipe do ProntoAgende.',
       onEnter: on('SUPPORT'),
     },
@@ -264,27 +330,6 @@ export function buildTourSteps(go: (tab: TourTab) => void): TourStep[] {
       title: 'Meus chamados',
       body: 'Abra para ver tudo que você já enviou, a situação de cada chamado e a resposta da equipe.',
       onEnter: on('SUPPORT'),
-    },
-
-    // ---------- Topo ----------
-    {
-      section: 'Topo da tela',
-      target: 'theme',
-      title: 'Modo claro e escuro',
-      body: 'Troque entre o visual claro e o escuro. O sistema lembra a sua escolha neste aparelho.',
-      onEnter: on('AGENDA'),
-    },
-    {
-      section: 'Topo da tela',
-      target: 'account',
-      title: 'Minha conta',
-      body: 'Troque a senha, ative a verificação em duas etapas, baixe seus dados ou exclua a conta.',
-      onEnter: on('AGENDA'),
-    },
-    {
-      title: 'Tudo pronto',
-      body: 'Onde aparecer uma bolinha com "?", passe o mouse (ou toque) para ver o que aquela área faz. Para rever este tutorial, abra Minha conta (ou use o botão Tutorial no topo, no computador).',
-      onEnter: on('AGENDA'),
     },
   ];
 

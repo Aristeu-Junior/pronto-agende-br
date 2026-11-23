@@ -122,14 +122,14 @@ export const AccountModule: React.FC<Props> = ({ email, isAdmin, onAccountDelete
         <div className={`${card} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
           <div>
             <h2 className="text-sm font-bold text-stone-100">Tutorial</h2>
-            <p className="mt-0.5 text-xs text-stone-400">Veja de novo o passo a passo de cada página do sistema.</p>
+            <p className="mt-0.5 text-xs text-stone-400">Veja de novo a apresentação das abas. Para explicar uma aba campo por campo, use o botão Tutorial no topo.</p>
           </div>
           <button
             type="button"
             onClick={onStartTour}
             className="rounded-xl border border-stone-800 px-4 py-2.5 text-xs font-semibold text-stone-100 hover:border-amber-500 cursor-pointer"
           >
-            Rever o tutorial
+            Rever apresentação
           </button>
         </div>
       )}
