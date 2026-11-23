@@ -1,10 +1,12 @@
 import ThemeToggle from './ThemeToggle';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Scissors, SignOut } from '@phosphor-icons/react';
 import { friendlyError, supabase } from '../lib/supabase';
 import { createBusinessWithDefaults, slugify } from '../lib/cloud';
 import { BusinessConfig } from '../types';
 import { LegalLinks } from './LegalPages';
+import TurnstileWidget, { TurnstileHandle } from './TurnstileWidget';
+import { TURNSTILE_SITE_KEY } from '../config/turnstile';
 
 const field =
   'w-full rounded-xl border border-stone-800 bg-stone-950 px-3.5 py-3 text-sm text-stone-100 focus:border-amber-500 focus:outline-none';
@@ -39,6 +41,8 @@ export const AuthScreen: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const captchaRef = useRef<TurnstileHandle>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,11 +50,15 @@ export const AuthScreen: React.FC = () => {
     setInfo('');
     const cleanEmail = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return setError('Digite um e-mail válido.');
+    if (TURNSTILE_SITE_KEY && !captcha) return setError('Aguarde a verificação de segurança terminar e tente de novo.');
+    const captchaToken = captcha ?? undefined;
     if (mode === 'forgot') {
       setBusy(true);
       await supabase.auth.resetPasswordForEmail(cleanEmail, {
         redirectTo: `${window.location.origin}${window.location.pathname}`,
+        captchaToken,
       });
+      captchaRef.current?.reset();
       setBusy(false);
       // mesma resposta exista ou não a conta: não revela quem é cliente
       setInfo('Se esse e-mail tiver uma conta, enviaremos um link para criar uma nova senha. Confira também o spam.');
@@ -61,13 +69,13 @@ export const AuthScreen: React.FC = () => {
     setBusy(true);
     try {
       if (mode === 'login') {
-        const { error: err } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+        const { error: err } = await supabase.auth.signInWithPassword({ email: cleanEmail, password, options: { captchaToken } });
         if (err) throw err;
       } else {
         const { data, error: err } = await supabase.auth.signUp({
           email: cleanEmail,
           password,
-          options: { data: { display_name: shopName.trim().slice(0, 80) } },
+          options: { data: { display_name: shopName.trim().slice(0, 80) }, captchaToken },
         });
         if (err) throw err;
         if (!data.session) {
@@ -77,6 +85,7 @@ export const AuthScreen: React.FC = () => {
     } catch (err) {
       setError(friendlyError((err as Error)?.message));
     } finally {
+      captchaRef.current?.reset();
       setBusy(false);
     }
   };
@@ -125,6 +134,12 @@ export const AuthScreen: React.FC = () => {
           />
         </label>
         )}
+        <TurnstileWidget
+          key={mode}
+          ref={captchaRef}
+          onToken={setCaptcha}
+          onUnavailable={() => setError('Não foi possível carregar a verificação de segurança. Recarregue a página.')}
+        />
         {error && (
           <p role="alert" className="text-xs font-medium text-rose-700">
             {error}
