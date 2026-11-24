@@ -2,9 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   ArrowUp,
-  CalendarCheck,
-  CurrencyCircleDollar,
-  LinkSimple,
   List,
   Scissors,
   SignIn,
@@ -15,7 +12,7 @@ import {
 } from '@phosphor-icons/react';
 import ThemeToggle from './ThemeToggle';
 import { LandingPreloader } from './LandingPreloader';
-import { LandingDevices } from './LandingDevices';
+import { LandingCenterStage } from './LandingCenterStage';
 import { LandingFaqSection, LandingPricingSection } from './LandingPricingAndFaq';
 import { buildSalesWhatsAppUrl } from '../config/landing';
 import { COMPANY } from '../config/legal';
@@ -279,30 +276,9 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
             </div>
           </div>
 
-          <div className="hero-rise hero-rise-delay-3 max-w-6xl mx-auto px-4 sm:px-6">
-            <LandingDevices />
+          <div className="hero-rise hero-rise-delay-3 max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-16 sm:pb-24">
+            <LandingCenterStage />
           </div>
-        </section>
-
-        {/* 2. TRÊS PILARES (ícone + 2 palavras) */}
-        <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24">
-          <ul className="grid grid-cols-3 gap-3 sm:gap-6">
-            {[
-              { Icon: LinkSimple, label: 'Link 24h' },
-              { Icon: CalendarCheck, label: 'Agenda' },
-              { Icon: CurrencyCircleDollar, label: 'Caixa' },
-            ].map(({ Icon, label }) => (
-              <li
-                key={label}
-                className="flex flex-col items-center gap-3 rounded-3xl border border-stone-800 bg-stone-900 py-6 sm:py-8"
-              >
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-stone-950">
-                  <Icon className="h-6 w-6" weight="bold" />
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-stone-100">{label}</span>
-              </li>
-            ))}
-          </ul>
         </section>
 
         {/* 5. SEÇÃO #PLANOS — CONTRATAÇÃO INTERATIVA */}
@@ -332,88 +308,28 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
 
       </main>
 
-      {/* RODAPÉ INSTITUCIONAL EM 3 COLUNAS */}
-      <footer className="border-t border-stone-800 bg-tint-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8 text-xs text-stone-400">
-          {/* Coluna 1: Marca */}
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500 text-stone-950">
-                <Scissors className="h-4 w-4" weight="bold" />
-              </div>
-              <span className="text-sm font-bold text-stone-100">
-                {COMPANY.productName} BR
-              </span>
-            </div>
-            <p className="leading-relaxed text-stone-300 max-w-xs">
-              Plataforma completa de agenda, link próprio 24h, lembretes no WhatsApp
-              e caixa para barbearias, salões e clínicas.
-            </p>
-            <p className="font-mono text-[11px] text-stone-400">
-              {COMPANY.city}
-            </p>
-          </div>
-
-          {/* Coluna 2: Navegação e Acesso */}
-          <div className="space-y-2.5">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-stone-200">
-              Sistema e Acesso
-            </p>
-            <ul className="grid grid-cols-2 gap-2 font-semibold">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => scrollToSection('planos')}
-                  className="hover:text-amber-800 cursor-pointer"
-                >
-                  Planos e Preços
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => scrollToSection('duvidas')}
-                  className="hover:text-amber-800 cursor-pointer"
-                >
-                  Dúvidas
-                </button>
-              </li>
-              <li>
-                <a href="#/entrar" className="text-amber-800 hover:underline">
-                  Entrar como Barbeiro
-                </a>
-              </li>
-              <li>
-                <a href="#/cadastro" className="hover:text-amber-800">
-                  Criar Conta
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Coluna 3: Contratação e Legal */}
-          <div className="space-y-2.5">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-stone-200">
-              Contratação e Transparência
-            </p>
-            <div className="flex flex-col items-start gap-2 font-semibold">
-              <a
-                href={salesWhatsappHref}
-                target={isWhatsappExternal ? '_blank' : undefined}
-                rel={isWhatsappExternal ? 'noopener noreferrer' : undefined}
-                className="inline-flex items-center gap-1.5 text-emerald-700 hover:underline"
-              >
-                <WhatsappLogo className="h-4 w-4" weight="bold" />
-                <span>Contratar pelo WhatsApp</span>
-              </a>
-              <a href="#/termos" className="hover:text-amber-800">
-                Termos de Uso
-              </a>
-              <a href="#/privacidade" className="hover:text-amber-800">
-                Política de Privacidade (LGPD)
-              </a>
-            </div>
-          </div>
+      {/* RODAPÉ */}
+      <footer className="border-t border-stone-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-stone-400">
+          <span className="inline-flex items-center gap-2 text-stone-100">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-stone-950">
+              <Scissors className="h-3.5 w-3.5" weight="bold" />
+            </span>
+            {COMPANY.productName} BR
+          </span>
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            <a href="#/entrar" className="hover:text-amber-800">Entrar</a>
+            <a
+              href={salesWhatsappHref}
+              target={isWhatsappExternal ? '_blank' : undefined}
+              rel={isWhatsappExternal ? 'noopener noreferrer' : undefined}
+              className="hover:text-emerald-700"
+            >
+              WhatsApp
+            </a>
+            <a href="#/termos" className="hover:text-amber-800">Termos</a>
+            <a href="#/privacidade" className="hover:text-amber-800">Privacidade</a>
+          </nav>
         </div>
       </footer>
 
