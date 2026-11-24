@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   ArrowUp,
-  CheckCircle,
-  Clock,
+  CalendarCheck,
+  CurrencyCircleDollar,
+  LinkSimple,
   List,
-  RocketLaunch,
   Scissors,
   SignIn,
   SquaresFour,
@@ -15,11 +15,9 @@ import {
 } from '@phosphor-icons/react';
 import ThemeToggle from './ThemeToggle';
 import { LandingPreloader } from './LandingPreloader';
-import { LandingHeroPreview } from './LandingHeroPreview';
-import { LandingCenterStage } from './LandingCenterStage';
+import { LandingDevices } from './LandingDevices';
 import { LandingFaqSection, LandingPricingSection } from './LandingPricingAndFaq';
-import { SpotlightCard } from './SpotlightCard';
-import { buildSalesWhatsAppUrl, LANDING_STEPS } from '../config/landing';
+import { buildSalesWhatsAppUrl } from '../config/landing';
 import { COMPANY } from '../config/legal';
 
 function useRevealOnScroll<T extends HTMLElement>() {
@@ -65,9 +63,6 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
   const [scrolled, setScrolled] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
 
-  const statsReveal = useRevealOnScroll<HTMLElement>();
-  const featuresReveal = useRevealOnScroll<HTMLElement>();
-  const stepsReveal = useRevealOnScroll<HTMLElement>();
   const plansReveal = useRevealOnScroll<HTMLElement>();
   const faqReveal = useRevealOnScroll<HTMLElement>();
 
@@ -162,20 +157,6 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
           >
             <button
               type="button"
-              onClick={() => scrollToSection('recursos')}
-              className="hover:text-amber-800 cursor-pointer"
-            >
-              Recursos
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection('como-funciona')}
-              className="hover:text-amber-800 cursor-pointer"
-            >
-              Como funciona
-            </button>
-            <button
-              type="button"
               onClick={() => scrollToSection('planos')}
               className="hover:text-amber-800 cursor-pointer"
             >
@@ -239,8 +220,6 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
           >
             <div className="grid grid-cols-2 gap-2">
               {[
-                { id: 'recursos', label: 'Recursos' },
-                { id: 'como-funciona', label: 'Como funciona' },
                 { id: 'planos', label: 'Planos e Preços' },
                 { id: 'duvidas', label: 'Dúvidas' },
               ].map((link) => (
@@ -270,220 +249,60 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
 
       {/* Conteúdo Principal */}
       <main id="conteudo-principal" tabIndex={-1} className="flex-1">
-        {/* 1. HERO SECTION */}
-        <section className="relative overflow-hidden border-b border-stone-800/80">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-24 right-0 h-80 w-80 rounded-full bg-amber-500/10 blur-3xl"
-          />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            {/* Texto e CTAs (6 cols) */}
-            <div className="lg:col-span-6 space-y-6">
-              <div className="hero-rise inline-flex items-center gap-2 rounded-full border border-stone-800 bg-amber-950 px-3.5 py-1.5 text-xs font-bold text-amber-800">
-                <RocketLaunch className="h-3.5 w-3.5" weight="bold" />
-                <span>Feito para barbearias, salões e clínicas no Brasil</span>
-              </div>
-
-              <h1 className="hero-rise hero-rise-delay-1 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-stone-100 leading-[1.12]">
-                Sua agenda cheia, link próprio 24h e{' '}
-                <span className="text-amber-500">caixa no controle</span> direto do
-                celular.
-              </h1>
-
-              <p className="hero-rise hero-rise-delay-2 text-sm sm:text-base leading-relaxed text-stone-300 max-w-xl">
-                O <strong>ProntoAgende BR</strong> reúne em um só lugar o link de
-                agendamento sem baixar aplicativo, agenda sem conflitos de horário,
-                lembrete no WhatsApp, sinal via Pix anti-falta e cálculo de
-                comissão da equipe.
-              </p>
-
-              <div className="hero-rise hero-rise-delay-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
-                <a
-                  href="#/cadastro"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-600 px-6 py-3.5 text-sm font-bold text-stone-950 shadow-lg shadow-amber-500/20"
-                >
-                  <span>Criar conta da barbearia</span>
-                  <ArrowRight className="h-4 w-4" weight="bold" />
-                </a>
-
-                <a
-                  href={salesWhatsappHref}
-                  target={isWhatsappExternal ? '_blank' : undefined}
-                  rel={isWhatsappExternal ? 'noopener noreferrer' : undefined}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-stone-800 bg-stone-900 hover:border-emerald-600 px-6 py-3.5 text-sm font-bold text-stone-100"
-                >
-                  <WhatsappLogo
-                    className="h-5 w-5 text-emerald-700"
-                    weight="bold"
-                  />
-                  <span>Contratar pelo WhatsApp</span>
-                </a>
-              </div>
-
-              {/* Selos de confiança */}
-              <div className="hero-rise hero-rise-delay-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
-                {[
-                  '0% comissão por cliente',
-                  'Link 24h sem baixar app',
-                  'Pronto em 2 minutos',
-                ].map((badge) => (
-                  <div
-                    key={badge}
-                    className="inline-flex items-center gap-2 rounded-xl border border-stone-800 bg-tint-50 px-3 py-2 text-xs font-semibold text-stone-200"
-                  >
-                    <CheckCircle
-                      className="h-4 w-4 shrink-0 text-emerald-700"
-                      weight="fill"
-                    />
-                    <span>{badge}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Preview vivo animado (6 cols) */}
-            <div className="lg:col-span-6 hero-rise hero-rise-delay-2">
-              <LandingHeroPreview />
-            </div>
-          </div>
-        </section>
-
-        {/* 2. FAIXA DE MÉTRICAS E DIFERENCIAIS */}
-        <section
-          ref={statsReveal.ref}
-          className={`reveal-on-scroll ${
-            statsReveal.visible ? 'is-visible' : ''
-          } border-b border-stone-800/80 bg-tint-50`}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              {
-                value: '0%',
-                label: 'Comissão sobre seus cortes',
-                sub: 'O cliente agenda no seu link e o valor é 100% seu.',
-              },
-              {
-                value: '20s',
-                label: 'Para o cliente agendar',
-                sub: 'Sem login, sem senha e direto do navegador do celular.',
-              },
-              {
-                value: '100%',
-                label: 'Mobile-first e leve',
-                sub: 'Modo claro ou escuro e botões feitos para usar com uma mão.',
-              },
-              {
-                value: '3 passos',
-                label: 'Para fechar o caixa do dia',
-                sub: 'Com rateio automático de taxa e comissão do barbeiro.',
-              },
-            ].map((item) => (
-              <SpotlightCard
-                key={item.label}
-                className="rounded-2xl border border-stone-800 bg-stone-900 p-4 sm:p-5 space-y-1"
-              >
-                <div className="font-mono num-tabular text-2xl sm:text-3xl font-bold text-amber-800">
-                  {item.value}
-                </div>
-                <h2 className="text-xs sm:text-sm font-bold text-stone-100">
-                  {item.label}
-                </h2>
-                <p className="text-[11px] leading-relaxed text-stone-400">
-                  {item.sub}
-                </p>
-              </SpotlightCard>
-            ))}
-          </div>
-        </section>
-
-        {/* 3. SEÇÃO #RECURSOS — CENTER STAGE INTERATIVO (COMPUTADOR E CELULAR) */}
-        <section
-          id="recursos"
-          ref={featuresReveal.ref}
-          className={`landing-section-defer reveal-on-scroll ${
-            featuresReveal.visible ? 'is-visible' : ''
-          } max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20 space-y-8`}
-        >
-          <div className="max-w-2xl space-y-2">
-            <span className="font-mono text-xs font-bold uppercase tracking-widest text-amber-800">
-              Por dentro do ProntoAgende BR
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-100">
-              Veja o sistema real funcionando no computador e no celular
-            </h2>
-            <p className="text-sm text-stone-300">
-              Alterne entre <strong>Computador</strong> e <strong>Celular</strong>{' '}
-              e clique em cada aba do painel para testar exatamente como você vai
-              operar sua barbearia no dia a dia.
+        {/* 1. HERO */}
+        <section className="relative overflow-hidden">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 text-center space-y-6">
+            <h1 className="hero-rise text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-stone-100 leading-[1.08]">
+              Agenda cheia.{' '}
+              <span className="text-amber-500">Caixa no controle.</span>
+            </h1>
+            <p className="hero-rise hero-rise-delay-1 mx-auto max-w-xl text-sm sm:text-base text-stone-300">
+              Link de reserva 24h, lembrete no WhatsApp e comissão da equipe. Em um só lugar.
             </p>
+            <div className="hero-rise hero-rise-delay-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
+              <a
+                href="#/cadastro"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-600 px-6 py-3.5 text-sm font-bold text-stone-950 shadow-lg shadow-amber-500/20"
+              >
+                <span>Criar conta</span>
+                <ArrowRight className="h-4 w-4" weight="bold" />
+              </a>
+              <a
+                href={salesWhatsappHref}
+                target={isWhatsappExternal ? '_blank' : undefined}
+                rel={isWhatsappExternal ? 'noopener noreferrer' : undefined}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-stone-800 bg-stone-900 hover:border-emerald-600 px-6 py-3.5 text-sm font-bold text-stone-100"
+              >
+                <WhatsappLogo className="h-5 w-5 text-emerald-700" weight="bold" />
+                <span>WhatsApp</span>
+              </a>
+            </div>
           </div>
 
-          <LandingCenterStage />
+          <div className="hero-rise hero-rise-delay-3 max-w-6xl mx-auto px-4 sm:px-6">
+            <LandingDevices />
+          </div>
         </section>
 
-        {/* 4. SEÇÃO #COMO-FUNCIONA — FASE 3 (FLUXO DO NEGÓCIO EM 3 PASSOS) */}
-        <section
-          id="como-funciona"
-          ref={stepsReveal.ref}
-          className={`landing-section-defer reveal-on-scroll ${
-            stepsReveal.visible ? 'is-visible' : ''
-          } border-y border-stone-800/80 bg-tint-50 py-14 sm:py-20`}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-10">
-            <div className="max-w-2xl space-y-2">
-              <span className="font-mono text-xs font-bold uppercase tracking-widest text-amber-800">
-                Sem burocracia
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-100">
-                Do cadastro ao primeiro agendamento em 3 passos
-              </h2>
-              <p className="text-sm text-stone-300">
-                Tudo pensado para rodar rápido desde o primeiro dia, sem precisar de
-                manual técnico ou instalação no computador.
-              </p>
-            </div>
-
-            <div className="relative grid grid-cols-1 md:grid-cols-3 gap-5">
-              {LANDING_STEPS.map((step, index) => {
-                const etaLabels = ['2 min', '10 seg', 'No dia a dia'];
-                return (
-                  <SpotlightCard
-                    key={step.number}
-                    className="rounded-3xl border border-stone-800 bg-stone-900 p-6 hover:border-amber-500/60 transition-colors"
-                  >
-                    <article className="space-y-3 h-full flex flex-col justify-between">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 font-mono text-sm font-bold text-stone-950">
-                            {step.number}
-                          </span>
-                          <span className="inline-flex items-center gap-1 rounded-full border border-stone-800 bg-tint-50 px-2.5 py-1 font-mono text-[11px] font-bold text-amber-800">
-                            <Clock className="h-3.5 w-3.5" weight="bold" />
-                            <span>{etaLabels[index] ?? 'Rápido'}</span>
-                          </span>
-                        </div>
-                        <h3 className="text-base font-bold text-stone-100">
-                          {step.title}
-                        </h3>
-                        <p className="text-xs sm:text-sm leading-relaxed text-stone-300">
-                          {step.description}
-                        </p>
-                      </div>
-
-                      <div className="pt-2 flex items-center gap-1.5 text-[11px] font-semibold text-stone-400">
-                        <span>
-                          {index < LANDING_STEPS.length - 1
-                            ? `Próximo passo: 0${index + 2}`
-                            : 'Pronto para atender'}
-                        </span>
-                        <ArrowRight className="h-3.5 w-3.5 text-amber-500" weight="bold" />
-                      </div>
-                    </article>
-                  </SpotlightCard>
-                );
-              })}
-            </div>
-          </div>
+        {/* 2. TRÊS PILARES (ícone + 2 palavras) */}
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24">
+          <ul className="grid grid-cols-3 gap-3 sm:gap-6">
+            {[
+              { Icon: LinkSimple, label: 'Link 24h' },
+              { Icon: CalendarCheck, label: 'Agenda' },
+              { Icon: CurrencyCircleDollar, label: 'Caixa' },
+            ].map(({ Icon, label }) => (
+              <li
+                key={label}
+                className="flex flex-col items-center gap-3 rounded-3xl border border-stone-800 bg-stone-900 py-6 sm:py-8"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-stone-950">
+                  <Icon className="h-6 w-6" weight="bold" />
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-stone-100">{label}</span>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* 5. SEÇÃO #PLANOS — CONTRATAÇÃO INTERATIVA */}
@@ -511,38 +330,6 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
           <LandingFaqSection />
         </section>
 
-        {/* 7. CTA FINAL */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14">
-          <SpotlightCard className="rounded-3xl border border-stone-800 bg-stone-900 p-7 sm:p-10">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-              <div className="space-y-2 max-w-2xl">
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-100">
-                  Pronto para profissionalizar sua agenda hoje?
-                </h2>
-                <p className="text-sm text-stone-300">
-                  Crie o acesso da sua barbearia agora mesmo ou chame nossa equipe no
-                  WhatsApp para ativar o sistema com sua tabela de cortes.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0 w-full lg:w-auto">
-                <a
-                  href="#/cadastro"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-600 px-6 py-3.5 text-sm font-bold text-stone-950"
-                >
-                  <span>Quero contratar agora</span>
-                  <ArrowRight className="h-4 w-4" weight="bold" />
-                </a>
-                <a
-                  href={loginHref}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-stone-800 bg-tint-50 hover:border-amber-500 px-6 py-3.5 text-sm font-bold text-stone-100"
-                >
-                  <SignIn className="h-4 w-4 text-amber-500" weight="bold" />
-                  <span>{isAuthenticated ? 'Abrir meu painel' : 'Já sou cliente · Entrar'}</span>
-                </a>
-              </div>
-            </div>
-          </SpotlightCard>
-        </section>
       </main>
 
       {/* RODAPÉ INSTITUCIONAL EM 3 COLUNAS */}
@@ -573,24 +360,6 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
               Sistema e Acesso
             </p>
             <ul className="grid grid-cols-2 gap-2 font-semibold">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => scrollToSection('recursos')}
-                  className="hover:text-amber-800 cursor-pointer"
-                >
-                  Recursos
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => scrollToSection('como-funciona')}
-                  className="hover:text-amber-800 cursor-pointer"
-                >
-                  Como funciona
-                </button>
-              </li>
               <li>
                 <button
                   type="button"
