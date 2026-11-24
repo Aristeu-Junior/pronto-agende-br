@@ -1,16 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
-  BellRinging,
-  CalendarCheck,
   CaretDown,
   Check,
   CheckCircle,
-  CreditCard,
-  DeviceMobile,
+  Clock,
   List,
-  LockKey,
-  QrCode,
   RocketLaunch,
   Scissors,
   ShieldCheck,
@@ -23,13 +18,13 @@ import {
 import ThemeToggle from './ThemeToggle';
 import { LandingPreloader } from './LandingPreloader';
 import { LandingHeroPreview } from './LandingHeroPreview';
+import { LandingCenterStage } from './LandingCenterStage';
+import { SpotlightCard } from './SpotlightCard';
 import {
   buildSalesWhatsAppUrl,
   LANDING_FAQS,
-  LANDING_FEATURES,
   LANDING_PLANS,
   LANDING_STEPS,
-  LandingFeatureId,
 } from '../config/landing';
 import { COMPANY } from '../config/legal';
 
@@ -69,238 +64,10 @@ function useRevealOnScroll<T extends HTMLElement>() {
   return { ref, visible };
 }
 
-function featureIcon(id: LandingFeatureId) {
-  switch (id) {
-    case 'agenda':
-      return <CalendarCheck className="h-4 w-4 shrink-0" weight="bold" />;
-    case 'link':
-      return <DeviceMobile className="h-4 w-4 shrink-0" weight="bold" />;
-    case 'caixa':
-      return <CreditCard className="h-4 w-4 shrink-0" weight="bold" />;
-    case 'whatsapp':
-      return <WhatsappLogo className="h-4 w-4 shrink-0" weight="bold" />;
-    case 'seguranca':
-      return <ShieldCheck className="h-4 w-4 shrink-0" weight="bold" />;
-  }
-}
-
-const FeatureShowcaseVisual: React.FC<{ featureId: LandingFeatureId }> = ({
-  featureId,
-}) => {
-  switch (featureId) {
-    case 'agenda':
-      return (
-        <div className="space-y-3 rounded-2xl border border-stone-800 bg-tint-50 p-4">
-          <div className="flex items-center justify-between border-b border-stone-800 pb-3">
-            <span className="text-xs font-bold text-stone-100">
-              Grade de Hoje · Sem Conflitos
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-0.5 text-[11px] font-bold text-stone-950">
-              + Encaixe rápido
-            </span>
-          </div>
-          {[
-            {
-              time: '10:00',
-              client: 'Bruno Henrique',
-              service: 'Corte Degradê',
-              status: 'Concluído',
-              tone: 'bg-tint-100 text-stone-400',
-            },
-            {
-              time: '11:00',
-              client: 'Eduardo Silva',
-              service: 'Barba Completa · Walk-in',
-              status: 'Na Cadeira',
-              tone: 'bg-emerald-950 text-emerald-700',
-            },
-            {
-              time: '14:00',
-              client: 'Thiago Mendes',
-              service: 'Combo Corte + Barba',
-              status: 'Confirmado',
-              tone: 'bg-amber-950 text-amber-800',
-            },
-          ].map((row) => (
-            <div
-              key={row.time}
-              className="flex items-center justify-between gap-2 rounded-xl border border-stone-800 bg-stone-900 px-3.5 py-2.5"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="font-mono num-tabular text-xs font-bold text-amber-800">
-                  {row.time}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-bold text-stone-100">
-                    {row.client}
-                  </p>
-                  <p className="truncate text-[11px] text-stone-400">
-                    {row.service}
-                  </p>
-                </div>
-              </div>
-              <span
-                className={`shrink-0 rounded-lg px-2 py-0.5 text-[11px] font-bold ${row.tone}`}
-              >
-                {row.status}
-              </span>
-            </div>
-          ))}
-        </div>
-      );
-
-    case 'link':
-      return (
-        <div className="space-y-3 rounded-2xl border border-stone-800 bg-tint-50 p-4">
-          <div className="rounded-xl border border-stone-800 bg-stone-900 px-3.5 py-2.5 flex items-center justify-between">
-            <span className="font-mono text-xs text-stone-300 truncate">
-              prontoagende.com.br/#/reserva/dom-barber
-            </span>
-            <span className="rounded-lg bg-amber-950 px-2 py-0.5 font-mono text-[11px] font-bold text-amber-800">
-              Online 24h
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-xl border border-stone-800 bg-stone-900 p-3">
-              <p className="text-[11px] text-stone-400">1. Serviço</p>
-              <p className="mt-0.5 text-xs font-bold text-stone-100">
-                Corte + Sobrancelha
-              </p>
-              <p className="mt-1 font-mono num-tabular text-xs font-bold text-amber-800">
-                45 min · R$ 55,00
-              </p>
-            </div>
-            <div className="rounded-xl border border-stone-800 bg-stone-900 p-3">
-              <p className="text-[11px] text-stone-400">2. Dia e Horário</p>
-              <p className="mt-0.5 text-xs font-bold text-stone-100">
-                Amanhã às 16:30
-              </p>
-              <p className="mt-1 text-[11px] font-semibold text-emerald-700">
-                Confirmado na hora
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-stone-800 bg-stone-900 px-3.5 py-2.5 text-xs">
-            <span className="inline-flex items-center gap-2 font-semibold text-stone-200">
-              <QrCode className="h-4 w-4 text-amber-500" />
-              Pix Copia e Cola para sinal
-            </span>
-            <span className="font-mono text-[11px] font-bold text-emerald-700">
-              Opcional
-            </span>
-          </div>
-        </div>
-      );
-
-    case 'caixa':
-      return (
-        <div className="space-y-3 rounded-2xl border border-stone-800 bg-tint-50 p-4">
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: 'Bruto Hoje', value: 'R$ 940,00', tone: 'text-stone-100' },
-              {
-                label: 'Equipe (50%)',
-                value: 'R$ 470,00',
-                tone: 'text-emerald-700',
-              },
-              { label: 'Líquido Casa', value: 'R$ 458,20', tone: 'text-amber-800' },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-stone-800 bg-stone-900 p-3"
-              >
-                <p className="text-[11px] text-stone-400">{stat.label}</p>
-                <p
-                  className={`mt-1 font-mono num-tabular text-sm font-bold ${stat.tone}`}
-                >
-                  {stat.value}
-                </p>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-xl border border-stone-800 bg-stone-900 p-3.5 space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-stone-400">Rateio de maquininha</span>
-              <span className="font-semibold text-stone-100">
-                Proporcional (Salão Parceiro)
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-stone-400">Meios aceitos</span>
-              <span className="font-mono text-stone-200">
-                Pix · Débito · Crédito · Dinheiro
-              </span>
-            </div>
-          </div>
-        </div>
-      );
-
-    case 'whatsapp':
-      return (
-        <div className="space-y-3 rounded-2xl border border-stone-800 bg-tint-50 p-4">
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-stone-100">
-              <BellRinging className="h-4 w-4 text-amber-500" weight="bold" />
-              Mensagem pronta em 1 clique
-            </span>
-            <span className="rounded-full bg-emerald-950 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
-              wa.me oficial
-            </span>
-          </div>
-          <div className="rounded-2xl border border-stone-800 bg-stone-900 p-3.5 text-xs leading-relaxed text-stone-200">
-            &ldquo;Olá <strong>Gabriel</strong>! Passando para confirmar seu horário na{' '}
-            <strong>Barbearia Central</strong> hoje às{' '}
-            <strong className="font-mono">15:00</strong> com <strong>Rafael</strong>{' '}
-            (Corte Degradê - R$ 45,00). Podemos confirmar?&rdquo;
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-stone-800 bg-stone-900 px-3.5 py-2 text-[11px] text-stone-400">
-            <span>Variáveis preenchidas automaticamente</span>
-            <span className="font-semibold text-emerald-700">Zero digitação</span>
-          </div>
-        </div>
-      );
-
-    case 'seguranca':
-      return (
-        <div className="space-y-2.5 rounded-2xl border border-stone-800 bg-tint-50 p-4">
-          {[
-            {
-              title: 'Row Level Security (RLS)',
-              desc: 'Cada barbearia enxerga exclusivamente os próprios dados.',
-            },
-            {
-              title: 'Autenticação + MFA + Turnstile',
-              desc: 'Verificação em duas etapas opcional e proteção contra robôs.',
-            },
-            {
-              title: 'Privacidade para clientes finais',
-              desc: 'Página pública mostra apenas horários ocupados, sem expor telefones.',
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="flex items-start gap-2.5 rounded-xl border border-stone-800 bg-stone-900 p-3"
-            >
-              <LockKey
-                className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700"
-                weight="bold"
-              />
-              <div>
-                <p className="text-xs font-bold text-stone-100">{item.title}</p>
-                <p className="text-[11px] text-stone-400">{item.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-  }
-};
-
 export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
   isAuthenticated = false,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeFeature, setActiveFeature] = useState<LandingFeatureId>('agenda');
   const [scrolled, setScrolled] = useState(false);
 
   const statsReveal = useRevealOnScroll<HTMLElement>();
@@ -331,9 +98,6 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
-
-  const currentFeature =
-    LANDING_FEATURES.find((f) => f.id === activeFeature) ?? LANDING_FEATURES[0];
 
   const loginHref = isAuthenticated ? '#/app' : '#/entrar';
   const loginLabel = isAuthenticated ? 'Abrir meu painel' : 'Entrar';
@@ -605,7 +369,7 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
                 sub: 'Com rateio automático de taxa e comissão do barbeiro.',
               },
             ].map((item) => (
-              <div
+              <SpotlightCard
                 key={item.label}
                 className="rounded-2xl border border-stone-800 bg-stone-900 p-4 sm:p-5 space-y-1"
               >
@@ -618,12 +382,12 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
                 <p className="text-[11px] leading-relaxed text-stone-400">
                   {item.sub}
                 </p>
-              </div>
+              </SpotlightCard>
             ))}
           </div>
         </section>
 
-        {/* 3. SEÇÃO #RECURSOS — POR DENTRO DO SISTEMA */}
+        {/* 3. SEÇÃO #RECURSOS — CENTER STAGE INTERATIVO (COMPUTADOR E CELULAR) */}
         <section
           id="recursos"
           ref={featuresReveal.ref}
@@ -636,95 +400,19 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
               Por dentro do ProntoAgende BR
             </span>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-100">
-              Tudo o que sua barbearia usa todos os dias, sem complicação
+              Veja o sistema real funcionando no computador e no celular
             </h2>
             <p className="text-sm text-stone-300">
-              Explore cada módulo abaixo e veja exatamente como o sistema organiza
-              sua rotina da abertura do caixa até o último horário.
+              Alterne entre <strong>Computador</strong> e <strong>Celular</strong>{' '}
+              e clique em cada aba do painel para testar exatamente como você vai
+              operar sua barbearia no dia a dia.
             </p>
           </div>
 
-          {/* Abas interativas dos 5 pilares */}
-          <div
-            role="tablist"
-            aria-label="Módulos do ProntoAgende"
-            className="flex flex-wrap gap-2"
-          >
-            {LANDING_FEATURES.map((feat) => {
-              const active = feat.id === activeFeature;
-              return (
-                <button
-                  key={feat.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setActiveFeature(feat.id)}
-                  className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
-                    active
-                      ? 'border-amber-500 bg-amber-500 text-stone-950 shadow-sm'
-                      : 'border-stone-800 bg-stone-900 text-stone-300 hover:border-amber-500/60 hover:text-stone-100'
-                  }`}
-                >
-                  {featureIcon(feat.id)}
-                  <span>{feat.tabLabel}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Card de detalhe do recurso ativo */}
-          <div
-            key={currentFeature.id}
-            className="tab-enter grid grid-cols-1 lg:grid-cols-12 gap-6 rounded-3xl border border-stone-800 bg-stone-900 p-6 sm:p-8 items-center"
-          >
-            <div className="lg:col-span-6 space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full bg-amber-950 px-3 py-1 font-mono text-[11px] font-bold text-amber-800">
-                {featureIcon(currentFeature.id)}
-                <span>{currentFeature.badge}</span>
-              </div>
-
-              <h3 className="text-xl sm:text-2xl font-bold text-stone-100">
-                {currentFeature.title}
-              </h3>
-
-              <p className="text-sm leading-relaxed text-stone-300">
-                {currentFeature.description}
-              </p>
-
-              <ul className="space-y-2.5 pt-1">
-                {currentFeature.bullets.map((bullet) => (
-                  <li
-                    key={bullet}
-                    className="flex items-start gap-2.5 text-xs sm:text-sm text-stone-200"
-                  >
-                    <CheckCircle
-                      className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700"
-                      weight="fill"
-                    />
-                    <span>{bullet}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="pt-2 flex items-center gap-3">
-                <div className="rounded-xl border border-stone-800 bg-tint-50 px-3.5 py-2">
-                  <span className="block font-mono num-tabular text-base font-bold text-amber-800">
-                    {currentFeature.highlightMetric}
-                  </span>
-                  <span className="block text-[11px] text-stone-400">
-                    {currentFeature.highlightLabel}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-6">
-              <FeatureShowcaseVisual featureId={currentFeature.id} />
-            </div>
-          </div>
+          <LandingCenterStage />
         </section>
 
-        {/* 4. SEÇÃO #COMO-FUNCIONA — 3 PASSOS */}
+        {/* 4. SEÇÃO #COMO-FUNCIONA — FASE 3 (FLUXO DO NEGÓCIO EM 3 PASSOS) */}
         <section
           id="como-funciona"
           ref={stepsReveal.ref}
@@ -740,28 +428,51 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-100">
                 Do cadastro ao primeiro agendamento em 3 passos
               </h2>
+              <p className="text-sm text-stone-300">
+                Tudo pensado para rodar rápido desde o primeiro dia, sem precisar de
+                manual técnico ou instalação no computador.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {LANDING_STEPS.map((step) => (
-                <article
-                  key={step.number}
-                  className="rounded-3xl border border-stone-800 bg-stone-900 p-6 space-y-3 hover:border-amber-500/60 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 font-mono text-sm font-bold text-stone-950">
-                      {step.number}
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-stone-400" />
-                  </div>
-                  <h3 className="text-base font-bold text-stone-100">
-                    {step.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm leading-relaxed text-stone-300">
-                    {step.description}
-                  </p>
-                </article>
-              ))}
+            <div className="relative grid grid-cols-1 md:grid-cols-3 gap-5">
+              {LANDING_STEPS.map((step, index) => {
+                const etaLabels = ['2 min', '10 seg', 'No dia a dia'];
+                return (
+                  <SpotlightCard
+                    key={step.number}
+                    className="rounded-3xl border border-stone-800 bg-stone-900 p-6 hover:border-amber-500/60 transition-colors"
+                  >
+                    <article className="space-y-3 h-full flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 font-mono text-sm font-bold text-stone-950">
+                            {step.number}
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-stone-800 bg-tint-50 px-2.5 py-1 font-mono text-[11px] font-bold text-amber-800">
+                            <Clock className="h-3.5 w-3.5" weight="bold" />
+                            <span>{etaLabels[index] ?? 'Rápido'}</span>
+                          </span>
+                        </div>
+                        <h3 className="text-base font-bold text-stone-100">
+                          {step.title}
+                        </h3>
+                        <p className="text-xs sm:text-sm leading-relaxed text-stone-300">
+                          {step.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 flex items-center gap-1.5 text-[11px] font-semibold text-stone-400">
+                        <span>
+                          {index < LANDING_STEPS.length - 1
+                            ? `Próximo passo: 0${index + 2}`
+                            : 'Pronto para atender'}
+                        </span>
+                        <ArrowRight className="h-3.5 w-3.5 text-amber-500" weight="bold" />
+                      </div>
+                    </article>
+                  </SpotlightCard>
+                );
+              })}
             </div>
           </div>
         </section>
