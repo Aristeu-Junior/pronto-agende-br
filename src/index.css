@@ -579,7 +579,7 @@ html {
   }
 }
 
-/* Center Stage + SpotlightCard (React Bits-inspired studio showcase) */
+/* Center Stage + SpotlightCard + 3D Hardware Devices (MacBook Pro & iPhone Pro) */
 .spotlight-card::before {
   content: "";
   position: absolute;
@@ -601,18 +601,244 @@ html {
   }
 }
 
-.center-stage-backdrop {
+.stage-macbook-studio {
   background:
-    radial-gradient(62% 55% at 50% 0%, rgba(250, 65, 0, 0.12), transparent 72%),
-    radial-gradient(45% 45% at 88% 82%, rgba(129, 240, 2, 0.11), transparent 72%),
-    var(--bg-subtle);
+    radial-gradient(65% 58% at 50% 42%, #FFFFFF 0%, #F1F2F4 62%, #E5E7EB 100%);
 }
 
-:root.dark .center-stage-backdrop {
+:root.dark .stage-macbook-studio {
   background:
-    radial-gradient(62% 55% at 50% 0%, rgba(250, 65, 0, 0.18), transparent 72%),
-    radial-gradient(45% 45% at 88% 82%, rgba(129, 240, 2, 0.1), transparent 72%),
-    #1A1410;
+    radial-gradient(65% 58% at 50% 42%, #2B231E 0%, #1B1512 65%, #120E0C 100%);
+}
+
+.stage-iphone-studio {
+  background:
+    radial-gradient(56% 52% at 50% 44%, #1B1B20 0%, #0A0A0C 62%, #040405 100%);
+}
+
+.stage-3d-scene {
+  perspective: 1550px;
+}
+
+.stage-3d-rig {
+  transform-style: preserve-3d;
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.macbook-3d-assembly {
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, -11deg));
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.macbook-3d-assembly.is-flat {
+  transform: rotateX(0deg) rotateY(0deg);
+}
+
+.macbook-lid {
+  transform-style: preserve-3d;
+  background: linear-gradient(145deg, #F3F4F6 0%, #D1D5DB 55%, #9CA3AF 100%);
+  box-shadow:
+    0 20px 45px -20px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+.macbook-bezel {
+  background: #0A0A0C;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.macbook-notch {
+  background: #0A0A0C;
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+
+.macbook-hinge {
+  height: 9px;
+  background: linear-gradient(180deg, #18181B 0%, #3F3F46 45%, #18181B 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.14);
+}
+
+.macbook-deck-slot {
+  position: relative;
+  width: 106%;
+  left: -3%;
+  height: 82px;
+  transform-style: preserve-3d;
+}
+
+@media (min-width: 640px) {
+  .macbook-deck-slot {
+    height: 112px;
+  }
+}
+
+.macbook-deck {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 195px;
+  transform-origin: top center;
+  transform: rotateX(67deg);
+  transform-style: preserve-3d;
+  border-radius: 10px 10px 16px 16px;
+  background: linear-gradient(180deg, #D9DCE1 0%, #E7E9ED 45%, #CFD3DA 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.75),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.14);
+}
+
+@media (min-width: 640px) {
+  .macbook-deck {
+    height: 245px;
+  }
+}
+
+.macbook-speaker-grille {
+  background-image: radial-gradient(rgba(39, 39, 42, 0.45) 0.75px, transparent 0.75px);
+  background-size: 3px 3px;
+}
+
+.macbook-keyboard-well {
+  background: #1C1D20;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.65),
+    0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.macbook-key {
+  background: linear-gradient(180deg, #27282C 0%, #151619 100%);
+  box-shadow:
+    0 1px 0 #09090B,
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+}
+
+.macbook-trackpad {
+  background: linear-gradient(180deg, #DBDDE2 0%, #E5E7EB 100%);
+  border: 1px solid rgba(113, 113, 122, 0.35);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.macbook-front-lip {
+  position: absolute;
+  top: 100%;
+  left: 3px;
+  right: 3px;
+  height: 15px;
+  transform-origin: top center;
+  transform: rotateX(-90deg);
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(180deg, #E4E6EB 0%, #A1A6B0 65%, #717680 100%);
+  box-shadow: 0 14px 24px -6px rgba(0, 0, 0, 0.4);
+}
+
+.macbook-thumb-notch {
+  background: linear-gradient(180deg, #6B7280 0%, #9CA3AF 100%);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.45);
+}
+
+.macbook-floor-shadow {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.28) 0%,
+    rgba(0, 0, 0, 0.12) 48%,
+    transparent 74%
+  );
+  filter: blur(8px);
+}
+
+/* iPhone 3D Titanium Hardware */
+.iphone-3d-assembly {
+  transform-style: preserve-3d;
+  transform: rotateX(calc(var(--tilt-x, 3deg))) rotateY(calc(var(--tilt-y, -11deg)));
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iphone-3d-assembly.is-flat {
+  transform: rotateX(0deg) rotateY(0deg);
+}
+
+.iphone-3d-chassis {
+  position: relative;
+  transform-style: preserve-3d;
+  border-radius: 2.65rem;
+  background: linear-gradient(135deg, #3A3A40 0%, #18181B 35%, #27272D 70%, #0E0E10 100%);
+  padding: 10px;
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.16),
+    -10px 16px 38px rgba(0, 0, 0, 0.72),
+    inset 0 0 0 2px #09090B;
+}
+
+.iphone-depth-left {
+  position: absolute;
+  top: 2.4rem;
+  bottom: 2.4rem;
+  left: -8px;
+  width: 10px;
+  transform-origin: right center;
+  transform: rotateY(-78deg);
+  border-radius: 6px 0 0 6px;
+  background: linear-gradient(180deg, #52525B 0%, #27272A 45%, #52525B 85%, #18181B 100%);
+}
+
+.iphone-depth-right {
+  position: absolute;
+  top: 2.4rem;
+  bottom: 2.4rem;
+  right: -8px;
+  width: 10px;
+  transform-origin: left center;
+  transform: rotateY(78deg);
+  border-radius: 0 6px 6px 0;
+  background: linear-gradient(180deg, #52525B 0%, #27272A 45%, #52525B 85%, #18181B 100%);
+}
+
+.iphone-screen-glass {
+  border-radius: 2.1rem;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.iphone-dynamic-island {
+  width: 78px;
+  height: 21px;
+  border-radius: 9999px;
+  background: #050506;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.iphone-floor-shadow {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(250, 65, 0, 0.1) 38%,
+    transparent 72%
+  );
+  filter: blur(12px);
+}
+
+@keyframes macbook-3d-float {
+  0%,
+  100% {
+    transform: rotateX(2deg) rotateY(-12deg) translateY(0px);
+  }
+  50% {
+    transform: rotateX(4deg) rotateY(-5deg) translateY(-5px);
+  }
+}
+
+@keyframes iphone-3d-sway {
+  0%,
+  100% {
+    transform: rotateX(4deg) rotateY(-14deg) translateY(0px);
+  }
+  50% {
+    transform: rotateX(4deg) rotateY(14deg) translateY(-4px);
+  }
 }
 
 @keyframes stage-device-in {
@@ -629,6 +855,19 @@ html {
 @media (prefers-reduced-motion: no-preference) {
   .stage-device-enter {
     animation: stage-device-in 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .macbook-3d-assembly.is-orbiting {
+    animation: macbook-3d-float 6.5s ease-in-out infinite;
+  }
+
+  .iphone-3d-assembly.is-orbiting {
+    animation: iphone-3d-sway 7.5s ease-in-out infinite;
+  }
+
+  .macbook-3d-assembly.motion-paused,
+  .iphone-3d-assembly.motion-paused {
+    animation-play-state: paused !important;
   }
 }
 

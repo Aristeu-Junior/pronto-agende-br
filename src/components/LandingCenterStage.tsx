@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
+  BatteryFull,
   Calendar,
   CheckCircle,
   Copy,
   CreditCard,
+  Cube,
   DeviceMobile,
   DownloadSimple,
   ArrowSquareOut as ExternalLink,
@@ -11,10 +13,13 @@ import {
   Laptop,
   SquaresFour as LayoutDashboard,
   MagnifyingGlass,
+  Pause,
+  Play,
   Plus,
   Scissors,
   Users,
   WhatsappLogo,
+  WifiHigh,
 } from '@phosphor-icons/react';
 import { PaymentMethod } from '../types';
 import { calculatePartnerSplit, formatBRL } from '../utils/validators';
@@ -193,6 +198,51 @@ const SANDBOX_CLIENTS = [
     tag: '1 falta registrada',
   },
 ] as const;
+
+const KEYBOARD_ROWS = [
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5],
+  [1.4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.1],
+  [1.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.8],
+  [2.1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2.2],
+  [1, 1, 1, 1.3, 5.2, 1.3, 1, 1, 1, 1],
+] as const;
+
+const MacBookKeyboardDeck: React.FC = () => (
+  <div aria-hidden="true" className="macbook-deck-slot select-none">
+    <div className="macbook-deck px-4 pt-3 pb-2 flex flex-col justify-between">
+      <div className="flex items-stretch gap-2.5 sm:gap-3.5 px-1">
+        {/* Grade de alto-falante esquerda */}
+        <div className="macbook-speaker-grille w-4 sm:w-8 rounded-md opacity-75 shrink-0" />
+
+        {/* Conjunto de teclas pretas chiclet */}
+        <div className="macbook-keyboard-well flex-1 rounded-md p-1.5 sm:p-2 space-y-1">
+          {KEYBOARD_ROWS.map((row, rIdx) => (
+            <div key={rIdx} className="flex gap-1">
+              {row.map((grow, kIdx) => (
+                <div
+                  key={kIdx}
+                  style={{ flexGrow: grow }}
+                  className="macbook-key h-2.5 sm:h-3.5 rounded-[2px]"
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Grade de alto-falante direita */}
+        <div className="macbook-speaker-grille w-4 sm:w-8 rounded-md opacity-75 shrink-0" />
+      </div>
+
+      {/* Trackpad central em vidro alumínio */}
+      <div className="macbook-trackpad mx-auto w-[44%] h-[54px] sm:h-[78px] rounded-lg" />
+
+      {/* Borda frontal 3D com recorte de abertura */}
+      <div className="macbook-front-lip flex justify-center">
+        <div className="macbook-thumb-notch h-1.5 w-14 sm:w-20 rounded-b-md" />
+      </div>
+    </div>
+  </div>
+);
 
 interface AppScreenBodyProps {
   activeTab: SandboxTab;
@@ -646,22 +696,51 @@ const AppScreenBody: React.FC<AppScreenBodyProps> = ({
 export const LandingCenterStage: React.FC = () => {
   const [device, setDevice] = useState<DeviceMode>('desktop');
   const [activeTab, setActiveTab] = useState<SandboxTab>('AGENDA');
+  const [angle3d, setAngle3d] = useState<boolean>(true);
+  const [motionPaused, setMotionPaused] = useState<boolean>(() => {
+    try {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+      return false;
+    }
+  });
+
+  const rigRef = useRef<HTMLDivElement | null>(null);
 
   const currentTabInfo =
     SANDBOX_TABS.find((t) => t.id === activeTab) ?? SANDBOX_TABS[0];
 
+  const handleStageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (motionPaused || !angle3d) return;
+    const rig = rigRef.current;
+    if (!rig) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width - 0.5;
+    const ny = (e.clientY - rect.top) / rect.height - 0.5;
+    rig.style.setProperty('--tilt-x', `${(-ny * 6).toFixed(2)}deg`);
+    rig.style.setProperty('--tilt-y', `${(nx * 9).toFixed(2)}deg`);
+  };
+
+  const handleStageMouseLeave = () => {
+    const rig = rigRef.current;
+    if (!rig) return;
+    rig.style.setProperty('--tilt-x', '0deg');
+    rig.style.setProperty('--tilt-y', '0deg');
+  };
+
   const handleToggleDevice = (next: DeviceMode) => {
     setDevice(next);
+    handleStageMouseLeave();
   };
 
   return (
     <div className="space-y-6">
-      {/* Controles superiores do Center Stage */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Controles superiores do Center Stage 3D */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div
           role="group"
-          aria-label="Alternar visualização entre computador e celular"
-          className="inline-flex self-start rounded-2xl border border-stone-800 bg-stone-900 p-1 shadow-sm"
+          aria-label="Alternar modelo 3D entre computador e celular"
+          className="inline-flex rounded-2xl border border-stone-800 bg-stone-900 p-1 shadow-sm"
         >
           <button
             type="button"
@@ -674,7 +753,7 @@ export const LandingCenterStage: React.FC = () => {
             }`}
           >
             <Laptop className="h-4 w-4" weight="bold" />
-            <span>Computador</span>
+            <span>MacBook 3D</span>
           </button>
 
           <button
@@ -688,227 +767,316 @@ export const LandingCenterStage: React.FC = () => {
             }`}
           >
             <DeviceMobile className="h-4 w-4" weight="bold" />
-            <span>Celular</span>
+            <span>iPhone 3D</span>
           </button>
         </div>
 
-        <span className="inline-flex items-center gap-2 rounded-full border border-stone-800 bg-stone-900 px-3.5 py-1.5 text-[11px] font-semibold text-stone-300">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" />
-          <span>Ambiente demonstrativo seguro · Clique nas abas internas</span>
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setAngle3d((v) => !v)}
+            aria-pressed={angle3d}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-800 bg-stone-900 px-3 py-2 text-xs font-semibold text-stone-200 hover:border-amber-500 cursor-pointer"
+          >
+            <Cube className="h-4 w-4 text-amber-500" weight="bold" />
+            <span>{angle3d ? 'Ângulo Frontal' : 'Ângulo 3D'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMotionPaused((p) => !p)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-800 bg-stone-900 px-3 py-2 text-xs font-semibold text-stone-200 hover:border-amber-500 cursor-pointer"
+          >
+            {motionPaused ? (
+              <>
+                <Play className="h-4 w-4 text-amber-500" weight="fill" />
+                <span>Retomar 3D</span>
+              </>
+            ) : (
+              <>
+                <Pause className="h-4 w-4 text-amber-500" weight="fill" />
+                <span>Pausar 3D</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Palco Center Stage com profundidade de estúdio */}
-      <div className="center-stage-backdrop relative rounded-3xl border border-stone-800 p-4 sm:p-8 lg:p-10 shadow-xl overflow-hidden">
-        {device === 'desktop' ? (
-          <div key="desktop" className="stage-device-enter relative max-w-5xl mx-auto">
-            {/* Moldura do Notebook */}
-            <div className="rounded-t-3xl border-2 border-stone-700 bg-stone-950 shadow-2xl overflow-hidden">
-              {/* Barra do navegador + câmera */}
-              <div className="flex items-center justify-between gap-3 border-b border-stone-800 bg-tint-50 px-4 py-2.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500/70" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-stone-700" />
-                </div>
-                <div className="rounded-lg border border-stone-800 bg-stone-900 px-3 py-1 font-mono text-[11px] text-stone-400 truncate max-w-[260px] sm:max-w-sm">
-                  prontoagende.com.br/#/app
-                </div>
-                <span className="font-mono text-[10px] text-stone-400 hidden sm:inline">
-                  Tela Desktop
-                </span>
-              </div>
-
-              {/* Header real do sistema dentro do Notebook */}
-              <div className="border-b border-stone-800 bg-stone-950 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-stone-950">
-                    <Scissors className="h-4 w-4" weight="bold" />
-                  </div>
-                  <div>
-                    <span className="block text-xs font-bold text-stone-100 leading-none">
-                      ProntoAgende
-                    </span>
-                    <span className="block text-[10px] text-stone-400 mt-0.5">
-                      Barbearia Modelo
-                    </span>
-                  </div>
-                </div>
-
-                {/* Abas reais clicáveis do sistema */}
-                <nav
-                  aria-label="Abas do aplicativo no computador"
-                  className="flex flex-wrap items-center gap-1 rounded-xl border border-stone-800 bg-stone-900 p-1"
-                >
-                  {SANDBOX_TABS.map((tab) => {
-                    const active = tab.id === activeTab;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        data-compact
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer ${
-                          active
-                            ? 'bg-amber-500 text-stone-950 shadow-sm'
-                            : 'text-stone-400 hover:text-stone-100'
-                        }`}
-                      >
-                        {tabIcon(tab.id)}
-                        <span>{tab.label}</span>
-                        {tab.badge && (
-                          <span
-                            className={`rounded-full px-1.5 text-[10px] font-mono ${
-                              active
-                                ? 'bg-stone-950/20 text-stone-950 font-bold'
-                                : 'bg-amber-500/20 text-amber-800'
-                            }`}
-                          >
-                            {tab.badge}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </nav>
-              </div>
-
-              {/* Corpo da tela selecionada */}
-              <div className="p-4 sm:p-5 bg-tint-50/40 min-h-[320px]">
-                <AppScreenBody
-                  activeTab={activeTab}
-                  compact={false}
-                  onSelectTab={setActiveTab}
-                />
-              </div>
-            </div>
-
-            {/* Base metálica do Notebook */}
-            <div className="mx-auto h-3.5 w-[96%] rounded-b-2xl border-x border-b border-stone-700 bg-tint-100 shadow-md flex justify-center">
-              <div className="h-1.5 w-20 rounded-b-md bg-stone-700/60" />
-            </div>
-
-            {/* Mini-Celular clicável estilo React Bits Center Stage */}
-            <button
-              type="button"
-              onClick={() => handleToggleDevice('mobile')}
-              aria-label="Alternar para visualização completa no celular"
-              className="hidden lg:flex flex-col w-48 rounded-[1.8rem] border-2 border-stone-700 bg-stone-950 p-2.5 shadow-2xl absolute -bottom-3 -right-3 hover:border-amber-500 hover:-translate-y-1 transition-all text-left cursor-pointer"
-            >
-              <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-stone-700" />
-              <div className="flex items-center justify-between border-b border-stone-800 pb-1.5">
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-stone-100">
-                  <Scissors className="h-3 w-3 text-amber-500" weight="bold" />
-                  <span>ProntoAgende</span>
-                </span>
-                <span className="rounded bg-amber-950 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">
-                  Mobile
-                </span>
-              </div>
-              <div className="my-2 space-y-1.5">
-                <div className="rounded-lg border border-stone-800 bg-tint-50 px-2 py-1.5">
-                  <span className="block font-mono text-[9px] font-bold text-amber-800">
-                    14:30 · Confirmado
-                  </span>
-                  <span className="block text-[10px] font-semibold text-stone-100 truncate">
-                    Lucas M. · Combo
-                  </span>
-                </div>
-                <div className="rounded-lg bg-amber-500 px-2 py-1 text-center text-[10px] font-bold text-stone-950">
-                  Ver tela do celular →
-                </div>
-              </div>
-            </button>
-          </div>
-        ) : (
+      {/* Palco Center Stage 3D */}
+      <div
+        onMouseMove={handleStageMouseMove}
+        onMouseLeave={handleStageMouseLeave}
+        className={`relative rounded-3xl border border-stone-800 px-4 py-8 sm:px-8 sm:py-12 lg:px-10 lg:py-14 shadow-xl overflow-hidden transition-colors duration-300 ${
+          device === 'desktop' ? 'stage-macbook-studio' : 'stage-iphone-studio'
+        }`}
+      >
+        <div className="stage-3d-scene">
           <div
-            key="mobile"
-            className="stage-device-enter flex flex-col items-center gap-4"
+            ref={rigRef}
+            className="stage-3d-rig"
+            style={{
+              transform: angle3d
+                ? 'rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg))'
+                : 'none',
+            }}
           >
-            {/* Moldura fiel do Smartphone */}
-            <div className="w-full max-w-[360px] rounded-[2.4rem] border-4 border-stone-700 bg-stone-950 p-2.5 shadow-2xl">
-              {/* Ilha superior / barra de status */}
-              <div className="flex items-center justify-between px-4 pt-1 pb-2">
-                <span className="font-mono text-[11px] font-bold text-stone-300">
-                  14:30
-                </span>
-                <div className="h-3.5 w-20 rounded-full bg-stone-800" />
-                <span className="font-mono text-[10px] font-bold text-emerald-700">
-                  5G
-                </span>
-              </div>
+            {device === 'desktop' ? (
+              <div
+                key="desktop-3d"
+                className="stage-device-enter relative max-w-[780px] mx-auto"
+              >
+                <div
+                  className={`macbook-3d-assembly mx-auto w-[94%] sm:w-[90%] ${
+                    angle3d
+                      ? motionPaused
+                        ? 'is-orbiting motion-paused'
+                        : 'is-orbiting'
+                      : 'is-flat'
+                  }`}
+                >
+                  {/* Tampa e Tela do MacBook Pro com Notch */}
+                  <div className="macbook-lid rounded-t-2xl p-[2px]">
+                    <div className="macbook-bezel rounded-t-[14px] p-2 sm:p-3 pt-2.5 sm:pt-3 relative">
+                      {/* Notch superior central do MacBook Pro */}
+                      <div className="macbook-notch mx-auto mb-1.5 sm:mb-2 h-3.5 sm:h-4 w-20 sm:w-28 flex items-center justify-center">
+                        <span className="h-1.5 w-1.5 rounded-full bg-zinc-700 ring-1 ring-zinc-600" />
+                      </div>
 
-              {/* Tela interna do aplicativo mobile */}
-              <div className="rounded-[1.75rem] border border-stone-800 bg-stone-950 overflow-hidden flex flex-col">
-                {/* Header mobile fixo */}
-                <div className="border-b border-stone-800 px-3.5 py-2.5 flex items-center justify-between bg-stone-950">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-stone-950">
-                      <Scissors className="h-3.5 w-3.5" weight="bold" />
+                      {/* Tela real do ProntoAgende BR */}
+                      <div className="rounded-lg bg-stone-950 overflow-hidden border border-white/10 shadow-inner">
+                        {/* Barra do navegador */}
+                        <div className="flex items-center justify-between gap-3 border-b border-stone-800 bg-tint-50 px-3 py-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2 w-2 rounded-full bg-amber-500/80" />
+                            <span className="h-2 w-2 rounded-full bg-emerald-500/80" />
+                            <span className="h-2 w-2 rounded-full bg-stone-700" />
+                          </div>
+                          <div className="rounded-md border border-stone-800 bg-stone-900 px-2.5 py-0.5 font-mono text-[10px] text-stone-400 truncate max-w-[210px] sm:max-w-xs">
+                            prontoagende.com.br/#/app
+                          </div>
+                          <span className="font-mono text-[10px] text-stone-400 hidden sm:inline">
+                            Desktop
+                          </span>
+                        </div>
+
+                        {/* Cabeçalho real do aplicativo */}
+                        <div className="border-b border-stone-800 bg-stone-950 px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-stone-950">
+                              <Scissors className="h-3.5 w-3.5" weight="bold" />
+                            </div>
+                            <div>
+                              <span className="block text-[11px] font-bold text-stone-100 leading-none">
+                                ProntoAgende
+                              </span>
+                              <span className="block text-[9px] text-stone-400 mt-0.5">
+                                Barbearia Modelo
+                              </span>
+                            </div>
+                          </div>
+
+                          <nav
+                            aria-label="Abas do aplicativo no MacBook 3D"
+                            className="flex flex-wrap items-center gap-1 rounded-xl border border-stone-800 bg-stone-900 p-0.5"
+                          >
+                            {SANDBOX_TABS.map((tab) => {
+                              const active = tab.id === activeTab;
+                              return (
+                                <button
+                                  key={tab.id}
+                                  type="button"
+                                  data-compact
+                                  onClick={() => setActiveTab(tab.id)}
+                                  className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-semibold transition-all cursor-pointer ${
+                                    active
+                                      ? 'bg-amber-500 text-stone-950 shadow-sm'
+                                      : 'text-stone-400 hover:text-stone-100'
+                                  }`}
+                                >
+                                  {tabIcon(tab.id)}
+                                  <span>{tab.label}</span>
+                                  {tab.badge && (
+                                    <span
+                                      className={`rounded-full px-1 text-[9px] font-mono ${
+                                        active
+                                          ? 'bg-stone-950/20 text-stone-950 font-bold'
+                                          : 'bg-amber-500/20 text-amber-800'
+                                      }`}
+                                    >
+                                      {tab.badge}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </nav>
+                        </div>
+
+                        {/* Área interativa da aba aberta */}
+                        <div className="p-3 sm:p-4 bg-tint-50/40 min-h-[260px] sm:min-h-[290px]">
+                          <AppScreenBody
+                            activeTab={activeTab}
+                            compact={false}
+                            onSelectTab={setActiveTab}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <span className="block text-xs font-bold text-stone-100 leading-none">
-                        ProntoAgende
-                      </span>
-                      <span className="block text-[10px] text-stone-400 truncate mt-0.5">
-                        Barbearia Modelo
-                      </span>
+
+                    {/* Dobradiça inferior */}
+                    <div className="macbook-hinge mx-auto w-[90%] rounded-b-sm" />
+                  </div>
+
+                  {/* Corpo inferior 3D: Teclado preto + Grades de Som + Trackpad prateado */}
+                  <MacBookKeyboardDeck />
+                </div>
+
+                {/* Sombra difusa no piso do estúdio */}
+                <div
+                  aria-hidden="true"
+                  className="macbook-floor-shadow mx-auto -mt-2 h-7 w-[92%] rounded-full"
+                />
+
+                {/* Botão rápido para alternar para iPhone 3D */}
+                <div className="mt-4 flex justify-center lg:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleDevice('mobile')}
+                    className="inline-flex items-center gap-2 rounded-xl border border-stone-800 bg-stone-900 px-3.5 py-2 text-xs font-bold text-stone-100 shadow-md hover:border-amber-500 cursor-pointer"
+                  >
+                    <DeviceMobile className="h-4 w-4 text-amber-500" weight="bold" />
+                    <span>Ver no iPhone 3D →</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                key="mobile-3d"
+                className="stage-device-enter flex flex-col items-center gap-5"
+              >
+                <div
+                  className={`iphone-3d-assembly ${
+                    angle3d
+                      ? motionPaused
+                        ? 'is-orbiting motion-paused'
+                        : 'is-orbiting'
+                      : 'is-flat'
+                  }`}
+                >
+                  <div className="iphone-3d-chassis w-[308px] sm:w-[336px]">
+                    {/* Profundidade lateral 3D em titânio + botões físicos */}
+                    <div aria-hidden="true" className="iphone-depth-left flex flex-col gap-2 pt-10 items-center">
+                      <span className="h-4 w-1 rounded-full bg-zinc-400/70" />
+                      <span className="h-7 w-1 rounded-full bg-zinc-400/70" />
+                      <span className="h-7 w-1 rounded-full bg-zinc-400/70" />
+                    </div>
+                    <div aria-hidden="true" className="iphone-depth-right flex flex-col pt-16 items-center">
+                      <span className="h-10 w-1 rounded-full bg-zinc-400/70" />
+                    </div>
+
+                    {/* Tela interna com cantos arredondados e Dynamic Island */}
+                    <div className="iphone-screen-glass relative bg-stone-950 overflow-hidden flex flex-col">
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-tr from-transparent via-white/[0.03] to-white/[0.08]"
+                      />
+                      {/* Barra de status iOS com Dynamic Island */}
+                      <div className="bg-zinc-950 px-5 pt-2.5 pb-2 flex items-center justify-between text-white">
+                        <span className="font-mono text-[11px] font-bold">
+                          9:41
+                        </span>
+                        <div className="iphone-dynamic-island flex items-center justify-end pr-2">
+                          <span className="h-2 w-2 rounded-full bg-zinc-800 ring-1 ring-zinc-700" />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <WifiHigh className="h-3.5 w-3.5" weight="bold" />
+                          <BatteryFull className="h-4 w-4" weight="fill" />
+                        </div>
+                      </div>
+
+                      {/* Header mobile do ProntoAgende */}
+                      <div className="border-b border-stone-800 px-3.5 py-2 flex items-center justify-between bg-stone-950">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-stone-950">
+                            <Scissors className="h-3.5 w-3.5" weight="bold" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="block text-xs font-bold text-stone-100 leading-none">
+                              ProntoAgende
+                            </span>
+                            <span className="block text-[10px] text-stone-400 truncate mt-0.5">
+                              Barbearia Modelo
+                            </span>
+                          </div>
+                        </div>
+                        <span className="rounded-lg border border-stone-800 bg-tint-50 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-800">
+                          {currentTabInfo.shortLabel}
+                        </span>
+                      </div>
+
+                      {/* Corpo rolável da aba ativa */}
+                      <div className="p-3 bg-tint-50/40 min-h-[325px] max-h-[355px] overflow-y-auto">
+                        <AppScreenBody
+                          activeTab={activeTab}
+                          compact
+                          onSelectTab={setActiveTab}
+                        />
+                      </div>
+
+                      {/* Barra inferior mobile real com as 6 abas */}
+                      <nav
+                        aria-label="Barra inferior do aplicativo no iPhone 3D"
+                        className="border-t border-stone-800 bg-stone-950 px-1 py-1.5 grid grid-cols-6 gap-0.5"
+                      >
+                        {SANDBOX_TABS.map((tab) => {
+                          const active = tab.id === activeTab;
+                          return (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              data-compact
+                              onClick={() => setActiveTab(tab.id)}
+                              className={`flex flex-col items-center justify-center rounded-lg py-1 px-0.5 text-[9px] font-semibold transition-colors cursor-pointer ${
+                                active
+                                  ? 'bg-amber-500/15 text-amber-800 font-bold'
+                                  : 'text-stone-400 hover:text-stone-100'
+                              }`}
+                            >
+                              {tabIcon(tab.id)}
+                              <span className="mt-0.5 truncate max-w-full">
+                                {tab.shortLabel}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </nav>
+
+                      {/* Home indicator iOS */}
+                      <div className="bg-stone-950 pb-1.5 pt-0.5 flex justify-center">
+                        <div className="h-1 w-24 rounded-full bg-stone-700" />
+                      </div>
                     </div>
                   </div>
-                  <span className="rounded-lg border border-stone-800 bg-tint-50 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-800">
-                    {currentTabInfo.shortLabel}
-                  </span>
                 </div>
 
-                {/* Conteúdo rolável da aba mobile */}
-                <div className="p-3 bg-tint-50/40 min-h-[340px] max-h-[380px] overflow-y-auto">
-                  <AppScreenBody
-                    activeTab={activeTab}
-                    compact
-                    onSelectTab={setActiveTab}
-                  />
-                </div>
+                {/* Sombra dramática de estúdio escuro */}
+                <div
+                  aria-hidden="true"
+                  className="iphone-floor-shadow -mt-1 h-5 w-60 rounded-full"
+                />
 
-                {/* Barra de navegação inferior mobile real */}
-                <nav
-                  aria-label="Barra inferior do aplicativo no celular"
-                  className="border-t border-stone-800 bg-stone-950 px-1 py-1.5 grid grid-cols-6 gap-0.5"
+                <button
+                  type="button"
+                  onClick={() => handleToggleDevice('desktop')}
+                  className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2 text-xs font-bold text-white hover:border-amber-500 cursor-pointer"
                 >
-                  {SANDBOX_TABS.map((tab) => {
-                    const active = tab.id === activeTab;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        data-compact
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`flex flex-col items-center justify-center rounded-lg py-1 px-0.5 text-[9px] font-semibold transition-colors cursor-pointer ${
-                          active
-                            ? 'bg-amber-500/15 text-amber-800 font-bold'
-                            : 'text-stone-400 hover:text-stone-100'
-                        }`}
-                      >
-                        {tabIcon(tab.id)}
-                        <span className="mt-0.5 truncate max-w-full">
-                          {tab.shortLabel}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </nav>
+                  <Laptop className="h-4 w-4 text-amber-500" weight="bold" />
+                  <span>Voltar para MacBook 3D</span>
+                </button>
               </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => handleToggleDevice('desktop')}
-              className="inline-flex items-center gap-2 rounded-xl border border-stone-800 bg-stone-900 px-4 py-2 text-xs font-bold text-stone-100 hover:border-amber-500 cursor-pointer"
-            >
-              <Laptop className="h-4 w-4 text-amber-500" weight="bold" />
-              <span>Voltar para visão do computador</span>
-            </button>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Painel explicativo sincronizado com a aba ativa no dispositivo */}
