@@ -7,5 +7,6 @@
     root.style.colorScheme = dark ? 'dark' : 'light';
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', dark ? '#14100D' : '#FFFFFF');
+    if (sessionStorage.getItem('pa-splash')) root.classList.add('no-splash');
   } catch (e) {}
 })();

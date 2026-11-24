@@ -18,8 +18,59 @@
       href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <style>
+      /* Pré-carregamento: a agenda do dia se preenche horário por horário; depois um círculo abre o app. */
+      @property --pct{syntax:"<integer>";inherits:false;initial-value:0}
+      @property --r{syntax:"<length-percentage>";inherits:false;initial-value:0%}
+      #splash{--bg:#FFFFFF;--ink:#1C1410;--mut:#7A5F52;--track:#FFEDE6;--line:#F4DDD2;position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg);color:var(--ink);font-family:"Geist",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-mask-image:radial-gradient(circle at 50% 46%,transparent var(--r),#000 calc(var(--r) + 1px));mask-image:radial-gradient(circle at 50% 46%,transparent var(--r),#000 calc(var(--r) + 1px))}
+      html.dark #splash{--bg:#14100D;--ink:#F6EFEA;--mut:#B39A8C;--track:#2A201B;--line:#3A2B24}
+      #splash .col{width:min(380px,100%);animation:sp-in .6s cubic-bezier(.2,.7,.2,1) both}
+      #splash .brand{display:flex;align-items:center;gap:12px;margin-bottom:26px}
+      #splash .logo{display:flex;width:44px;height:44px;align-items:center;justify-content:center;border-radius:12px;background:#FA4100;color:#fff;animation:sp-pop .7s .1s cubic-bezier(.3,1.4,.5,1) both}
+      #splash .logo svg{width:22px;height:22px}
+      #splash .name{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+      #splash .sub{margin-top:3px;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+      #splash .row{display:flex;align-items:center;gap:12px;height:46px;border-top:1px solid var(--line)}
+      #splash .row:last-of-type{border-bottom:1px solid var(--line)}
+      #splash .hr{width:42px;flex:none;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;color:var(--mut)}
+      #splash .track{position:relative;flex:1;height:32px;border-radius:9px;background:var(--track);overflow:hidden}
+      #splash .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:#FA4100;border-radius:9px;overflow:hidden;animation:sp-fill var(--d,1s) var(--w,0s) cubic-bezier(.45,.05,.2,1) forwards}
+      #splash .fill span,#splash .lbl{position:absolute;left:12px;top:0;line-height:32px;font-size:13px;font-weight:600;white-space:nowrap}
+      #splash .fill span{color:#fff}
+      #splash .lbl{color:var(--mut);font-weight:500}
+      #splash .foot{display:flex;justify-content:space-between;margin-top:16px;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;color:var(--mut)}
+      #splash .pct{--pct:0;animation:sp-count 1.9s .25s cubic-bezier(.45,.05,.2,1) forwards;counter-reset:n var(--pct)}
+      #splash .pct::after{content:counter(n) "%";color:var(--ink);font-weight:600}
+      #splash.go .col{animation:sp-out .45s cubic-bezier(.5,0,.8,.4) forwards}
+      #splash.go{pointer-events:none;animation:sp-hole .85s .2s cubic-bezier(.65,0,.25,1) forwards}
+      html.no-splash #splash{display:none}
+      @keyframes sp-in{from{opacity:0;transform:translateY(14px)}}
+      @keyframes sp-pop{from{opacity:0;transform:scale(.6)}}
+      @keyframes sp-fill{from{width:0}to{width:100%}}
+      @keyframes sp-count{to{--pct:100}}
+      @keyframes sp-out{to{opacity:0;transform:scale(.96)}}
+      @keyframes sp-hole{from{--r:0%}to{--r:75%;opacity:.98}}
+      @media (prefers-reduced-motion:reduce){
+        #splash .col,#splash .logo{animation:none}
+        #splash .fill{animation-duration:.01s;animation-delay:0s}
+        #splash.go{animation:sp-fade .3s forwards}
+        @keyframes sp-fade{to{opacity:0}}
+      }
+    </style>
   </head>
   <body class="antialiased">
+    <div id="splash" aria-hidden="true">
+      <div class="col">
+        <div class="brand"><div class="logo"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M238.78,183.79,98.28,87.65A40.18,40.18,0,0,0,100,76a40,40,0,1,0-15.29,31.45l30,20.56-30,20.56a40,40,0,1,0,3.57,59.74h0A39.73,39.73,0,0,0,100,180a40.18,40.18,0,0,0-1.72-11.66L136,142.54l89.22,61.06a12,12,0,0,0,13.56-19.81ZM71.31,191.33h0A16,16,0,1,1,76,180,16,16,0,0,1,71.31,191.33ZM48.69,87.3a16,16,0,1,1,22.62,0h0A16,16,0,0,1,48.69,87.3Zm112.82,23.24a12,12,0,0,1,3.13-16.68L225.22,52.4a12,12,0,0,1,13.56,19.81l-60.59,41.46a12,12,0,0,1-16.68-3.13Z"/></svg></div><div><div class="name">ProntoAgende</div><div class="sub">Montando sua agenda</div></div></div>
+        <div class="row"><span class="hr">09:00</span><div class="track"><span class="lbl">Corte</span><div class="fill" style="--d:0.9s;--w:0.30s"><span>Corte</span></div></div></div>
+        <div class="row"><span class="hr">10:00</span><div class="track"><span class="lbl">Barba</span><div class="fill" style="--d:1.05s;--w:0.50s"><span>Barba</span></div></div></div>
+        <div class="row"><span class="hr">11:00</span><div class="track"><span class="lbl">Corte + Barba</span><div class="fill" style="--d:1.2s;--w:0.70s"><span>Corte + Barba</span></div></div></div>
+        <div class="row"><span class="hr">12:00</span><div class="track"><span class="lbl">Pezinho</span><div class="fill" style="--d:0.85s;--w:0.90s"><span>Pezinho</span></div></div></div>
+        <div class="row"><span class="hr">13:00</span><div class="track"><span class="lbl">Corte</span><div class="fill" style="--d:1.1s;--w:1.10s"><span>Corte</span></div></div></div>
+        <div class="row"><span class="hr">14:00</span><div class="track"><span class="lbl">Barba</span><div class="fill" style="--d:1.0s;--w:1.30s"><span>Barba</span></div></div></div>
+        <div class="foot"><span>Hoje</span><span class="pct"></span></div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

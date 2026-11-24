@@ -1,5 +1,5 @@
 import ThemeToggle from './ThemeToggle';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Scissors, SignOut } from '@phosphor-icons/react';
 import { friendlyError, supabase } from '../lib/supabase';
 import { createBusinessWithDefaults, slugify } from '../lib/cloud';
@@ -11,14 +11,25 @@ import { TURNSTILE_SITE_KEY } from '../config/turnstile';
 const field =
   'w-full rounded-xl border border-stone-800 bg-stone-950 px-3.5 py-3 text-sm text-stone-100 focus:border-amber-500 focus:outline-none';
 
-const Shell: React.FC<{ title: string; subtitle?: string; children: React.ReactNode }> = ({
-  title,
-  subtitle,
-  children,
-}) => (
-  <main className="flex min-h-screen items-center justify-center bg-stone-950 px-4 pb-10 pt-20 sm:py-10">
+const Shell: React.FC<{
+  title: string;
+  subtitle?: string;
+  showBackToSite?: boolean;
+  children: React.ReactNode;
+}> = ({ title, subtitle, showBackToSite = false, children }) => (
+  <main className="flex min-h-[100dvh] items-center justify-center bg-stone-950 px-4 pb-10 pt-20 sm:py-10">
     <ThemeToggle floating />
     <div className="w-full max-w-md rounded-3xl border border-stone-800 bg-stone-900 p-7 shadow-xl">
+      {showBackToSite && (
+        <div className="mb-3">
+          <a
+            href="#/"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800"
+          >
+            ← Voltar ao site
+          </a>
+        </div>
+      )}
       <div className="mb-5 flex items-center gap-3 border-b border-stone-800 pb-5">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500 text-stone-950">
           <Scissors className="h-5 w-5" weight="bold" />
@@ -33,8 +44,10 @@ const Shell: React.FC<{ title: string; subtitle?: string; children: React.ReactN
   </main>
 );
 
-export const AuthScreen: React.FC = () => {
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
+export const AuthScreen: React.FC<{ initialMode?: 'login' | 'signup' }> = ({
+  initialMode = 'login',
+}) => {
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [shopName, setShopName] = useState('');
@@ -43,6 +56,12 @@ export const AuthScreen: React.FC = () => {
   const [info, setInfo] = useState('');
   const [captcha, setCaptcha] = useState<string | null>(null);
   const captchaRef = useRef<TurnstileHandle>(null);
+
+  useEffect(() => {
+    setMode(initialMode);
+    setError('');
+    setInfo('');
+  }, [initialMode]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,6 +112,7 @@ export const AuthScreen: React.FC = () => {
   return (
     <Shell
       title="ProntoAgende"
+      showBackToSite
       subtitle={
         mode === 'login' ? 'Entre na sua barbearia' : mode === 'signup' ? 'Crie a conta da sua barbearia' : 'Recuperar senha'
       }

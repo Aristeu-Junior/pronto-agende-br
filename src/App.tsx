@@ -67,6 +67,7 @@ import { PublicBookingPage } from './components/PublicBookingPage';
 import { AuthScreen, MfaChallengeScreen, OnboardingScreen, ResetPasswordScreen, WaitingScreen } from './components/AuthScreens';
 import { AccountModule } from './components/AccountModule';
 import { LegalPage } from './components/LegalPages';
+import { LandingPage } from './components/LandingPage';
 
 type ActiveTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'REMINDERS' | 'PUBLIC_BOOKING' | 'MANAGER' | 'SUPPORT' | 'ADMIN' | 'ACCOUNT';
 
@@ -92,14 +93,28 @@ function parsePublicSlug(hash: string): string | null {
 }
 
 /* ============================================================
- * Raiz: decide entre página pública do cliente e área da barbearia.
+ * Raiz: decide entre Landing Page, Reserva pública e Área da barbearia.
  * ============================================================ */
+function isAuthCallbackHash(hash: string): boolean {
+  return /access_token=|type=recovery|error_description=|refresh_token=/i.test(hash);
+}
+
 export function App() {
   const [hash, setHash] = useState(window.location.hash);
+  const [hasSession, setHasSession] = useState(false);
+
   useEffect(() => {
     const onHash = () => setHash(window.location.hash);
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setHasSession(Boolean(data.session)));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      setHasSession(Boolean(s));
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   if (import.meta.env.DEV && DevPreview && hash.startsWith('#/preview/')) {
@@ -115,13 +130,29 @@ export function App() {
 
   const publicSlug = parsePublicSlug(hash);
   if (publicSlug) return <PublicBookingPage slug={publicSlug} />;
-  return <OwnerGate />;
+
+  if (hash === '#/site') {
+    return <LandingPage isAuthenticated={hasSession} />;
+  }
+
+  if (
+    isAuthCallbackHash(hash) ||
+    hash === '#/app' ||
+    hash === '#/entrar' ||
+    hash === '#/login' ||
+    hash === '#/cadastro'
+  ) {
+    const initialAuthMode = hash === '#/cadastro' ? 'signup' : 'login';
+    return <OwnerGate initialAuthMode={initialAuthMode} />;
+  }
+
+  return <LandingPage isAuthenticated={hasSession} />;
 }
 
 /* ============================================================
  * Porta de entrada da barbearia: login, aprovação e cadastro.
  * ============================================================ */
-function OwnerGate() {
+function OwnerGate({ initialAuthMode = 'login' }: { initialAuthMode?: 'login' | 'signup' }) {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [business, setBusiness] = useState<BusinessConfig | null | undefined>(undefined);
@@ -179,11 +210,15 @@ function OwnerGate() {
     };
   }, [userId, refresh]);
 
-  const signOut = () => void supabase.auth.signOut();
+  const signOut = () => {
+    void supabase.auth.signOut().then(() => {
+      window.location.hash = '#/';
+    });
+  };
 
   if (session === undefined)
     return <main className="p-10 text-center text-sm text-stone-400">Carregando…</main>;
-  if (!session) return <AuthScreen />;
+  if (!session) return <AuthScreen initialMode={initialAuthMode} />;
   if (recovery) return <ResetPasswordScreen onDone={() => setRecovery(false)} />;
   if (mfaState === 'needed')
     return (
