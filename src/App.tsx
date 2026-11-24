@@ -27,9 +27,6 @@ import {
   UserPermissions,
 } from './types';
 import ThemeToggle from './components/ThemeToggle';
-import GuidedTour from './components/GuidedTour';
-import { SupportModule } from './components/SupportModule';
-import { AdminTicketsModule } from './components/AdminTicketsModule';
 import { fetchTickets } from './lib/cloud';
 import { SUPPORT_ENABLED } from './config/features';
 import { buildIntroSteps, buildPageSteps } from './config/tourSteps';
@@ -56,18 +53,26 @@ import {
   staffFromRow,
   staffToRow,
 } from './lib/cloud';
-import { AgendaModule } from './components/AgendaModule';
-import { ClientsModule } from './components/ClientsModule';
-import { PosModule } from './components/PosModule';
-import { RemindersModule } from './components/RemindersModule';
-import { ManagerDashboardModule } from './components/ManagerDashboardModule';
-import { AdminUsersModule } from './components/AdminUsersModule';
-import { ShareLinkModule } from './components/ShareLinkModule';
-import { PublicBookingPage } from './components/PublicBookingPage';
 import { AuthScreen, MfaChallengeScreen, OnboardingScreen, ResetPasswordScreen, WaitingScreen } from './components/AuthScreens';
-import { AccountModule } from './components/AccountModule';
-import { LegalPage } from './components/LegalPages';
 import { LandingPage } from './components/LandingPage';
+
+const GuidedTour = lazy(() => import('./components/GuidedTour'));
+const SupportModule = lazy(() => import('./components/SupportModule').then((m) => ({ default: m.SupportModule })));
+const AdminTicketsModule = lazy(() => import('./components/AdminTicketsModule').then((m) => ({ default: m.AdminTicketsModule })));
+const AgendaModule = lazy(() => import('./components/AgendaModule').then((m) => ({ default: m.AgendaModule })));
+const ClientsModule = lazy(() => import('./components/ClientsModule').then((m) => ({ default: m.ClientsModule })));
+const PosModule = lazy(() => import('./components/PosModule').then((m) => ({ default: m.PosModule })));
+const RemindersModule = lazy(() => import('./components/RemindersModule').then((m) => ({ default: m.RemindersModule })));
+const ManagerDashboardModule = lazy(() => import('./components/ManagerDashboardModule').then((m) => ({ default: m.ManagerDashboardModule })));
+const AdminUsersModule = lazy(() => import('./components/AdminUsersModule').then((m) => ({ default: m.AdminUsersModule })));
+const ShareLinkModule = lazy(() => import('./components/ShareLinkModule').then((m) => ({ default: m.ShareLinkModule })));
+const PublicBookingPage = lazy(() => import('./components/PublicBookingPage').then((m) => ({ default: m.PublicBookingPage })));
+const AccountModule = lazy(() => import('./components/AccountModule').then((m) => ({ default: m.AccountModule })));
+const LegalPage = lazy(() => import('./components/LegalPages').then((m) => ({ default: m.LegalPage })));
+
+const PageLoader: React.FC = () => (
+  <main className="p-10 text-center text-sm text-stone-400">Carregando…</main>
+);
 
 type ActiveTab = 'AGENDA' | 'POS' | 'CLIENTS' | 'REMINDERS' | 'PUBLIC_BOOKING' | 'MANAGER' | 'SUPPORT' | 'ADMIN' | 'ACCOUNT';
 
@@ -125,11 +130,29 @@ export function App() {
     );
   }
 
-  if (hash === '#/termos') return <LegalPage kind="termos" />;
-  if (hash === '#/privacidade') return <LegalPage kind="privacidade" />;
+  if (hash === '#/termos') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <LegalPage kind="termos" />
+      </Suspense>
+    );
+  }
+  if (hash === '#/privacidade') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <LegalPage kind="privacidade" />
+      </Suspense>
+    );
+  }
 
   const publicSlug = parsePublicSlug(hash);
-  if (publicSlug) return <PublicBookingPage slug={publicSlug} />;
+  if (publicSlug) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <PublicBookingPage slug={publicSlug} />
+      </Suspense>
+    );
+  }
 
   if (hash === '#/site') {
     return <LandingPage isAuthenticated={hasSession} />;
@@ -888,7 +911,11 @@ function Dashboard({
         </div>
       </header>
 
-      {tourOpen && <GuidedTour steps={tourSteps} onClose={closeTour} />}
+      {tourOpen && (
+        <Suspense fallback={null}>
+          <GuidedTour steps={tourSteps} onClose={closeTour} />
+        </Suspense>
+      )}
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-6">
         {syncError && (
@@ -900,6 +927,7 @@ function Dashboard({
           </div>
         )}
 
+        <Suspense fallback={<PageLoader />}>
         <div key={activeTab} className="tab-enter">
         {activeTab === 'AGENDA' && (
           <AgendaModule
@@ -1014,6 +1042,7 @@ function Dashboard({
           </>
         )}
         </div>
+        </Suspense>
       </main>
 
       <nav aria-label="Navegação Mobile" className="xl:hidden fixed bottom-0 inset-x-0 z-40 bg-stone-950/95 backdrop-blur-lg border-t border-stone-800 px-1 py-1.5 flex items-stretch justify-around">

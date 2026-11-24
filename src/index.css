@@ -632,6 +632,18 @@ html {
   }
 }
 
+#recursos,
+#como-funciona,
+#planos,
+#duvidas {
+  scroll-margin-top: 5rem;
+}
+
+.landing-section-defer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 560px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

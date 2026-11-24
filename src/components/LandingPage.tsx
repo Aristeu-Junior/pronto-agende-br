@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
+  ArrowUp,
   CheckCircle,
   Clock,
   List,
@@ -62,6 +63,7 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   const statsReveal = useRevealOnScroll<HTMLElement>();
   const featuresReveal = useRevealOnScroll<HTMLElement>();
@@ -69,11 +71,12 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
   const plansReveal = useRevealOnScroll<HTMLElement>();
   const faqReveal = useRevealOnScroll<HTMLElement>();
 
-  // Atualiza header compactado + fallback para barra de progresso de scroll
+  // Atualiza header compactado, botão de voltar ao topo + fallback para barra de progresso
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
       setScrolled(y > 16);
+      setShowBackToTop(y > 600);
       const doc = document.documentElement;
       const maxScroll = Math.max(1, doc.scrollHeight - doc.clientHeight);
       const progress = Math.min(1, Math.max(0, y / maxScroll));
@@ -99,6 +102,19 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
 
   return (
     <div className="min-h-[100dvh] bg-stone-950 text-stone-100 flex flex-col">
+      <a
+        href="#conteudo-principal"
+        onClick={(e) => {
+          e.preventDefault();
+          const mainEl = document.getElementById('conteudo-principal');
+          mainEl?.focus();
+          mainEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }}
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70] focus:rounded-xl focus:bg-amber-500 focus:px-4 focus:py-2 focus:text-xs focus:font-bold focus:text-stone-950 focus:shadow-lg"
+      >
+        Pular para o conteúdo
+      </a>
+
       {/* Barra de progresso de leitura no topo */}
       <div className="landing-scroll-progress" aria-hidden="true" />
 
@@ -253,7 +269,7 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
       </header>
 
       {/* Conteúdo Principal */}
-      <main className="flex-1">
+      <main id="conteudo-principal" tabIndex={-1} className="flex-1">
         {/* 1. HERO SECTION */}
         <section className="relative overflow-hidden border-b border-stone-800/80">
           <div
@@ -384,7 +400,7 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
         <section
           id="recursos"
           ref={featuresReveal.ref}
-          className={`reveal-on-scroll ${
+          className={`landing-section-defer reveal-on-scroll ${
             featuresReveal.visible ? 'is-visible' : ''
           } max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20 space-y-8`}
         >
@@ -409,7 +425,7 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
         <section
           id="como-funciona"
           ref={stepsReveal.ref}
-          className={`reveal-on-scroll ${
+          className={`landing-section-defer reveal-on-scroll ${
             stepsReveal.visible ? 'is-visible' : ''
           } border-y border-stone-800/80 bg-tint-50 py-14 sm:py-20`}
         >
@@ -474,7 +490,7 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
         <section
           id="planos"
           ref={plansReveal.ref}
-          className={`reveal-on-scroll ${
+          className={`landing-section-defer reveal-on-scroll ${
             plansReveal.visible ? 'is-visible' : ''
           } max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20`}
         >
@@ -488,7 +504,7 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
         <section
           id="duvidas"
           ref={faqReveal.ref}
-          className={`reveal-on-scroll ${
+          className={`landing-section-defer reveal-on-scroll ${
             faqReveal.visible ? 'is-visible' : ''
           } border-t border-stone-800/80 bg-tint-50 py-14 sm:py-20`}
         >
@@ -631,6 +647,20 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
           </div>
         </div>
       </footer>
+
+      {/* Botão flutuante discreto: Voltar ao topo */}
+      {showBackToTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Voltar ao topo"
+          title="Voltar ao topo"
+          data-compact
+          className="fixed bottom-5 right-4 z-40 inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-800 bg-stone-900/95 text-stone-100 shadow-lg backdrop-blur-sm hover:border-amber-500 hover:bg-amber-500 hover:text-stone-950 transition-all cursor-pointer"
+        >
+          <ArrowUp className="h-5 w-5" weight="bold" />
+        </button>
+      )}
     </div>
   );
 };
