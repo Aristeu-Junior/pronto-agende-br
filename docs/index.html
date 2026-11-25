@@ -30,28 +30,43 @@
       rel="stylesheet"
     />
     <style>
-      /* Pré-carregamento: a agenda do dia se preenche horário por horário; depois um círculo abre o app. */
+      /* Pré-carregamento: o cliente é atendido na cadeira (corte, barba, pronto); depois um círculo abre o app. */
       @property --pct{syntax:"<integer>";inherits:false;initial-value:0}
       @property --r{syntax:"<length-percentage>";inherits:false;initial-value:0%}
-      #splash{--bg:#FFFFFF;--ink:#1C1410;--mut:#7A5F52;--track:#FFEDE6;--line:#F4DDD2;position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg);color:var(--ink);font-family:"Geist",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-mask-image:radial-gradient(circle at 50% 46%,transparent var(--r),#000 calc(var(--r) + 1px));mask-image:radial-gradient(circle at 50% 46%,transparent var(--r),#000 calc(var(--r) + 1px))}
-      html.dark #splash{--bg:#14100D;--ink:#F6EFEA;--mut:#B39A8C;--track:#2A201B;--line:#3A2B24}
+      #splash{--T:3.2s;--bg:#FFFFFF;--ink:#1C1410;--mut:#7A5F52;--track:#FFEDE6;--line:#F4DDD2;--hair:#2B1D16;position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg);color:var(--ink);font-family:"Geist",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-mask-image:radial-gradient(circle at 50% 46%,transparent var(--r),#000 calc(var(--r) + 1px));mask-image:radial-gradient(circle at 50% 46%,transparent var(--r),#000 calc(var(--r) + 1px))}
+      html.dark #splash{--bg:#14100D;--ink:#F6EFEA;--mut:#B39A8C;--track:#2A201B;--line:#3A2B24;--hair:#8A6552}
       #splash .col{width:min(380px,100%);animation:sp-in .6s cubic-bezier(.2,.7,.2,1) both}
-      #splash .brand{display:flex;align-items:center;gap:12px;margin-bottom:26px}
+      #splash .brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
       #splash .logo{display:flex;width:44px;height:44px;align-items:center;justify-content:center;border-radius:12px;background:#FA4100;color:#fff;animation:sp-pop .7s .1s cubic-bezier(.3,1.4,.5,1) both}
       #splash .logo svg{width:22px;height:22px}
       #splash .name{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
       #splash .sub{margin-top:3px;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
-      #splash .row{display:flex;align-items:center;gap:12px;height:46px;border-top:1px solid var(--line)}
-      #splash .row:last-of-type{border-bottom:1px solid var(--line)}
-      #splash .hr{width:42px;flex:none;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;color:var(--mut)}
-      #splash .track{position:relative;flex:1;height:32px;border-radius:9px;background:var(--track);overflow:hidden}
-      #splash .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:#FA4100;border-radius:9px;overflow:hidden;animation:sp-fill var(--d,1s) var(--w,0s) cubic-bezier(.45,.05,.2,1) forwards}
-      #splash .fill span,#splash .lbl{position:absolute;left:12px;top:0;line-height:32px;font-size:13px;font-weight:600;white-space:nowrap}
-      #splash .fill span{color:#fff}
-      #splash .lbl{color:var(--mut);font-weight:500}
-      #splash .foot{display:flex;justify-content:space-between;margin-top:16px;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;color:var(--mut)}
-      #splash .pct{--pct:0;animation:sp-count 1.9s .25s cubic-bezier(.45,.05,.2,1) forwards;counter-reset:n var(--pct)}
+      #splash .stage{width:min(300px,100%);margin:0 auto}
+      #splash .scn{display:block;width:100%;height:auto;overflow:visible}
+      #splash .scn *{transform-box:fill-box}
+      #splash .scn .free,#splash .scn .free *,#splash .ok,#splash .star{transform-box:view-box}
+      #splash .bar{height:4px;margin-top:14px;border-radius:99px;background:var(--track);overflow:hidden}
+      #splash .bar i{display:block;height:100%;width:0;border-radius:99px;background:#FA4100;animation:sp-fill 3s .2s cubic-bezier(.45,.05,.2,1) forwards}
+      #splash .foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;color:var(--mut)}
+      #splash .cap{position:relative;flex:1;height:16px}
+      #splash .cap span{position:absolute;left:0;top:0;white-space:nowrap;opacity:0}
+      #splash .cap .c1{animation:cap1 var(--T) ease forwards}
+      #splash .cap .c2{animation:cap2 var(--T) ease forwards}
+      #splash .cap .c3{animation:cap3 var(--T) ease forwards;color:var(--ink);font-weight:600}
+      #splash .pct{--pct:0;animation:sp-count 3s .2s cubic-bezier(.45,.05,.2,1) forwards;counter-reset:n var(--pct)}
       #splash .pct::after{content:counter(n) "%";color:var(--ink);font-weight:600}
+      /* cena */
+      #splash .hair{transform-origin:50% 100%;animation:hair-cut var(--T) ease-in-out forwards}
+      #splash .beard{transform-origin:50% 0%;animation:beard-trim var(--T) ease-in-out forwards}
+      #splash .eye{transform-origin:50% 50%;animation:blink 2.6s .8s infinite}
+      #splash .scis{opacity:0;transform-origin:0 0;animation:scis-move var(--T) ease-in-out forwards}
+      #splash .b1{transform-origin:0 0;transform:rotate(-16deg);animation:snip1 .16s ease-in-out .2s 12 alternate}
+      #splash .b2{transform-origin:0 0;transform:rotate(16deg);animation:snip2 .16s ease-in-out .2s 12 alternate}
+      #splash .clip{opacity:0;animation:fall .5s var(--dl) ease-in 2}
+      #splash .trim{opacity:0;transform-origin:0 0;animation:trim-move var(--T) ease-in-out forwards}
+      #splash .vib{animation:vib .06s linear infinite alternate}
+      #splash .ok{transform-origin:0 0;transform:scale(0);animation:pop var(--T) cubic-bezier(.3,1.4,.5,1) forwards}
+      #splash .star{transform-origin:0 0;transform:scale(0);animation:pop var(--T) cubic-bezier(.3,1.4,.5,1) forwards}
       #splash.go .col{animation:sp-out .45s cubic-bezier(.5,0,.8,.4) forwards}
       #splash.go{pointer-events:none;animation:sp-hole .85s .2s cubic-bezier(.65,0,.25,1) forwards}
       html.no-splash #splash{display:none}
@@ -61,30 +76,93 @@
       @keyframes sp-count{to{--pct:100}}
       @keyframes sp-out{to{opacity:0;transform:scale(.96)}}
       @keyframes sp-hole{from{--r:0%}to{--r:75%;opacity:.98}}
+      @keyframes hair-cut{0%,6%{transform:scale(1.14,1.4)}14%{transform:scale(1.11,1.32)}24%{transform:scale(1.08,1.22)}34%{transform:scale(1.05,1.11)}46%,100%{transform:scale(1,1)}}
+      @keyframes beard-trim{0%,50%{transform:scale(1.12,1.45)}60%{transform:scale(1.1,1.32)}70%{transform:scale(1.06,1.16)}82%,100%{transform:scale(1,1)}}
+      @keyframes blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+      @keyframes scis-move{0%,3%{opacity:0;transform:translate(60px,40px) rotate(-20deg)}7%{opacity:1;transform:translate(70px,34px) rotate(-10deg)}16%{transform:translate(150px,24px) rotate(8deg)}26%{transform:translate(78px,22px) rotate(-8deg)}36%{transform:translate(158px,32px) rotate(10deg)}45%{opacity:1;transform:translate(120px,12px) rotate(0)}50%,100%{opacity:0;transform:translate(120px,0) rotate(0)}}
+      @keyframes snip1{to{transform:rotate(-1deg)}}
+      @keyframes snip2{to{transform:rotate(1deg)}}
+      @keyframes fall{0%{opacity:0;transform:translate(0,0) rotate(0)}12%{opacity:1}100%{opacity:0;transform:translate(var(--dx),72px) rotate(var(--rot))}}
+      @keyframes trim-move{0%,50%{opacity:0;transform:translate(70px,110px) rotate(35deg)}54%{opacity:1;transform:translate(78px,118px) rotate(40deg)}60%{transform:translate(92px,136px) rotate(20deg)}68%{transform:translate(120px,152px) rotate(0)}76%{transform:translate(148px,136px) rotate(-20deg)}82%{opacity:1;transform:translate(164px,118px) rotate(-38deg)}90%,100%{opacity:0;transform:translate(170px,110px) rotate(-40deg)}}
+      @keyframes vib{from{transform:translate(.8px,0)}to{transform:translate(-.8px,0)}}
+      @keyframes pop{0%,84%{transform:scale(0)}92%{transform:scale(1.2)}100%{transform:scale(1)}}
+      @keyframes cap1{0%{opacity:0;transform:translateY(4px)}4%,44%{opacity:1;transform:none}49%,100%{opacity:0;transform:translateY(-4px)}}
+      @keyframes cap2{0%,48%{opacity:0;transform:translateY(4px)}53%,80%{opacity:1;transform:none}85%,100%{opacity:0;transform:translateY(-4px)}}
+      @keyframes cap3{0%,84%{opacity:0;transform:translateY(4px)}90%,100%{opacity:1;transform:none}}
       @media (prefers-reduced-motion:reduce){
         #splash .col,#splash .logo{animation:none}
-        #splash .fill{animation-duration:.01s;animation-delay:0s}
+        #splash .scn *,#splash .cap span,#splash .pct,#splash .bar i{animation-duration:.01s!important;animation-delay:0s!important;animation-iteration-count:1!important}
         #splash.go{animation:sp-fade .3s forwards}
         @keyframes sp-fade{to{opacity:0}}
       }
     </style>
-    <script type="module" crossorigin src="./assets/index-6szUlWtg.js"></script>
+    <script type="module" crossorigin src="./assets/index-DPlc8gSx.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/vendor-icons-CnsjcF1n.js">
     <link rel="modulepreload" crossorigin href="./assets/vendor-react-igMbjcal.js">
     <link rel="modulepreload" crossorigin href="./assets/vendor-supabase-D5xPhma_.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-DQnfUb4A.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-DqaP7tQT.css">
   </head>
   <body class="antialiased">
     <div id="splash" aria-hidden="true">
       <div class="col">
-        <div class="brand"><div class="logo"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M238.78,183.79,98.28,87.65A40.18,40.18,0,0,0,100,76a40,40,0,1,0-15.29,31.45l30,20.56-30,20.56a40,40,0,1,0,3.57,59.74h0A39.73,39.73,0,0,0,100,180a40.18,40.18,0,0,0-1.72-11.66L136,142.54l89.22,61.06a12,12,0,0,0,13.56-19.81ZM71.31,191.33h0A16,16,0,1,1,76,180,16,16,0,0,1,71.31,191.33ZM48.69,87.3a16,16,0,1,1,22.62,0h0A16,16,0,0,1,48.69,87.3Zm112.82,23.24a12,12,0,0,1,3.13-16.68L225.22,52.4a12,12,0,0,1,13.56,19.81l-60.59,41.46a12,12,0,0,1-16.68-3.13Z"/></svg></div><div><div class="name">ProntoAgende</div><div class="sub">Montando sua agenda</div></div></div>
-        <div class="row"><span class="hr">09:00</span><div class="track"><span class="lbl">Corte</span><div class="fill" style="--d:0.9s;--w:0.30s"><span>Corte</span></div></div></div>
-        <div class="row"><span class="hr">10:00</span><div class="track"><span class="lbl">Barba</span><div class="fill" style="--d:1.05s;--w:0.50s"><span>Barba</span></div></div></div>
-        <div class="row"><span class="hr">11:00</span><div class="track"><span class="lbl">Corte + Barba</span><div class="fill" style="--d:1.2s;--w:0.70s"><span>Corte + Barba</span></div></div></div>
-        <div class="row"><span class="hr">12:00</span><div class="track"><span class="lbl">Pezinho</span><div class="fill" style="--d:0.85s;--w:0.90s"><span>Pezinho</span></div></div></div>
-        <div class="row"><span class="hr">13:00</span><div class="track"><span class="lbl">Corte</span><div class="fill" style="--d:1.1s;--w:1.10s"><span>Corte</span></div></div></div>
-        <div class="row"><span class="hr">14:00</span><div class="track"><span class="lbl">Barba</span><div class="fill" style="--d:1.0s;--w:1.30s"><span>Barba</span></div></div></div>
-        <div class="foot"><span>Hoje</span><span class="pct"></span></div>
+        <div class="brand"><div class="logo"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M238.78,183.79,98.28,87.65A40.18,40.18,0,0,0,100,76a40,40,0,1,0-15.29,31.45l30,20.56-30,20.56a40,40,0,1,0,3.57,59.74h0A39.73,39.73,0,0,0,100,180a40.18,40.18,0,0,0-1.72-11.66L136,142.54l89.22,61.06a12,12,0,0,0,13.56-19.81ZM71.31,191.33h0A16,16,0,1,1,76,180,16,16,0,0,1,71.31,191.33ZM48.69,87.3a16,16,0,1,1,22.62,0h0A16,16,0,0,1,48.69,87.3Zm112.82,23.24a12,12,0,0,1,3.13-16.68L225.22,52.4a12,12,0,0,1,13.56,19.81l-60.59,41.46a12,12,0,0,1-16.68-3.13Z"/></svg></div><div><div class="name">ProntoAgende</div><div class="sub">Preparando sua agenda</div></div></div>
+        <div class="stage">
+          <svg class="scn" viewBox="0 0 240 200" fill="none">
+            <defs><clipPath id="spc"><circle cx="120" cy="100" r="92"/></clipPath></defs>
+            <circle cx="120" cy="100" r="92" fill="var(--track)"/>
+            <g clip-path="url(#spc)">
+              <path d="M30 200 C34 164 76 150 120 150 C164 150 206 164 210 200 Z" fill="#FA4100"/>
+              <path d="M96 150 Q120 165 144 150" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".85"/>
+            </g>
+            <rect x="104" y="130" width="32" height="26" rx="8" fill="#D9A47F"/>
+            <circle cx="80" cy="96" r="7" fill="#E8B38F"/>
+            <circle cx="160" cy="96" r="7" fill="#E8B38F"/>
+            <ellipse cx="120" cy="92" rx="40" ry="48" fill="#F0C3A0"/>
+            <path class="beard" d="M81 98 C79 132 98 146 120 146 C142 146 161 132 159 98 C152 112 142 117 130 117 C124 114 116 114 110 117 C98 117 88 112 81 98 Z" fill="var(--hair)"/>
+            <ellipse class="eye" cx="107" cy="91" rx="2.6" ry="3.2" fill="#2B1D16"/>
+            <ellipse class="eye" cx="133" cy="91" rx="2.6" ry="3.2" fill="#2B1D16"/>
+            <path d="M119 97 Q116 104 120 105" stroke="#D9A47F" stroke-width="2" stroke-linecap="round"/>
+            <path d="M111 109 Q120 114 129 109" stroke="#B5785A" stroke-width="2.2" stroke-linecap="round"/>
+            <path class="hair" d="M76 92 C66 56 88 30 120 30 C152 30 174 56 164 92 C158 74 146 64 120 64 C94 64 82 74 76 92 Z" fill="var(--hair)"/>
+            <g fill="var(--hair)">
+              <ellipse class="clip" cx="88" cy="40" rx="4" ry="2" style="--dl:.25s;--dx:-14px;--rot:120deg"/>
+              <ellipse class="clip" cx="150" cy="38" rx="4" ry="2" style="--dl:.4s;--dx:16px;--rot:-140deg"/>
+              <ellipse class="clip" cx="110" cy="30" rx="3.5" ry="1.8" style="--dl:.55s;--dx:-8px;--rot:90deg"/>
+              <ellipse class="clip" cx="132" cy="28" rx="3.5" ry="1.8" style="--dl:.7s;--dx:10px;--rot:-100deg"/>
+              <ellipse class="clip" cx="72" cy="62" rx="3.5" ry="1.8" style="--dl:.85s;--dx:-18px;--rot:150deg"/>
+              <ellipse class="clip" cx="168" cy="60" rx="3.5" ry="1.8" style="--dl:1s;--dx:18px;--rot:-150deg"/>
+            </g>
+            <g class="free">
+              <g class="scis">
+                <g class="b1">
+                  <path d="M0 0 L36 -3 L36 0 Z" fill="#CFD6DD"/>
+                  <path d="M0 0 L-12 9" stroke="#FA4100" stroke-width="3" stroke-linecap="round"/>
+                  <circle cx="-15" cy="11" r="5.5" stroke="#FA4100" stroke-width="3"/>
+                </g>
+                <g class="b2">
+                  <path d="M0 0 L36 3 L36 0 Z" fill="#B7C0C8"/>
+                  <path d="M0 0 L-12 -9" stroke="#FA4100" stroke-width="3" stroke-linecap="round"/>
+                  <circle cx="-15" cy="-11" r="5.5" stroke="#FA4100" stroke-width="3"/>
+                </g>
+                <circle r="2" fill="#6B7680"/>
+              </g>
+              <g class="trim">
+                <g class="vib">
+                  <rect x="-8" y="0" width="16" height="36" rx="5" fill="#3A4651"/>
+                  <rect x="-8" y="-6" width="16" height="7" rx="1" fill="#CFD6DD"/>
+                  <path d="M-6 -6v7M-2 -6v7M2 -6v7M6 -6v7" stroke="#7C8791" stroke-width="1"/>
+                  <circle cx="0" cy="18" r="3" fill="#FA4100"/>
+                </g>
+              </g>
+            </g>
+            <g transform="translate(188 64)"><g class="ok"><circle r="15" fill="#FA4100"/><path d="M-6 0 L-1.5 5 L7 -5" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></g></g>
+            <g transform="translate(46 64)"><path class="star" d="M0 -9 Q1.5 -1.5 9 0 Q1.5 1.5 0 9 Q-1.5 1.5 -9 0 Q-1.5 -1.5 0 -9Z" fill="#FA4100"/></g>
+            <g transform="translate(50 140)"><path class="star" style="animation-delay:.08s" d="M0 -7 Q1.2 -1.2 7 0 Q1.2 1.2 0 7 Q-1.2 1.2 -7 0 Q-1.2 -1.2 0 -7Z" fill="#FF8A5B"/></g>
+            <g transform="translate(200 132)"><path class="star" style="animation-delay:.14s" d="M0 -8 Q1.4 -1.4 8 0 Q1.4 1.4 0 8 Q-1.4 1.4 -8 0 Q-1.4 -1.4 0 -8Z" fill="#FA4100"/></g>
+          </svg>
+        </div>
+        <div class="bar"><i></i></div>
+        <div class="foot"><div class="cap"><span class="c1">Cortando o cabelo…</span><span class="c2">Aparando a barba…</span><span class="c3">Pronto! Abrindo sua agenda</span></div><span class="pct"></span></div>
       </div>
     </div>
     <div id="root"></div>

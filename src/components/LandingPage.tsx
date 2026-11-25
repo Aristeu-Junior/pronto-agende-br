@@ -11,7 +11,6 @@ import {
   X,
 } from '@phosphor-icons/react';
 import ThemeToggle from './ThemeToggle';
-import { LandingPreloader } from './LandingPreloader';
 import { LandingCenterStage } from './LandingCenterStage';
 import { LandingFaqSection, LandingPricingSection } from './LandingPricingAndFaq';
 import { buildSalesWhatsAppUrl } from '../config/landing';
@@ -110,8 +109,6 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
       {/* Barra de progresso de leitura no topo */}
       <div className="landing-scroll-progress" aria-hidden="true" />
 
-      {/* Preloader coreografado */}
-      <LandingPreloader />
 
       {/* Header fixo com login do barbeiro no canto superior direito */}
       <header
