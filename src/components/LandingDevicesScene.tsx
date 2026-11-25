@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useMemo, useRef } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, createPortal, useFrame } from '@react-three/fiber';
 import { ContactShadows, Environment, Html, Lightformer, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -16,6 +16,7 @@ interface SceneProps {
   laptopScreen: React.ReactNode;
   phoneScreen: React.ReactNode;
   narrow: boolean;
+  device: 'laptop' | 'phone';
 }
 
 /** MacBook: lid hinged on the model's own `screen` node, UI projected on its panel. */
@@ -111,35 +112,78 @@ const IPhone: React.FC<{ screen: React.ReactNode }> = ({ screen }) => {
   );
 };
 
-const Rig: React.FC<SceneProps> = ({ laptopScreen, phoneScreen, narrow }) => {
-  const group = useRef<THREE.Group>(null);
-  useFrame(({ clock, pointer }) => {
-    const g = group.current;
+const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const SWAP_SECONDS = 0.7;
+
+/** One device at a time. Swapping spins the current one away and the next one in. */
+const Rig: React.FC<SceneProps> = ({ laptopScreen, phoneScreen, narrow, device }) => {
+  const tilt = useRef<THREE.Group>(null);
+  const swap = useRef<THREE.Group>(null);
+  const [shown, setShown] = useState(device);
+  const wanted = useRef(device);
+  const anim = useRef<{ phase: 'idle' | 'out' | 'in'; t: number }>({ phase: 'idle', t: 1 });
+
+  useEffect(() => {
+    wanted.current = device;
+    if (device !== shown && anim.current.phase !== 'out') anim.current = { phase: 'out', t: 0 };
+  }, [device, shown]);
+
+  useFrame(({ clock, pointer }, delta) => {
+    const a = anim.current;
+    if (a.phase !== 'idle') {
+      a.t = Math.min(1, a.t + delta / (SWAP_SECONDS / 2));
+      if (a.t >= 1) {
+        if (a.phase === 'out') {
+          setShown(wanted.current);
+          anim.current = { phase: 'in', t: 0 };
+        } else {
+          anim.current = { phase: 'idle', t: 1 };
+        }
+      }
+    }
+    const cur = anim.current;
+    const away = cur.phase === 'out' ? easeInOut(cur.t) : cur.phase === 'in' ? 1 - easeInOut(cur.t) : 0;
+    const dir = cur.phase === 'in' ? -1 : 1;
+    const s = swap.current;
+    if (s) {
+      s.rotation.y = dir * away * Math.PI * 2.2;
+      s.rotation.z = dir * away * 0.6;
+      s.position.y = away * 0.9;
+      s.position.z = -away * 3.5;
+      s.scale.setScalar(Math.max(0.001, 1 - 0.95 * away));
+    }
+    const g = tilt.current;
     if (!g) return;
     const t = clock.getElapsedTime();
-    const targetY = Math.sin(t * 0.45) * 0.07 + pointer.x * 0.08;
-    const targetX = pointer.y * -0.04;
+    const targetY = Math.sin(t * 0.45) * 0.03 + pointer.x * 0.05;
+    const targetX = pointer.y * -0.025;
     g.rotation.y += (targetY - g.rotation.y) * 0.05;
     g.rotation.x += (targetX - g.rotation.x) * 0.05;
   });
 
+  const showLaptop = shown === 'laptop' && !narrow;
   return (
-    <group ref={group}>
-      {!narrow && (
-        <group position={[-1.35, -1.45, 0]} rotation={[0, 0.3, 0]}>
-          <MacBook screen={laptopScreen} />
-        </group>
-      )}
-      <group
-        position={narrow ? [0, -0.1, 0] : [2.7, -0.3, 1.3]}
-        rotation={[0, Math.PI + (narrow ? 0 : 0.35), 0]}
-        scale={narrow ? 3.1 : 2.7}
-      >
-        <IPhone screen={phoneScreen} />
+    <group ref={tilt}>
+      <group ref={swap}>
+        {showLaptop ? (
+          <group position={[0, -1.0, 0.2]} scale={LAPTOP_ZOOM}>
+            <MacBook screen={laptopScreen} />
+          </group>
+        ) : (
+          <group
+            position={narrow ? [0, -0.1, 0] : [0, 0.2, 0.2]}
+            rotation={[0, Math.PI, 0]}
+            scale={narrow ? 3.1 : 3.4}
+          >
+            <IPhone screen={phoneScreen} />
+          </group>
+        )}
       </group>
     </group>
   );
 };
+
+const LAPTOP_ZOOM = 1.15;
 
 const LandingDevicesScene: React.FC<SceneProps> = (props) => (
   <Canvas

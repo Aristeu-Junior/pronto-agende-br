@@ -770,3 +770,11 @@ html {
 .lc3d-screen button:active:not(:disabled){transform:none}
 .lc3d-screen button,.lc3d-screen a{transition-property:color,background-color,border-color,opacity}
 .lc3d-loading{position:absolute;inset:0}
+
+/* Landing: troca notebook/celular */
+.lc3d-hint{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:100;margin:0;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;color:#fff;background:rgb(20 20 22 / .78);border:1px solid rgb(255 255 255 / .12);backdrop-filter:blur(6px);pointer-events:none}
+.lc3d-switch{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);z-index:100;display:inline-flex;align-items:center;gap:8px;padding:12px 22px;min-height:44px;border-radius:999px;border:0;font-size:15px;font-weight:700;cursor:pointer;color:#1c1410;background:#fa4100;box-shadow:0 10px 30px -8px rgb(250 65 0 / .7);transition:filter .15s}
+.lc3d-switch:hover{filter:brightness(1.1)}
+.lc3d-switch:active:not(:disabled){transform:translateX(-50%) scale(.97)}
+.lc3d-switch svg{width:20px;height:20px}
+@media (prefers-reduced-motion: reduce){.lc3d-switch{transition:none}}

@@ -5,9 +5,11 @@ import {
   CheckCircle,
   Copy,
   CreditCard,
+  DeviceMobile,
   DownloadSimple,
   ArrowSquareOut as ExternalLink,
   Headset,
+  Laptop,
   SquaresFour as LayoutDashboard,
   MagnifyingGlass,
   Plus,
@@ -649,6 +651,7 @@ export const LandingCenterStage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SandboxTab>('AGENDA');
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(1120);
+  const [device, setDevice] = useState<'laptop' | 'phone'>('laptop');
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -659,6 +662,8 @@ export const LandingCenterStage: React.FC = () => {
   }, []);
 
   const narrow = width < 640;
+  const target = narrow ? 'phone' : device;
+  const other = target === 'laptop' ? 'celular' : 'notebook';
 
   const phoneScreen = (
     <div className="flex h-full w-full flex-col bg-stone-950 text-stone-100">
@@ -741,15 +746,28 @@ export const LandingCenterStage: React.FC = () => {
     <div ref={wrapRef} className="w-full">
       <div
         className="lc3d-stage relative mx-auto w-full"
-        style={{ height: narrow ? 640 : Math.max(380, width * STAGE_RATIO) }}
+        style={{ height: narrow ? 640 : Math.max(420, width * STAGE_RATIO) }}
       >
+        <p className="lc3d-hint">Teste você mesmo o nosso app: clique dentro da tela</p>
         <Suspense fallback={<div className="lc3d-loading" aria-hidden="true" />}>
           <LandingDevicesScene
             laptopScreen={laptopScreen}
             phoneScreen={phoneScreen}
             narrow={narrow}
+            device={target}
           />
         </Suspense>
+        {!narrow && (
+          <button
+            type="button"
+            className="lc3d-switch"
+            onClick={() => setDevice(target === 'laptop' ? 'phone' : 'laptop')}
+            aria-label={`Trocar para o ${other}`}
+          >
+            {target === 'laptop' ? <DeviceMobile weight="bold" /> : <Laptop weight="bold" />}
+            <span>Ver no {other}</span>
+          </button>
+        )}
       </div>
     </div>
   );
