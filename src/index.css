@@ -778,3 +778,5 @@ html {
 .lc3d-switch:active:not(:disabled){transform:translateX(-50%) scale(.97)}
 .lc3d-switch svg{width:20px;height:20px}
 @media (prefers-reduced-motion: reduce){.lc3d-switch{transition:none}}
+.lc3d-overlay{position:absolute;left:0;top:0;z-index:10;display:none;transform-origin:0 0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.lc3d-overlay-phone{border-radius:34px}

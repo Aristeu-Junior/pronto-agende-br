@@ -18,6 +18,7 @@ import {
   WhatsappLogo,
   WifiHigh,
 } from '@phosphor-icons/react';
+import { MAC_PX_H, MAC_PX_W, PHONE_PX_H, PHONE_PX_W } from './landingScreenSizes';
 import { PaymentMethod } from '../types';
 import { calculatePartnerSplit, formatBRL } from '../utils/validators';
 
@@ -643,6 +644,7 @@ const AppScreenBody: React.FC<AppScreenBodyProps> = ({
   );
 };
 
+
 const LandingDevicesScene = React.lazy(() => import('./LandingDevicesScene'));
 
 const STAGE_RATIO = 0.54;
@@ -650,6 +652,8 @@ const STAGE_RATIO = 0.54;
 export const LandingCenterStage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SandboxTab>('AGENDA');
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const laptopOverlay = useRef<HTMLDivElement | null>(null);
+  const phoneOverlay = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(1120);
   const [device, setDevice] = useState<'laptop' | 'phone'>('laptop');
 
@@ -751,12 +755,26 @@ export const LandingCenterStage: React.FC = () => {
         <p className="lc3d-hint">Teste você mesmo o nosso app: clique dentro da tela</p>
         <Suspense fallback={<div className="lc3d-loading" aria-hidden="true" />}>
           <LandingDevicesScene
-            laptopScreen={laptopScreen}
-            phoneScreen={phoneScreen}
+            laptopOverlay={laptopOverlay}
+            phoneOverlay={phoneOverlay}
             narrow={narrow}
             device={target}
           />
         </Suspense>
+        <div
+          ref={laptopOverlay}
+          className="lc3d-screen lc3d-overlay"
+          style={{ width: MAC_PX_W, height: MAC_PX_H }}
+        >
+          {laptopScreen}
+        </div>
+        <div
+          ref={phoneOverlay}
+          className="lc3d-screen lc3d-overlay lc3d-overlay-phone"
+          style={{ width: PHONE_PX_W, height: PHONE_PX_H }}
+        >
+          {phoneScreen}
+        </div>
         {!narrow && (
           <button
             type="button"

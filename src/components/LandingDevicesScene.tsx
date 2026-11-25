@@ -1,26 +1,93 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, createPortal, useFrame } from '@react-three/fiber';
-import { ContactShadows, Environment, Html, Lightformer, useGLTF } from '@react-three/drei';
+import { ContactShadows, Environment, Lightformer, useGLTF } from '@react-three/drei';
+import { MAC_PX_H, MAC_PX_W, PHONE_PX_H, PHONE_PX_W } from './landingScreenSizes';
 import * as THREE from 'three';
 
-export const MAC_PX_W = 1000;
-export const MAC_PX_H = 645;
-export const PHONE_PX_W = 340;
-export const PHONE_PX_H = 736;
 
 const DRACO = `${import.meta.env.BASE_URL}draco/`;
 const MAC_URL = `${import.meta.env.BASE_URL}models/mac.glb`;
 const PHONE_URL = `${import.meta.env.BASE_URL}models/iphone/scene.gltf`;
 
+type OverlayRef = React.RefObject<HTMLDivElement | null>;
+
 interface SceneProps {
-  laptopScreen: React.ReactNode;
-  phoneScreen: React.ReactNode;
+  laptopOverlay: OverlayRef;
+  phoneOverlay: OverlayRef;
   narrow: boolean;
   device: 'laptop' | 'phone';
 }
 
+
+/**
+ * Pins a flat DOM screen onto a 3D quad. The quad's corners are projected with the real
+ * camera every frame and applied as ONE matrix3d, so what is drawn and what is clickable
+ * are the same pixels (drei's nested <Html transform> drifts on hit-testing and on zoom).
+ */
+const useScreenOverlay = (
+  anchor: React.RefObject<THREE.Object3D | null>,
+  overlay: OverlayRef,
+  cssW: number,
+  cssH: number,
+  worldW: number,
+  worldH: number,
+) => {
+  const v = useMemo(() => new THREE.Vector3(), []);
+  const corners = useMemo(
+    () => [
+      [-worldW / 2, worldH / 2],
+      [worldW / 2, worldH / 2],
+      [worldW / 2, -worldH / 2],
+      [-worldW / 2, -worldH / 2],
+    ],
+    [worldW, worldH],
+  );
+
+  useEffect(
+    () => () => {
+      const el = overlay.current;
+      if (el) el.style.display = 'none';
+    },
+    [overlay],
+  );
+
+  useFrame(({ camera, size }) => {
+    const el = overlay.current;
+    const a = anchor.current;
+    if (!el || !a) return;
+    a.updateWorldMatrix(true, false);
+    const pts: number[][] = [];
+    for (const [cx, cy] of corners) {
+      v.set(cx, cy, 0).applyMatrix4(a.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+      if (v.z > -0.1) {
+        el.style.visibility = 'hidden';
+        return;
+      }
+      v.applyMatrix4(camera.projectionMatrix);
+      pts.push([(v.x * 0.5 + 0.5) * size.width, (-v.y * 0.5 + 0.5) * size.height]);
+    }
+    const [[x0, y0], [x1, y1], [x2, y2], [x3, y3]] = pts;
+    const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3;
+    const dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
+    const den = dx1 * dy2 - dy1 * dx2;
+    if (Math.abs(den) < 1e-6) {
+      el.style.visibility = 'hidden';
+      return;
+    }
+    const g = (dx3 * dy2 - dy3 * dx2) / den;
+    const h = (dx1 * dy3 - dy1 * dx3) / den;
+    const A = x1 - x0 + g * x1, B = x3 - x0 + h * x3;
+    const D = y1 - y0 + g * y1, E = y3 - y0 + h * y3;
+    const m = [A / cssW, D / cssW, 0, g / cssW, B / cssH, E / cssH, 0, h / cssH, 0, 0, 1, 0, x0, y0, 0, 1];
+    el.style.transform = `matrix3d(${m.join(',')})`;
+    el.style.display = 'block';
+    el.style.visibility = 'visible';
+  });
+};
+
 /** MacBook: lid hinged on the model's own `screen` node, UI projected on its panel. */
-const MacBook: React.FC<{ screen: React.ReactNode }> = ({ screen }) => {
+const MacBook: React.FC<{ overlay: OverlayRef }> = ({ overlay }) => {
+  const anchor = useRef<THREE.Object3D>(null);
   const { scene } = useGLTF(MAC_URL, DRACO);
   const root = useMemo(() => scene.clone(true), [scene]);
   const lid = useMemo(() => root.getObjectByName('screen') as THREE.Object3D, [root]);
@@ -43,6 +110,8 @@ const MacBook: React.FC<{ screen: React.ReactNode }> = ({ screen }) => {
   }, [root, lid]);
 
   const portalTarget = lid;
+  const worldW = 30.4;
+  useScreenOverlay(anchor, overlay, MAC_PX_W, MAC_PX_H, worldW, (worldW * MAC_PX_H) / MAC_PX_W);
 
   return (
     <group scale={0.13} rotation={[0, MAC_YAW, 0]}>
@@ -50,18 +119,7 @@ const MacBook: React.FC<{ screen: React.ReactNode }> = ({ screen }) => {
       {portalTarget &&
         matte &&
         createPortal(
-          <Html
-            transform
-            scale={(30.4 * 40) / MAC_PX_W}
-            position={[0, -0.47, -11.52]}
-            rotation={[-Math.PI / 2, 0, 0]}
-            style={{ width: MAC_PX_W, height: MAC_PX_H }}
-            zIndexRange={[10, 0]}
-          >
-            <div className="lc3d-screen" style={{ width: MAC_PX_W, height: MAC_PX_H }}>
-              {screen}
-            </div>
-          </Html>,
+          <object3D ref={anchor} position={[0, -0.47, -11.52]} rotation={[-Math.PI / 2, 0, 0]} />,
           portalTarget,
         )}
     </group>
@@ -72,7 +130,8 @@ const MAC_LID_ANGLE = Math.PI / 2 + 0.2;
 const MAC_YAW = 0;
 
 /** iPhone: UI projected onto the model's own Wallpaper (screen) mesh. */
-const IPhone: React.FC<{ screen: React.ReactNode }> = ({ screen }) => {
+const IPhone: React.FC<{ overlay: OverlayRef }> = ({ overlay }) => {
+  const anchor = useRef<THREE.Object3D>(null);
   const { scene } = useGLTF(PHONE_URL, DRACO);
   const root = useMemo(() => scene.clone(true), [scene]);
   const wallpaper = useMemo(
@@ -89,23 +148,15 @@ const IPhone: React.FC<{ screen: React.ReactNode }> = ({ screen }) => {
     }
   }, [wallpaper]);
 
+  const worldW = 0.444;
+  useScreenOverlay(anchor, overlay, PHONE_PX_W, PHONE_PX_H, worldW, (worldW * PHONE_PX_H) / PHONE_PX_W);
+
   return (
     <group>
       <primitive object={root} />
       {wallpaper &&
         createPortal(
-          <Html
-            transform
-            scale={(0.444 * 40) / PHONE_PX_W}
-            position={[0, 0, -0.026]}
-            rotation={[0, Math.PI, 0]}
-            style={{ width: PHONE_PX_W, height: PHONE_PX_H }}
-            zIndexRange={[10, 0]}
-          >
-            <div className="lc3d-screen" style={{ width: PHONE_PX_W, height: PHONE_PX_H }}>
-              {screen}
-            </div>
-          </Html>,
+          <object3D ref={anchor} position={[0, 0, -0.026]} rotation={[0, Math.PI, 0]} />,
           wallpaper,
         )}
     </group>
@@ -116,7 +167,7 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
 const SWAP_SECONDS = 0.7;
 
 /** One device at a time. Swapping spins the current one away and the next one in. */
-const Rig: React.FC<SceneProps> = ({ laptopScreen, phoneScreen, narrow, device }) => {
+const Rig: React.FC<SceneProps> = ({ laptopOverlay, phoneOverlay, narrow, device }) => {
   const tilt = useRef<THREE.Group>(null);
   const swap = useRef<THREE.Group>(null);
   const [shown, setShown] = useState(device);
@@ -167,7 +218,7 @@ const Rig: React.FC<SceneProps> = ({ laptopScreen, phoneScreen, narrow, device }
       <group ref={swap}>
         {showLaptop ? (
           <group position={[0, -1.0, 0.2]} scale={LAPTOP_ZOOM}>
-            <MacBook screen={laptopScreen} />
+            <MacBook overlay={laptopOverlay} />
           </group>
         ) : (
           <group
@@ -175,7 +226,7 @@ const Rig: React.FC<SceneProps> = ({ laptopScreen, phoneScreen, narrow, device }
             rotation={[0, Math.PI, 0]}
             scale={narrow ? 3.1 : 3.4}
           >
-            <IPhone screen={phoneScreen} />
+            <IPhone overlay={phoneOverlay} />
           </group>
         )}
       </group>
