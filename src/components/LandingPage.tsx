@@ -331,6 +331,27 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
             <a href="#/privacidade" className="hover:text-amber-800">Privacidade</a>
           </nav>
         </div>
+        <p className="max-w-7xl mx-auto px-4 sm:px-6 pb-6 text-center text-[10px] text-stone-400">
+          Modelo 3D "Apple iPhone 13 Pro Max" por{' '}
+          <a
+            href="https://sketchfab.com/DatSketch"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            DatSketch
+          </a>
+          , licença{' '}
+          <a
+            href="http://creativecommons.org/licenses/by/4.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            CC-BY 4.0
+          </a>
+          .
+        </p>
       </footer>
 
       {/* Botão flutuante discreto: Voltar ao topo */}

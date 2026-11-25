@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BatteryFull,
   Calendar,
@@ -641,187 +641,115 @@ const AppScreenBody: React.FC<AppScreenBodyProps> = ({
   );
 };
 
-const KEY_ROWS = [
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5],
-  [1.4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.1],
-  [1.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.8],
-  [2.1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2.2],
-  [1, 1, 1, 1.3, 5.2, 1.3, 1, 1, 1, 1],
-];
+const LandingDevicesScene = React.lazy(() => import('./LandingDevicesScene'));
 
-const STAGE_W = 1120;
-const STAGE_H = 640;
+const STAGE_RATIO = 0.54;
 
 export const LandingCenterStage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SandboxTab>('AGENDA');
   const wrapRef = useRef<HTMLDivElement | null>(null);
-  const [scale, setScale] = useState(1);
-  const [narrow, setNarrow] = useState(false);
+  const [width, setWidth] = useState(1120);
 
   useEffect(() => {
     const el = wrapRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(([entry]) => {
-      const w = entry.contentRect.width;
-      setNarrow(w < 640);
-      setScale(w < 640 ? Math.min(1, w / 340) : Math.min(1, w / STAGE_W));
-    });
+    const ro = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  const phone = (
-    <div className="lc-phone-wrap">
-      <div className="iphone-3d-assembly is-orbiting">
-        <div className="iphone-3d-chassis w-[308px]">
-          <div aria-hidden="true" className="iphone-depth-left flex flex-col gap-2 pt-10 items-center">
-            <span className="h-4 w-1 rounded-full bg-zinc-400/70" />
-            <span className="h-7 w-1 rounded-full bg-zinc-400/70" />
-            <span className="h-7 w-1 rounded-full bg-zinc-400/70" />
-          </div>
-          <div aria-hidden="true" className="iphone-depth-right flex flex-col pt-16 items-center">
-            <span className="h-10 w-1 rounded-full bg-zinc-400/70" />
-          </div>
-          <div className="iphone-screen-glass relative bg-stone-950 overflow-hidden flex flex-col">
-            <div className="bg-zinc-950 px-5 pt-2.5 pb-2 flex items-center justify-between text-white">
-              <span className="font-mono text-[11px] font-bold">9:41</span>
-              <div className="iphone-dynamic-island flex items-center justify-end pr-2">
-                <span className="h-2 w-2 rounded-full bg-zinc-800 ring-1 ring-zinc-700" />
-              </div>
-              <div className="flex items-center gap-1.5">
-                <WifiHigh className="h-3.5 w-3.5" weight="bold" />
-                <BatteryFull className="h-4 w-4" weight="fill" />
-              </div>
-            </div>
-            <div className="border-b border-stone-800 px-3.5 py-2 flex items-center gap-2 bg-stone-950">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-stone-950">
-                <Scissors className="h-3.5 w-3.5" weight="bold" />
-              </div>
-              <span className="text-xs font-bold text-stone-100">ProntoAgende</span>
-            </div>
-            <div className="p-3 bg-tint-50/40 h-[340px] overflow-y-auto">
-              <AppScreenBody activeTab={activeTab} compact onSelectTab={setActiveTab} />
-            </div>
-            <nav
-              aria-label="Abas do aplicativo no celular"
-              className="border-t border-stone-800 bg-stone-950 px-1 py-1.5 grid grid-cols-6 gap-0.5"
-            >
-              {SANDBOX_TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  data-compact
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center rounded-lg py-1 px-0.5 text-[9px] font-semibold cursor-pointer ${
-                    tab.id === activeTab ? 'bg-amber-500/15 text-amber-800 font-bold' : 'text-stone-400'
-                  }`}
-                >
-                  {tabIcon(tab.id)}
-                  <span className="mt-0.5 truncate max-w-full">{tab.shortLabel}</span>
-                </button>
-              ))}
-            </nav>
-            <div className="bg-stone-950 pb-1.5 pt-0.5 flex justify-center">
-              <div className="h-1 w-24 rounded-full bg-stone-700" />
-            </div>
-          </div>
+  const narrow = width < 640;
+
+  const phoneScreen = (
+    <div className="flex h-full w-full flex-col bg-stone-950 text-stone-100">
+      <div className="flex items-center justify-between px-7 pt-3 pb-2">
+        <span className="font-mono text-[13px] font-bold">9:41</span>
+        <div className="flex items-center gap-1.5">
+          <WifiHigh className="h-4 w-4" weight="bold" />
+          <BatteryFull className="h-5 w-5" weight="fill" />
         </div>
       </div>
+      <div className="mt-6 flex items-center gap-2 border-b border-stone-800 px-4 py-2.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-stone-950">
+          <Scissors className="h-4 w-4" weight="bold" />
+        </div>
+        <span className="text-sm font-bold">ProntoAgende</span>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto bg-tint-50/40 p-3.5">
+        <AppScreenBody activeTab={activeTab} compact onSelectTab={setActiveTab} />
+      </div>
+      <nav
+        aria-label="Abas do aplicativo no celular"
+        className="grid grid-cols-6 gap-0.5 border-t border-stone-800 bg-stone-950 px-1.5 pt-2 pb-5"
+      >
+        {SANDBOX_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            data-compact
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex flex-col items-center rounded-lg px-0.5 py-1.5 text-[10px] font-semibold cursor-pointer ${
+              tab.id === activeTab ? 'bg-amber-500/15 text-amber-800 font-bold' : 'text-stone-400'
+            }`}
+          >
+            {tabIcon(tab.id)}
+            <span className="mt-0.5 max-w-full truncate">{tab.shortLabel}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 
-  const laptop = (
-    <div className="lc-laptop-scene">
-      <div className="lc-laptop">
-        <div className="lc-lid">
-          <div className="lc-lid-front">
-            <div className="lc-bezel">
-              <span className="lc-notch" />
-              <div className="lc-screen bg-stone-950">
-                <div className="flex items-center justify-between gap-2 border-b border-stone-800 bg-stone-950 px-3 py-1.5">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500 text-stone-950">
-                      <Scissors className="h-3 w-3" weight="bold" />
-                    </div>
-                    <span className="text-[11px] font-bold text-stone-100">ProntoAgende</span>
-                  </div>
-                  <nav
-                    aria-label="Abas do aplicativo no notebook"
-                    className="flex items-center gap-0.5 rounded-xl border border-stone-800 bg-stone-900 p-0.5"
-                  >
-                    {SANDBOX_TABS.map((tab) => (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        data-compact
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-semibold cursor-pointer ${
-                          tab.id === activeTab
-                            ? 'bg-amber-500 text-stone-950'
-                            : 'text-stone-400 hover:text-stone-100'
-                        }`}
-                      >
-                        {tabIcon(tab.id)}
-                        <span>{tab.label}</span>
-                      </button>
-                    ))}
-                  </nav>
-                </div>
-                <div className="p-3 bg-tint-50/40 h-[calc(100%-41px)] overflow-y-auto">
-                  <AppScreenBody activeTab={activeTab} compact={false} onSelectTab={setActiveTab} />
-                </div>
-              </div>
-            </div>
+  const laptopScreen = (
+    <div className="flex h-full w-full flex-col bg-stone-950 text-stone-100">
+      <div className="flex items-center justify-between gap-3 border-b border-stone-800 px-5 py-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-stone-950">
+            <Scissors className="h-4 w-4" weight="bold" />
           </div>
-          <div className="lc-lid-back" />
+          <span className="text-sm font-bold">ProntoAgende</span>
         </div>
-        <div className="lc-deck">
-          <div className="lc-deck-top">
-            <div className="lc-speaker" />
-            <div className="lc-keys">
-              {KEY_ROWS.map((row, r) => (
-                <div key={r} className="flex gap-[5px]">
-                  {row.map((g, k) => (
-                    <span key={k} className="lc-key" style={{ flexGrow: g }} />
-                  ))}
-                </div>
-              ))}
-            </div>
-            <div className="lc-speaker" />
-            <div className="lc-trackpad" />
-          </div>
-          <div className="lc-deck-lip" />
-        </div>
+        <nav
+          aria-label="Abas do aplicativo no notebook"
+          className="flex items-center gap-1 rounded-xl border border-stone-800 bg-stone-900 p-1"
+        >
+          {SANDBOX_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              data-compact
+              onClick={() => setActiveTab(tab.id)}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer ${
+                tab.id === activeTab
+                  ? 'bg-amber-500 text-stone-950'
+                  : 'text-stone-400 hover:text-stone-100'
+              }`}
+            >
+              {tabIcon(tab.id)}
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
       </div>
-      <div className="lc-floor-shadow" />
+      <div className="min-h-0 flex-1 overflow-y-auto bg-tint-50/40 p-5">
+        <AppScreenBody activeTab={activeTab} compact={false} onSelectTab={setActiveTab} />
+      </div>
     </div>
   );
 
   return (
     <div ref={wrapRef} className="w-full">
       <div
-        className="relative mx-auto"
-        style={{
-          width: narrow ? 340 * scale : STAGE_W * scale,
-          height: narrow ? 560 * scale : STAGE_H * scale,
-        }}
+        className="lc3d-stage relative mx-auto w-full"
+        style={{ height: narrow ? 640 : Math.max(380, width * STAGE_RATIO) }}
       >
-        {narrow ? (
-          <div
-            className="absolute left-0 top-0 origin-top-left"
-            style={{ width: 340, height: 560, transform: `scale(${scale})` }}
-          >
-            {phone}
-          </div>
-        ) : (
-          <div
-            className="absolute left-0 top-0 origin-top-left"
-            style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})` }}
-          >
-            {laptop}
-            {phone}
-          </div>
-        )}
+        <Suspense fallback={<div className="lc3d-loading" aria-hidden="true" />}>
+          <LandingDevicesScene
+            laptopScreen={laptopScreen}
+            phoneScreen={phoneScreen}
+            narrow={narrow}
+          />
+        </Suspense>
       </div>
     </div>
   );

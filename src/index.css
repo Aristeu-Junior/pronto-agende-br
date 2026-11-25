@@ -763,3 +763,10 @@ html {
 
 .lc-laptop button:active:not(:disabled), .iphone-3d-assembly button:active:not(:disabled) { transform: none; }
 .lc-laptop button, .lc-laptop a, .iphone-3d-assembly button, .iphone-3d-assembly a { transition-property: background-color, border-color, color, opacity; }
+
+/* ---- Landing 3D devices (three.js scene + live DOM screens) ---- */
+.lc3d-stage canvas{display:block;touch-action:pan-y}
+.lc3d-screen{overflow:hidden;background:#0a0a0a;font-size:14px;line-height:1.4}
+.lc3d-screen button:active:not(:disabled){transform:none}
+.lc3d-screen button,.lc3d-screen a{transition-property:color,background-color,border-color,opacity}
+.lc3d-loading{position:absolute;inset:0}
