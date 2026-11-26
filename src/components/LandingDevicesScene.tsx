@@ -3,6 +3,7 @@ import { Canvas, createPortal, useFrame } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, useGLTF } from '@react-three/drei';
 import { MAC_PX_H, MAC_PX_W, PHONE_PX_H, PHONE_PX_W } from './landingScreenSizes';
 import * as THREE from 'three';
+import LandingKeyboard3D from './LandingKeyboard3D';
 
 
 const DRACO = `${import.meta.env.BASE_URL}draco/`;
@@ -114,8 +115,9 @@ const MacBook: React.FC<{ overlay: OverlayRef }> = ({ overlay }) => {
   useScreenOverlay(anchor, overlay, MAC_PX_W, MAC_PX_H, worldW, (worldW * MAC_PX_H) / MAC_PX_W);
 
   return (
-    <group scale={0.13} rotation={[0, MAC_YAW, 0]}>
+    <group scale={0.13} rotation={[MAC_TILT, MAC_YAW, 0]}>
       <primitive object={root} />
+      <LandingKeyboard3D />
       {portalTarget &&
         matte &&
         createPortal(
@@ -128,6 +130,8 @@ const MacBook: React.FC<{ overlay: OverlayRef }> = ({ overlay }) => {
 
 const MAC_LID_ANGLE = Math.PI / 2 + 0.2;
 const MAC_YAW = 0;
+// Inclina o notebook para o espectador enxergar o teclado de cima.
+const MAC_TILT = 0.2;
 
 /** iPhone: UI projected onto the model's own Wallpaper (screen) mesh. */
 const IPhone: React.FC<{ overlay: OverlayRef }> = ({ overlay }) => {
@@ -234,7 +238,7 @@ const Rig: React.FC<SceneProps> = ({ laptopOverlay, phoneOverlay, narrow, device
   );
 };
 
-const LAPTOP_ZOOM = 1.15;
+const LAPTOP_ZOOM = 1.0;
 
 const LandingDevicesScene: React.FC<SceneProps> = (props) => (
   <Canvas
