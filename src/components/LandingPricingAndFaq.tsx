@@ -5,6 +5,7 @@ import {
   buildSalesWhatsAppUrl,
   LANDING_FAQS,
   LANDING_PLANS,
+  TRIAL_CTA_LABEL,
 } from '../config/landing';
 
 interface LandingPricingSectionProps {
@@ -12,11 +13,15 @@ interface LandingPricingSectionProps {
   loginHref: string;
 }
 
-const MAX_FEATURES = 4;
-const MAX_FAQS = 5;
+const brl = (value: number, fractionDigits = 0) =>
+  `R$ ${value.toLocaleString('pt-BR', {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  })}`;
 
 export const LandingPricingSection: React.FC<LandingPricingSectionProps> = () => {
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
+  // Anual já vem selecionado para o cliente enxergar o melhor preço primeiro.
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('annual');
 
   return (
     <div className="space-y-10">
@@ -43,7 +48,7 @@ export const LandingPricingSection: React.FC<LandingPricingSectionProps> = () =>
             >
               <span>{cycle === 'monthly' ? 'Mensal' : 'Anual'}</span>
               {cycle === 'annual' && (
-                <span className="font-mono text-[10px] font-bold">-20%</span>
+                <span className="font-mono text-[10px] font-bold">Desconto</span>
               )}
             </button>
           ))}
@@ -52,12 +57,13 @@ export const LandingPricingSection: React.FC<LandingPricingSectionProps> = () =>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
         {LANDING_PLANS.map((plan) => {
-          const displayedPrice =
-            billingCycle === 'annual' && plan.priceAnnualMonthlyValue !== null
-              ? `R$ ${plan.priceAnnualMonthlyValue}`
-              : plan.priceMonthlyValue !== null
-              ? `R$ ${plan.priceMonthlyValue}`
-              : plan.priceMonthly;
+          const tier = billingCycle === 'annual' ? plan.annual : plan.monthly;
+          const periodLabel =
+            tier === null
+              ? plan.customPeriodLabel
+              : billingCycle === 'annual'
+              ? '/ano'
+              : '/mês';
 
           const primaryHref = plan.useWhatsappPrimary
             ? buildSalesWhatsAppUrl(plan.name, billingCycle)
@@ -75,16 +81,28 @@ export const LandingPricingSection: React.FC<LandingPricingSectionProps> = () =>
             >
               <div className="space-y-5">
                 <h3 className="text-lg font-bold text-stone-100">{plan.name}</h3>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-mono num-tabular text-3xl font-bold text-stone-100">
-                    {displayedPrice}
-                  </span>
-                  <span className="text-xs font-medium text-stone-400">
-                    {plan.periodLabel}
-                  </span>
+                <div className="space-y-1">
+                  {tier !== null && (
+                    <p className="font-mono num-tabular text-sm text-stone-400 line-through">
+                      {brl(tier.was)}
+                    </p>
+                  )}
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-mono num-tabular text-3xl font-bold text-stone-100">
+                      {tier !== null ? brl(tier.price) : plan.customPriceLabel}
+                    </span>
+                    <span className="text-xs font-medium text-stone-400">
+                      {periodLabel}
+                    </span>
+                  </div>
+                  {tier !== null && billingCycle === 'annual' && (
+                    <p className="text-[11px] font-medium text-stone-400">
+                      equivale a {brl(tier.price / 12, 2)} por mês
+                    </p>
+                  )}
                 </div>
                 <ul className="space-y-2.5">
-                  {plan.features.slice(0, MAX_FEATURES).map((feat) => (
+                  {plan.features.map((feat) => (
                     <li
                       key={feat}
                       className="flex items-start gap-2 text-xs text-stone-200"
@@ -116,6 +134,19 @@ export const LandingPricingSection: React.FC<LandingPricingSectionProps> = () =>
           );
         })}
       </div>
+
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 rounded-3xl border border-stone-800 bg-stone-900 px-6 py-5 text-center sm:text-left">
+        <p className="text-sm font-bold text-stone-100">
+          Ainda na dúvida de qual plano escolher?
+        </p>
+        <a
+          href="#/cadastro"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-600 px-5 py-3 text-xs font-bold text-stone-950"
+        >
+          <span>{TRIAL_CTA_LABEL}</span>
+          <ArrowRight className="h-4 w-4" weight="bold" />
+        </a>
+      </div>
     </div>
   );
 };
@@ -126,7 +157,7 @@ export const LandingFaqSection: React.FC = () => (
       Dúvidas
     </h2>
     <div className="landing-faq space-y-3">
-      {LANDING_FAQS.slice(0, MAX_FAQS).map((faq) => (
+      {LANDING_FAQS.map((faq) => (
         <details
           key={faq.question}
           className="rounded-2xl border border-stone-800 bg-stone-900 overflow-hidden"

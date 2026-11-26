@@ -13,7 +13,7 @@ import {
 import ThemeToggle from './ThemeToggle';
 import { LandingCenterStage } from './LandingCenterStage';
 import { LandingFaqSection, LandingPricingSection } from './LandingPricingAndFaq';
-import { buildSalesWhatsAppUrl } from '../config/landing';
+import { buildSalesWhatsAppUrl, TRIAL_CTA_LABEL } from '../config/landing';
 import { COMPANY } from '../config/legal';
 
 function useRevealOnScroll<T extends HTMLElement>() {
@@ -246,19 +246,19 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
         {/* 1. HERO */}
         <section className="relative overflow-hidden">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 text-center space-y-6">
-            <h1 className="hero-rise text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-stone-100 leading-[1.08]">
-              Agenda cheia.{' '}
-              <span className="text-amber-500">Caixa no controle.</span>
+            <h1 className="hero-rise text-4xl sm:text-5xl lg:text-5xl font-bold tracking-tight text-stone-100 leading-[1.1]">
+              Agendamento fácil de verdade para a sua barbearia.{' '}
+              <span className="text-amber-500">Sem complicação.</span>
             </h1>
             <p className="hero-rise hero-rise-delay-1 mx-auto max-w-xl text-sm sm:text-base text-stone-300">
-              Link de reserva 24h, lembrete no WhatsApp e comissão da equipe. Em um só lugar.
+              Organize horários no dia a dia e mande lembretes no WhatsApp.
             </p>
             <div className="hero-rise hero-rise-delay-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
               <a
                 href="#/cadastro"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-600 px-6 py-3.5 text-sm font-bold text-stone-950 shadow-lg shadow-amber-500/20"
               >
-                <span>Criar conta</span>
+                <span>{TRIAL_CTA_LABEL}</span>
                 <ArrowRight className="h-4 w-4" weight="bold" />
               </a>
               <a
@@ -301,6 +301,22 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
           } border-t border-stone-800/80 bg-tint-50 py-14 sm:py-20`}
         >
           <LandingFaqSection />
+        </section>
+
+        {/* 7. CHAMADA FINAL */}
+        <section className="border-t border-stone-800/80 py-14 sm:py-20">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center space-y-6">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-100">
+              Pronto para facilitar o agendamento da sua barbearia no dia a dia?
+            </h2>
+            <a
+              href="#/cadastro"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-600 px-6 py-3.5 text-sm font-bold text-stone-950 shadow-lg shadow-amber-500/20"
+            >
+              <span>{TRIAL_CTA_LABEL}</span>
+              <ArrowRight className="h-4 w-4" weight="bold" />
+            </a>
+          </div>
         </section>
 
       </main>

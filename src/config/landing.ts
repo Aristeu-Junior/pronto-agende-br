@@ -3,9 +3,9 @@
  * Edite aqui o WhatsApp comercial, planos, recursos e perguntas frequentes sem mexer nos componentes.
  */
 
-// Troque pelo WhatsApp comercial oficial com DDI + DDD (apenas dígitos), ex.: '5511999999999'.
+// Troque pelo WhatsApp comercial oficial com DDI + DDD (apenas dígitos), ex.: '5511953023340'.
 // Quando estiver vazio, o CTA direciona para o cadastro direto (#/cadastro).
-export const SALES_WHATSAPP_NUMBER = '5511999999999';
+export const SALES_WHATSAPP_NUMBER = '5511953023340';
 
 export type BillingCycle = 'monthly' | 'annual';
 
@@ -121,78 +121,66 @@ export const LANDING_FEATURES: LandingFeatureItem[] = [
 export interface LandingPlanItem {
   id: string;
   name: string;
-  badge?: string;
-  priceMonthlyValue: number | null;
-  priceAnnualMonthlyValue: number | null;
-  annualSavingsLabel?: string;
-  priceMonthly: string;
-  periodLabel: string;
-  description: string;
   highlighted?: boolean;
+  /** Preço mensal atual e o preço "de" riscado (null = sob medida). */
+  monthly: { price: number; was: number } | null;
+  /** Preço do ano inteiro e o valor "de" riscado (mensal x 12). */
+  annual: { price: number; was: number } | null;
+  customPriceLabel?: string;
+  customPeriodLabel?: string;
   features: string[];
   ctaLabel: string;
   ctaHref: string;
   useWhatsappPrimary?: boolean;
 }
 
+export const TRIAL_CTA_LABEL = 'Quero testar sem pagar';
+
 export const LANDING_PLANS: LandingPlanItem[] = [
   {
-    id: 'essencial',
-    name: 'Autônomo / Essencial',
-    priceMonthlyValue: 49,
-    priceAnnualMonthlyValue: 39,
-    annualSavingsLabel: 'Economize R$ 120/ano',
-    priceMonthly: 'R$ 49',
-    periodLabel: '/mês',
-    description:
-      'Ideal para quem trabalha sozinho e quer sair do caderno ou WhatsApp manual.',
+    id: 'solo',
+    name: 'Solo / Essencial',
+    monthly: { price: 27, was: 37 },
+    annual: { price: 287, was: 324 },
     features: [
-      '1 profissional (cadeira) com escala própria',
-      'Agenda ilimitada + encaixes rápidos',
-      'Link exclusivo de agendamento online 24h',
-      'Caixa / PDV simples com Pix, cartão e dinheiro',
-      'Base de clientes e disparo rápido no WhatsApp',
+      '1 barbeiro com agenda própria',
+      'Agendamento rápido para cortes',
+      'Link para clientes agendarem online',
+      'Caixa simples (Pix, cartão e dinheiro), sem papel',
+      'Acesso gratuito por sete dias',
     ],
-    ctaLabel: 'Começar no Essencial',
+    ctaLabel: 'Garantir minha conta',
     ctaHref: '#/cadastro',
   },
   {
-    id: 'profissional',
-    name: 'Barbearia Pro',
-    badge: 'Mais escolhido',
-    priceMonthlyValue: 89,
-    priceAnnualMonthlyValue: 71,
-    annualSavingsLabel: 'Economize R$ 216/ano',
-    priceMonthly: 'R$ 89',
-    periodLabel: '/mês',
-    description:
-      'Tudo liberado para barbearias, salões e clínicas com equipe e comissões.',
+    id: 'barbearia',
+    name: 'Barbearia',
     highlighted: true,
+    monthly: { price: 57, was: 79 },
+    annual: { price: 652, was: 684 },
     features: [
-      'Até 5 profissionais com horários e folgas individuais',
-      'Cálculo automático de comissão e taxa de maquininha',
-      'Sinal Pix anti-falta com Copia e Cola na reserva',
-      'Central de lembretes no WhatsApp + alerta de faltas',
-      'Extratos bancários, relatório financeiro e suporte prioritário',
+      'Tudo do Solo / Essencial para até 4 barbeiros',
+      'Agendas, folgas e horários por barbeiro',
+      'Lembretes no WhatsApp para evitar faltas e "bolos"',
+      'Comissão e taxa de maquininha automáticas',
+      'Sinal via Pix na reserva',
+      'Acesso gratuito por sete dias',
     ],
-    ctaLabel: 'Contratar Barbearia Pro',
+    ctaLabel: 'Garantir minha conta',
     ctaHref: '#/cadastro',
   },
   {
-    id: 'equipe',
+    id: 'estudio',
     name: 'Estúdio & Rede',
-    priceMonthlyValue: null,
-    priceAnnualMonthlyValue: null,
-    priceMonthly: 'Sob medida',
-    periodLabel: 'equipe 6+',
-    description:
-      'Para operações maiores que precisam de implantação assistida e múltiplos profissionais.',
+    monthly: null,
+    annual: null,
+    customPriceLabel: 'Sob medida',
+    customPeriodLabel: '5+ barbeiros',
     features: [
-      'Profissionais e serviços ilimitados',
-      'Configuração inicial assistida com sua equipe',
-      'Regras personalizadas de comissão e auxiliares',
-      'Acompanhamento dedicado via WhatsApp',
-      'Zero comissão por agendamento de clientes seus',
+      'Tudo do plano Barbearia para 5 ou mais barbeiros',
+      'Regras personalizadas de equipe e comissão',
+      'Apoio no WhatsApp para configurar',
+      'Acesso gratuito por sete dias',
     ],
     ctaLabel: 'Falar no WhatsApp',
     ctaHref: buildSalesWhatsAppUrl('Estúdio & Rede'),
@@ -200,79 +188,41 @@ export const LANDING_PLANS: LandingPlanItem[] = [
   },
 ];
 
-export const INCLUDED_IN_ALL_PLANS: string[] = [
-  '0% comissão por atendimento',
-  'Sem fidelidade ou multa',
-  'Ativação assistida no mesmo dia',
-  'Backup e exportação LGPD em JSON',
-];
-
-export type LandingFaqCategory = 'AGENDAMENTO' | 'FINANCEIRO' | 'SEGURANCA';
-
 export interface LandingFaqItem {
-  category: LandingFaqCategory;
   question: string;
   answer: string;
 }
 
-export const LANDING_FAQ_CATEGORIES: Array<{
-  id: 'ALL' | LandingFaqCategory;
-  label: string;
-}> = [
-  { id: 'ALL', label: 'Todas' },
-  { id: 'AGENDAMENTO', label: 'Agendamento & Link' },
-  { id: 'FINANCEIRO', label: 'Financeiro & Pix' },
-  { id: 'SEGURANCA', label: 'Contratação & Segurança' },
-];
-
 export const LANDING_FAQS: LandingFaqItem[] = [
   {
-    category: 'AGENDAMENTO',
     question: 'Meu cliente precisa baixar algum aplicativo para agendar?',
     answer:
-      'Não. Você envia o link da sua barbearia no WhatsApp ou coloca na bio do Instagram. O cliente abre direto no navegador do celular, escolhe o serviço, o profissional e o horário livre em menos de 20 segundos.',
+      'Não, de jeito nenhum! O ProntoAgende funciona direto no navegador do celular do seu cliente (como um site). Ele clica no seu link exclusivo, vê os horários livres e agenda em segundos, sem precisar instalar nada na memória do celular. É muito mais prático para ele e não cria barreira para marcar o corte.',
   },
   {
-    category: 'AGENDAMENTO',
     question: 'Consigo usar tudo pelo celular no dia a dia da barbearia?',
     answer:
-      'Sim. Toda a interface foi desenhada pensando em quem atende com o celular na mão: botões simétricos, filtros recolhíveis, modo claro ou escuro para ambientes com muita luz e barra de atalhos rápida no rodapé.',
+      'Sim, 100% focado na correria da cadeira. O sistema foi pensado para usar no celular ou tablet. Você abre a agenda, faz encaixes rápidos, confere o caixa e envia lembretes no WhatsApp com a mesma facilidade de sempre, controlando o negócio na palma da mão sem depender de computador.',
   },
   {
-    category: 'AGENDAMENTO',
     question: 'Posso configurar dias, intervalo de almoço e folgas por barbeiro?',
     answer:
-      'Sim. Cada profissional tem sua própria escala semanal e datas de folga/bloqueio. O link público e o servidor revalidam esses horários automaticamente para nunca aceitar reserva fora do expediente ou no horário de almoço.',
+      'Sim, cada profissional tem a sua própria agenda. Você configura os horários de atendimento, pausas para almoço, dias de folga e os serviços de cada um. O sistema respeita a rotina de cada barbeiro e evita conflitos de horário.',
   },
   {
-    category: 'FINANCEIRO',
     question: 'O ProntoAgende cobra comissão por cada corte ou cliente agendado?',
     answer:
-      'Não cobramos comissão por atendimento nem tomamos seus clientes para uma vitrine de concorrentes. O link é da sua marca e o valor pago pelo cliente vai direto para você.',
+      'Não. Você paga apenas uma mensalidade fixa e usa sem limites. Não cobramos taxas por agendamento, comissão sobre os seus cortes nem tarifa por cliente cadastrado. A receita é toda sua.',
   },
   {
-    category: 'FINANCEIRO',
     question: 'Como funciona o sinal via Pix para evitar faltas?',
     answer:
-      'Você cadastra sua chave Pix e escolhe o percentual de sinal (por exemplo, 30%) nos Ajustes. Se ativar essa opção, o sistema gera o código Pix Copia e Cola no momento da reserva e você confirma o recebimento direto na agenda após conferir no seu banco.',
+      'É uma proteção simples para o seu tempo. Ao agendar pelo link online, o cliente pode pagar um valor de sinal (ex.: R$ 10 ou R$ 20) ou o valor total do corte via Pix. Se ele não comparecer, o sinal compensa o tempo parado; se avisar com antecedência, você pode reagendar para outra data, reduzindo bastante as faltas e os "bolos".',
   },
   {
-    category: 'FINANCEIRO',
-    question: 'Como funciona o cálculo de comissão (Lei do Salão Parceiro)?',
+    question: 'Como funciona o teste gratuito de sete dias?',
     answer:
-      'No Caixa / PDV você escolhe se a taxa da maquininha (débito ou crédito) é dividida proporcionalmente, descontada do profissional ou absorvida pelo estabelecimento. O sistema mostra na hora quanto fica líquido para o barbeiro e quanto vai para o caixa da casa.',
-  },
-  {
-    category: 'SEGURANCA',
-    question: 'Como funciona a contratação e tem multa se eu quiser cancelar?',
-    answer:
-      'Não há multa nem fidelidade. Você cria sua conta pelo botão "Contratar" ou chama nossa equipe no WhatsApp; após a ativação, você já configura sua tabela de serviços no mesmo dia e pode encerrar ou exportar seus dados quando quiser.',
-  },
-  {
-    category: 'SEGURANCA',
-    question: 'Os dados da minha barbearia e dos meus clientes ficam protegidos?',
-    answer:
-      'Sim. Cada barbearia tem acesso isolado no banco de dados (Row Level Security), a página pública de reserva não expõe nome nem telefone de outros clientes e sua conta conta com verificação antibot e autenticação em duas etapas (MFA) opcional, conforme a LGPD.',
+      'Basta clicar em "Quero testar sem pagar" e criar a sua conta. Você libera o acesso gratuito por sete dias para testar a agenda e o caixa na rotina da barbearia, sem compromisso.',
   },
 ];
 
