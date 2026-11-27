@@ -131,7 +131,7 @@ const MacBook: React.FC<{ overlay: OverlayRef }> = ({ overlay }) => {
 const MAC_LID_ANGLE = Math.PI / 2 + 0.2;
 const MAC_YAW = 0;
 // Inclina o notebook para o espectador enxergar o teclado de cima.
-const MAC_TILT = 0.2;
+const MAC_TILT = 0.1;
 
 /** iPhone: UI projected onto the model's own Wallpaper (screen) mesh. */
 const IPhone: React.FC<{ overlay: OverlayRef }> = ({ overlay }) => {
@@ -221,7 +221,7 @@ const Rig: React.FC<SceneProps> = ({ laptopOverlay, phoneOverlay, narrow, device
     <group ref={tilt}>
       <group ref={swap}>
         {showLaptop ? (
-          <group position={[0, -1.0, 0.2]} scale={LAPTOP_ZOOM}>
+          <group position={[0, -0.95, 0.2]} scale={LAPTOP_ZOOM}>
             <MacBook overlay={laptopOverlay} />
           </group>
         ) : (
@@ -238,7 +238,7 @@ const Rig: React.FC<SceneProps> = ({ laptopOverlay, phoneOverlay, narrow, device
   );
 };
 
-const LAPTOP_ZOOM = 1.3;
+const LAPTOP_ZOOM = 1.14;
 
 const LandingDevicesScene: React.FC<SceneProps> = (props) => (
   <Canvas

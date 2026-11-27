@@ -12,14 +12,14 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
  */
 
 const DECK_Y = 0.018;
-const KEY_H = 0.3;
+const KEY_H = 0.12;
 const U = 1.84; // largura de 1u
 const X_LEFT = -13.8;
 const Z_START = -10.3;
 const FN_D = 1.05;
 const ROW_D = 1.7;
 const ROW_PITCH = 1.88;
-const GAP = 0.16;
+const GAP = 0.3;
 
 interface KeyDef {
   x: number; // centro
@@ -80,14 +80,14 @@ const drawLabels = (keys: KeyDef[]): HTMLCanvasElement => {
   if (!ctx) return canvas;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#e9eaee';
+  ctx.fillStyle = "#a0a2aa";
   for (const k of keys) {
     if (!k.label) continue;
     const px = (k.x - TEX_X0) * PX_PER_UNIT;
     const pz = (k.z - TEX_Z0) * PX_PER_UNIT;
     const word = k.label.length > 1;
-    const size = k.small ? 0.5 : word ? 0.5 : 0.82;
-    ctx.font = `600 ${size * PX_PER_UNIT}px "Geist", system-ui, -apple-system, "Segoe UI", sans-serif`;
+    const size = k.small ? 0.42 : word ? 0.4 : 0.7;
+    ctx.font = `500 ${size * PX_PER_UNIT}px "Geist", system-ui, -apple-system, "Segoe UI", sans-serif`;
     if (word && !k.small) {
       // rótulos de função ficam no canto inferior esquerdo, como no teclado real
       ctx.textAlign = 'left';
@@ -113,7 +113,7 @@ export const LandingKeyboard3D: React.FC = () => {
       const id = `${w.toFixed(3)}x${d.toFixed(3)}`;
       let base = cache.get(id);
       if (!base) {
-        base = new RoundedBoxGeometry(w, KEY_H, d, 3, 0.1);
+        base = new RoundedBoxGeometry(w, KEY_H, d, 3, 0.055);
         cache.set(id, base);
       }
       const g = base.clone();
@@ -152,11 +152,11 @@ export const LandingKeyboard3D: React.FC = () => {
       {/* fundo escuro do teclado, sob as teclas */}
       <mesh position={[0, DECK_Y + 0.012, (TEX_Z0 + TEX_Z1) / 2]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[wellW, wellD]} />
-        <meshStandardMaterial color="#050506" roughness={0.9} metalness={0} />
+        <meshStandardMaterial color="#141416" roughness={0.85} metalness={0} />
       </mesh>
       {/* teclas */}
       <mesh geometry={keyGeometry}>
-        <meshStandardMaterial color="#1c1d21" roughness={0.42} metalness={0.15} envMapIntensity={0.9} />
+        <meshStandardMaterial color="#222327" roughness={0.6} metalness={0.1} envMapIntensity={0.5} />
       </mesh>
       {/* letras */}
       <mesh position={[(TEX_X0 + TEX_X1) / 2, topY + 0.006, (TEX_Z0 + TEX_Z1) / 2]} rotation={[-Math.PI / 2, 0, 0]}>
