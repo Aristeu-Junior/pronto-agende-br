@@ -303,22 +303,6 @@ export const LandingPage: React.FC<{ isAuthenticated?: boolean }> = ({
           <LandingFaqSection />
         </section>
 
-        {/* 7. CHAMADA FINAL */}
-        <section className="border-t border-stone-800/80 py-14 sm:py-20">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center space-y-6">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-100">
-              Pronto para facilitar o agendamento da sua barbearia no dia a dia?
-            </h2>
-            <a
-              href="#/cadastro"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-600 px-6 py-3.5 text-sm font-bold text-stone-950 shadow-lg shadow-amber-500/20"
-            >
-              <span>{TRIAL_CTA_LABEL}</span>
-              <ArrowRight className="h-4 w-4" weight="bold" />
-            </a>
-          </div>
-        </section>
-
       </main>
 
       {/* RODAPÉ */}
