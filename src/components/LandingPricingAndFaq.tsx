@@ -58,12 +58,8 @@ export const LandingPricingSection: React.FC<LandingPricingSectionProps> = () =>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
         {LANDING_PLANS.map((plan) => {
           const tier = billingCycle === 'annual' ? plan.annual : plan.monthly;
-          const periodLabel =
-            tier === null
-              ? plan.customPeriodLabel
-              : billingCycle === 'annual'
-              ? '/ano'
-              : '/mês';
+          const periodLabel = tier === null ? plan.customPeriodLabel : '/mês';
+          const annualTier = billingCycle === 'annual' ? plan.annual : null;
 
           const primaryHref = plan.useWhatsappPrimary
             ? buildSalesWhatsAppUrl(plan.name, billingCycle)
@@ -82,22 +78,22 @@ export const LandingPricingSection: React.FC<LandingPricingSectionProps> = () =>
               <div className="space-y-5">
                 <h3 className="text-lg font-bold text-stone-100">{plan.name}</h3>
                 <div className="space-y-1">
-                  {tier !== null && (
-                    <p className="font-mono num-tabular text-sm text-stone-400 line-through">
-                      {brl(tier.was)}
-                    </p>
-                  )}
-                  <div className="flex items-baseline gap-1.5">
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                     <span className="font-mono num-tabular text-3xl font-bold text-stone-100">
                       {tier !== null ? brl(tier.price) : plan.customPriceLabel}
                     </span>
                     <span className="text-xs font-medium text-stone-400">
                       {periodLabel}
                     </span>
+                    {annualTier !== null && (
+                      <span className="font-mono num-tabular text-sm text-stone-400 line-through">
+                        {brl(annualTier.was)}/mês
+                      </span>
+                    )}
                   </div>
-                  {tier !== null && billingCycle === 'annual' && (
+                  {annualTier !== null && (
                     <p className="text-[11px] font-medium text-stone-400">
-                      equivale a {brl(tier.price / 12, 2)} por mês
+                      cobrado {brl(annualTier.yearTotal)} por ano
                     </p>
                   )}
                 </div>

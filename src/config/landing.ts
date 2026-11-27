@@ -122,10 +122,10 @@ export interface LandingPlanItem {
   id: string;
   name: string;
   highlighted?: boolean;
-  /** Preço mensal atual e o preço "de" riscado (null = sob medida). */
-  monthly: { price: number; was: number } | null;
-  /** Preço do ano inteiro e o valor "de" riscado (mensal x 12). */
-  annual: { price: number; was: number } | null;
+  /** Mensal: valor cheio por mês, sem riscado (null = sob medida). */
+  monthly: { price: number } | null;
+  /** Anual: valor por mês com desconto (`price`), valor cheio riscado (`was`) e total cobrado no ano. */
+  annual: { price: number; was: number; yearTotal: number } | null;
   customPriceLabel?: string;
   customPeriodLabel?: string;
   features: string[];
@@ -140,8 +140,8 @@ export const LANDING_PLANS: LandingPlanItem[] = [
   {
     id: 'solo',
     name: 'Solo / Essencial',
-    monthly: { price: 27, was: 37 },
-    annual: { price: 287, was: 324 },
+    monthly: { price: 37 },
+    annual: { price: 27, was: 37, yearTotal: 287 },
     features: [
       '1 barbeiro com agenda própria',
       'Agendamento rápido para cortes',
@@ -156,8 +156,8 @@ export const LANDING_PLANS: LandingPlanItem[] = [
     id: 'barbearia',
     name: 'Barbearia',
     highlighted: true,
-    monthly: { price: 57, was: 79 },
-    annual: { price: 652, was: 684 },
+    monthly: { price: 79 },
+    annual: { price: 57, was: 79, yearTotal: 652 },
     features: [
       'Tudo do Solo / Essencial para até 4 barbeiros',
       'Agendas, folgas e horários por barbeiro',
