@@ -238,7 +238,7 @@ const Rig: React.FC<SceneProps> = ({ laptopOverlay, phoneOverlay, narrow, device
   );
 };
 
-const LAPTOP_ZOOM = 1.0;
+const LAPTOP_ZOOM = 1.3;
 
 const LandingDevicesScene: React.FC<SceneProps> = (props) => (
   <Canvas
